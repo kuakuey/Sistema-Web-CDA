@@ -1,0 +1,8 @@
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'iglesiacasadeavi_bootstrap');
+define('DB_USER', 'iglesiacasadeavi_kuakuey');
+define('DB_PASS', 'Superadmin29@!');
+define('DB_CHARSET', 'utf8mb4');
+
+// Mantenimiento BD (login): esquina inferior izquierda invisible O directo:
+// index.php?m=cda-bd-v2-7f3a9e2c

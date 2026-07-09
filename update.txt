@@ -1,0 +1,102 @@
+================================================================================
+ACTUALIZACIÓN — Sistema Web CDA
+Fecha: 28 de junio de 2026
+Estado: En desarrollo (producción activa)
+================================================================================
+
+RESUMEN DE CAMBIOS
+------------------
+
+1. Valores adicionales — registro para Counter
+   El rol Counter puede registrar nuevos valores adicionales (antes solo
+   Superadmin y Administrador).
+
+2. Generar informe — filtro por fecha de registro
+   El informe PDF filtra ofrendas y valores adicionales según la fecha en
+   que se registraron en el sistema (creado_en), no según la fecha de ofrenda
+   ni la fecha del valor.
+
+3. Reporte de ofrendas (informe PDF)
+   - Nueva opción: mostrar u ocultar casas de vida que no entregaron ofrenda.
+   - Las ofrendas se muestran agrupadas por fecha de ofrenda (ej. «Fecha: 09
+     Junio» seguido de la tabla correspondiente).
+   - En el resumen aparece el total de registros (ingresos) de ofrendas en el
+     rango de fecha de registro seleccionado.
+
+4. Valores adicionales — tipo «Eventos»
+   Nueva opción en el selector de tipo al registrar o filtrar valores
+   adicionales.
+
+5. Generar informe — filtro por turno
+   Selector Mañana / Tarde / Todos según hora de registro:
+   Mañana 00:01–15:59, Tarde 16:00–23:59, Todos el día completo.
+
+6. Módulo Eventos (solo Superadmin y Administrador)
+   Nueva sección para registrar nombres de eventos. En valores adicionales,
+   al elegir tipo «Eventos», se muestra un selector con los eventos
+   registrados. El informe PDF incluye columna Evento.
+
+ARCHIVOS MODIFICADOS
+--------------------
+
+  includes/roles.php
+    Permiso de registro en valores adicionales para Counter; menú Eventos
+    solo Superadmin/Administrador.
+
+  includes/eventos.php
+    Nuevo: CRUD de eventos.
+
+  includes/informes.php
+    Consultas del informe por creado_en; agrupación por fecha de ofrenda;
+    opción mostrar_sin_entregar; conteo de registros; filtro por turno.
+
+  includes/valores_adicionales.php
+    Tipo Eventos; campo evento_id al guardar.
+
+  includes/detalle_registro.php
+    Detalle de valor adicional con evento.
+
+  config/database.php
+    Tabla eventos y columna evento_id en valores_adicionales.
+
+  database/schema.sql
+    Tabla eventos y columna evento_id.
+
+  eventos.php
+    Nueva página de gestión de eventos.
+
+  views/eventos/index.php
+    Vista de gestión de eventos.
+
+  valores-adicionales.php
+    Carga lista de eventos para el formulario.
+
+  views/valores-adicionales/index.php
+    Selector de evento cuando el tipo es Eventos.
+
+  acciones.php
+    Validación y guardado con evento_id; eliminar evento.
+
+  generar-informe.php
+    Parámetros mostrar_sin_entregar y turno.
+
+  views/informes/generar.php
+    Checkbox casas sin entregar, selector de turno y aclaración del filtro.
+
+  views/informes/pdf.php
+    Columna Evento en valores adicionales; turno en subtítulo; ofrendas
+    agrupadas por fecha; sección de casas sin entregar condicional.
+
+  update.txt
+    Este archivo (registro de la actualización).
+
+NOTAS PARA DESPLIEGUE
+---------------------
+
+  - Requiere migración de base de datos: tabla eventos y columna evento_id
+    en valores_adicionales. Usar «Crear tablas» en el login o ejecutar el
+    script de migración en config/database.php.
+  - Después de subir los archivos, crear eventos como administrador y
+    probar un valor adicional tipo Eventos y el informe PDF.
+
+================================================================================

@@ -16,6 +16,7 @@ function parsearFiltrosRegistros(array $entrada): array
         'monto_max'   => trim((string) ($entrada['monto_max'] ?? '')),
         'tipo_valor'       => trim((string) ($entrada['tipo_valor'] ?? '')),
         'tipo_consejeria'  => trim((string) ($entrada['tipo_consejeria'] ?? '')),
+        'tipo_transporte'  => trim((string) ($entrada['tipo_transporte'] ?? '')),
     ];
 }
 

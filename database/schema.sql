@@ -170,3 +170,17 @@ CREATE TABLE IF NOT EXISTS consejerias (
     INDEX idx_cita_fecha (cita_fecha),
     INDEX idx_creado_en (creado_en)
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS transporte_aniversario (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_completo VARCHAR(200) NOT NULL,
+    telefono VARCHAR(30) NOT NULL,
+    posee_movilizacion TINYINT(1) NOT NULL DEFAULT 0,
+    asientos_disponibles SMALLINT UNSIGNED DEFAULT NULL,
+    registrado_por_id INT DEFAULT NULL,
+    registrado_por_nombre VARCHAR(100) DEFAULT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_posee_movilizacion (posee_movilizacion),
+    INDEX idx_creado_en (creado_en)
+) ENGINE=InnoDB;

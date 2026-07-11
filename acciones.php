@@ -17,6 +17,7 @@ require_once 'includes/estructura.php';
 require_once 'includes/valores_adicionales.php';
 require_once 'includes/eventos.php';
 require_once 'includes/consejerias.php';
+require_once 'includes/transporte_aniversario.php';
 
 $accion = $_POST['accion'] ?? '';
 $id = (int) ($_POST['id'] ?? 0);
@@ -179,6 +180,33 @@ if ($accion === 'crear_consejeria') {
         ]);
     } catch (PDOException $e) {
         header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode('No se pudo guardar. Verifica que exista la tabla consejerias.'));
+        exit;
+    }
+
+    header('Location: ' . $redireccionBase . '?pestaña=nuevo&ok=1');
+    exit;
+}
+
+if ($accion === 'crear_transporte_aniversario') {
+    if (!puedeRegistrarTransporteAniversario(obtenerUsuarioActual()['rol'])) {
+        header('Location: ' . $urlInicio);
+        exit;
+    }
+
+    $usuario = obtenerUsuarioActual();
+    $redireccionBase = 'transporte-aniversario.php';
+
+    try {
+        $datos = validarDatosTransporteAniversario($_POST);
+        insertarTransporteAniversario(array_merge($datos, [
+            'registrado_por_id'     => (int) $usuario['id'],
+            'registrado_por_nombre' => $usuario['nombre'] ?? $usuario['usuario'],
+        ]));
+    } catch (InvalidArgumentException $e) {
+        header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode($e->getMessage()));
+        exit;
+    } catch (PDOException $e) {
+        header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode('No se pudo guardar. Verifica que exista la tabla transporte_aniversario.'));
         exit;
     }
 
@@ -389,6 +417,7 @@ $accionesActualizar = [
     'actualizar_valor_adicional',
     'actualizar_registro_evento',
     'actualizar_consejeria',
+    'actualizar_transporte_aniversario',
 ];
 
 if (in_array($accion, $accionesActualizar, true)) {
@@ -541,6 +570,11 @@ if (in_array($accion, $accionesActualizar, true)) {
                     'cita_hora'         => trim((string) ($_POST['cita_hora'] ?? '')),
                 ]);
                 break;
+
+            case 'actualizar_transporte_aniversario':
+                $datos = validarDatosTransporteAniversario($_POST);
+                actualizarTransporteAniversario($id, $datos);
+                break;
         }
     } catch (InvalidArgumentException $e) {
         header('Location: ' . $redireccion . $sepRedireccion . 'error=' . urlencode($e->getMessage()));
@@ -565,6 +599,7 @@ $accionesEliminar = [
     'eliminar_ofrenda',
     'eliminar_valor_adicional',
     'eliminar_consejeria',
+    'eliminar_transporte_aniversario',
     'eliminar_usuario',
     'eliminar_territorio',
     'eliminar_lider',
@@ -598,6 +633,9 @@ if (in_array($accion, $accionesEliminar, true)) {
             break;
         case 'eliminar_consejeria':
             eliminarConsejeria($id);
+            break;
+        case 'eliminar_transporte_aniversario':
+            eliminarTransporteAniversario($id);
             break;
         case 'eliminar_usuario':
             require_once 'includes/users.php';

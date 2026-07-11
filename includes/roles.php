@@ -3,6 +3,7 @@
 require_once __DIR__ . '/submissions.php';
 require_once __DIR__ . '/valores_adicionales.php';
 require_once __DIR__ . '/consejerias.php';
+require_once __DIR__ . '/transporte_aniversario.php';
 require_once __DIR__ . '/permisos.php';
 
 const ROL_SUPERADMIN = 'superadmin';
@@ -78,6 +79,21 @@ function puedeAsignarCitaConsejeria(string $rol): bool
     return puedeVerConsejerias($rol);
 }
 
+function puedeVerTransporteAniversario(string $rol): bool
+{
+    return tienePermisoSeccion($rol, 'transporte_aniversario');
+}
+
+function puedeRegistrarTransporteAniversario(string $rol): bool
+{
+    return tienePermisoDetalle($rol, 'transporte_aniversario', 'nuevo');
+}
+
+function puedeVerReporteTransporteAniversario(string $rol): bool
+{
+    return tienePermisoDetalle($rol, 'transporte_aniversario', 'reporte');
+}
+
 function puedeRegistrarEnSeccion(string $rol, string $seccion): bool
 {
     if ($seccion === 'generales') {
@@ -93,6 +109,7 @@ function puedeRegistrarEnSeccion(string $rol, string $seccion): bool
         'ofrendas'            => 'nuevo',
         'valores_adicionales' => 'nuevo',
         'consejeria'          => 'nuevo',
+        'transporte_aniversario' => 'nuevo',
     ];
 
     if (isset($mapaNuevo[$seccion])) {
@@ -230,6 +247,7 @@ function obtenerEtiquetasSecciones(): array
         'valores_adicionales' => 'Valores adicionales',
         'eventos'             => 'Eventos',
         'consejeria'          => "Consejer\u{00ED}a",
+        'transporte_aniversario' => 'Transporte Aniversario',
         'generar_informe'     => 'Generar informe',
         'estructura'          => 'Estructura CDV',
         'usuarios'            => 'Usuarios',
@@ -249,6 +267,7 @@ function obtenerIconosSecciones(): array
         'valores_adicionales' => 'bi-wallet2',
         'eventos'             => 'bi-calendar-event',
         'consejeria'          => 'bi-chat-heart',
+        'transporte_aniversario' => 'bi-bus-front',
         'generar_informe'     => 'bi-file-earmark-bar-graph',
         'estructura'          => 'bi-diagram-3',
         'usuarios'            => 'bi-person-gear',
@@ -273,6 +292,7 @@ function obtenerOrdenMenuSidebar(): array
         'eventos',
         'valores_adicionales',
         'consejeria',
+        'transporte_aniversario',
         'generar_informe',
         'estructura',
         'usuarios',
@@ -319,6 +339,7 @@ function obtenerUrlMenuSidebar(string $clave): string
         'valores_adicionales' => 'valores-adicionales.php',
         'eventos'             => 'eventos.php',
         'consejeria'          => 'consejeria.php',
+        'transporte_aniversario' => 'transporte-aniversario.php',
         'generar_informe'     => 'generar-informe.php',
         'estructura'          => 'estructura.php',
         'usuarios'            => 'usuarios.php',
@@ -336,6 +357,12 @@ function obtenerContadorMenuSidebar(string $clave, array $estadisticas): ?int
     if ($clave === 'consejeria') {
         return isset($estadisticas['consejerias'])
             ? (int) $estadisticas['consejerias']
+            : null;
+    }
+
+    if ($clave === 'transporte_aniversario') {
+        return isset($estadisticas['transporte_aniversario'])
+            ? (int) $estadisticas['transporte_aniversario']
             : null;
     }
 
@@ -377,6 +404,7 @@ function obtenerEstadisticasPorRol(string $rol): array
         'ofrendas'            => 0,
         'valores_adicionales' => 0,
         'consejerias'         => 0,
+        'transporte_aniversario' => 0,
         'total'               => 0,
     ];
 
@@ -400,6 +428,10 @@ function obtenerEstadisticasPorRol(string $rol): array
 
     if (puedeVerConsejerias($rol)) {
         $estadisticas['consejerias'] = contarConsejerias();
+    }
+
+    if (puedeVerTransporteAniversario($rol)) {
+        $estadisticas['transporte_aniversario'] = contarTransporteAniversario();
     }
 
     $estadisticas['total'] = $estadisticas['total_inscripciones']

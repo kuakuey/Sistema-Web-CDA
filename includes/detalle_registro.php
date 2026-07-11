@@ -3,6 +3,7 @@
 require_once __DIR__ . '/submissions.php';
 require_once __DIR__ . '/valores_adicionales.php';
 require_once __DIR__ . '/consejerias.php';
+require_once __DIR__ . '/transporte_aniversario.php';
 
 function tieneObservacionRegistro(?string $texto): bool
 {
@@ -195,6 +196,32 @@ function construirDetalleConsejeria(array $fila): array
             'valor'    => formatearCitaConsejeria($fila['cita_fecha'] ?? null, $fila['cita_hora'] ?? null),
         ],
     ];
+
+    return array_merge($filas, filasMetaRegistro($fila));
+}
+
+/**
+ * @return array<int, array{etiqueta: string, valor: string}>
+ */
+function construirDetalleTransporteAniversario(array $fila): array
+{
+    $poseeMovilizacion = !empty($fila['posee_movilizacion']);
+
+    $filas = [
+        ['etiqueta' => 'Nombre completo', 'valor' => (string) ($fila['nombre_completo'] ?? '—')],
+        [
+            'etiqueta' => 'Tipo',
+            'valor'    => etiquetaTipoTransporteAniversario($poseeMovilizacion),
+        ],
+        filaDetalleHtml('Teléfono', enlaceWhatsApp($fila['telefono'] ?? null)),
+    ];
+
+    if ($poseeMovilizacion) {
+        $filas[] = [
+            'etiqueta' => 'Asientos disponibles',
+            'valor'    => (string) ((int) ($fila['asientos_disponibles'] ?? 0)),
+        ];
+    }
 
     return array_merge($filas, filasMetaRegistro($fila));
 }

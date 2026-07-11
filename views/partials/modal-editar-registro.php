@@ -301,6 +301,43 @@ $fila = $filaEditar;
               <input type="time" class="form-control" name="cita_hora" value="<?= htmlspecialchars(formatearHoraConsejeria($fila['cita_hora'] ?? '')) ?>">
             </div>
           </div>
+
+          <?php elseif ($tipoEditar === 'transporte_aniversario'): ?>
+          <input type="hidden" name="accion" value="actualizar_transporte_aniversario">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Nombre completo <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="nombre_completo" required maxlength="200" value="<?= htmlspecialchars($fila['nombre_completo'] ?? '') ?>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Teléfono <span class="text-danger">*</span></label>
+              <input type="tel" class="form-control" name="telefono" required maxlength="30" value="<?= htmlspecialchars($fila['telefono'] ?? '') ?>">
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input
+                  class="form-check-input js-posee-movilizacion"
+                  type="checkbox"
+                  id="<?= htmlspecialchars($modalEditarId . '-posee-movilizacion') ?>"
+                  name="posee_movilizacion"
+                  value="1"
+                  <?= !empty($fila['posee_movilizacion']) ? 'checked' : '' ?>
+                >
+                <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-posee-movilizacion') ?>">Posee movilización</label>
+              </div>
+            </div>
+            <div class="col-md-4 js-campo-asientos" style="<?= !empty($fila['posee_movilizacion']) ? '' : 'display:none' ?>">
+              <label class="form-label">Asientos disponibles <span class="text-danger">*</span></label>
+              <input
+                type="number"
+                class="form-control"
+                name="asientos_disponibles"
+                min="1"
+                max="99"
+                value="<?= !empty($fila['asientos_disponibles']) ? (int) $fila['asientos_disponibles'] : '' ?>"
+              >
+            </div>
+          </div>
           <?php endif; ?>
         </div>
         <div class="modal-footer">

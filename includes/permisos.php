@@ -98,6 +98,15 @@ function obtenerCatalogoPermisosDetallados(): array
                 'nuevo'     => 'Nueva solicitud',
             ],
         ],
+        'transporte_aniversario' => [
+            'etiqueta'  => 'Transporte Aniversario',
+            'icono'     => 'bi-bus-front',
+            'permisos'  => [
+                'registros' => 'Registros',
+                'nuevo'     => 'Nuevo registro',
+                'reporte'   => 'Reporte',
+            ],
+        ],
         'generar_informe' => [
             'etiqueta'  => 'Generar informe',
             'icono'     => 'bi-file-earmark-bar-graph',
@@ -220,6 +229,7 @@ function obtenerSeccionesConfigurablesPermisos(): array
         'valores_adicionales' => 'Valores adicionales',
         'eventos'             => 'Eventos',
         'consejeria'          => "Consejer\u{00ED}a",
+        'transporte_aniversario' => 'Transporte Aniversario',
         'generar_informe'     => 'Generar informe',
         'estructura'          => 'Estructura CDV',
         'usuarios'            => 'Usuarios',
@@ -256,6 +266,7 @@ function obtenerPermisosPorDefectoRol(string $rol): array
                 'valores_adicionales',
                 'eventos',
                 'consejeria',
+                'transporte_aniversario',
                 'generar_informe',
                 'estructura',
             ], $rol);
@@ -270,6 +281,7 @@ function obtenerPermisosPorDefectoRol(string $rol): array
                 'ofrendas',
                 'valores_adicionales',
                 'consejeria',
+                'transporte_aniversario',
                 'generar_informe',
             ], $rol);
 

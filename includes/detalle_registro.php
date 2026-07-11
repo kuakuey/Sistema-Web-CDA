@@ -46,7 +46,7 @@ function construirDetalleInscripcion(array $fila, array $etiquetasFormulario): a
         'etiqueta' => 'Nombre completo',
         'valor'    => trim(($fila['nombre'] ?? '') . ' ' . ($fila['apellido'] ?? '')),
     ];
-    $filas[] = filaDetalleHtml('Celular', enlaceWhatsApp($fila['celular'] ?? null));
+    $filas[] = filaDetalleHtml('Teléfono', enlaceWhatsApp($fila['celular'] ?? null));
     $filas[] = ['etiqueta' => 'Email', 'valor' => (string) ($fila['email'] ?? '—')];
 
     if (($fila['tipo_formulario'] ?? '') === 'conexion' || ($fila['zona'] ?? '') !== '') {

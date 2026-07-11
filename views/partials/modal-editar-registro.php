@@ -22,21 +22,21 @@ $fila = $filaEditar;
           <?php if ($tipoEditar === 'inscripcion'): ?>
           <input type="hidden" name="accion" value="actualizar_inscripcion">
           <div class="row g-3">
-            <div class="col-md-6">
+            <div class="col-12 col-md-6">
               <label class="form-label">Nombre <span class="text-danger">*</span></label>
               <input type="text" class="form-control" name="nombre" required maxlength="100" value="<?= htmlspecialchars($fila['nombre'] ?? '') ?>">
             </div>
-            <div class="col-md-6">
+            <div class="col-12 col-md-6">
               <label class="form-label">Apellido <span class="text-danger">*</span></label>
               <input type="text" class="form-control" name="apellido" required maxlength="100" value="<?= htmlspecialchars($fila['apellido'] ?? '') ?>">
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Celular <span class="text-danger">*</span></label>
+            <div class="col-12">
+              <label class="form-label">Teléfono <span class="text-danger">*</span></label>
               <input type="tel" class="form-control" name="celular" required maxlength="30" value="<?= htmlspecialchars($fila['celular'] ?? '') ?>">
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Email <span class="text-danger">*</span></label>
-              <input type="email" class="form-control" name="email" required maxlength="100" value="<?= htmlspecialchars($fila['email'] ?? '') ?>">
+            <div class="col-12">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" name="email" maxlength="100" value="<?= htmlspecialchars($fila['email'] ?? '') ?>">
             </div>
             <?php if (($fila['tipo_formulario'] ?? '') === 'conexion'): ?>
             <div class="col-md-6">

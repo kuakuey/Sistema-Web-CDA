@@ -25,24 +25,24 @@ $esConexion = $seccion === 'conexion' || ($seccion === 'generales' && ($tipoForm
   <input type="hidden" name="tipo_formulario" value="<?= htmlspecialchars($seccion) ?>">
   <?php endif; ?>
 
-  <div class="col-md-6 col-lg-4">
+  <div class="col-12 col-md-6">
     <label class="form-label" for="nombre">Nombre <span class="text-danger">*</span></label>
     <input type="text" class="form-control" id="nombre" name="nombre" required maxlength="100">
   </div>
 
-  <div class="col-md-6 col-lg-4">
+  <div class="col-12 col-md-6">
     <label class="form-label" for="apellido">Apellido <span class="text-danger">*</span></label>
     <input type="text" class="form-control" id="apellido" name="apellido" required maxlength="100">
   </div>
 
-  <div class="col-md-6 col-lg-4">
-    <label class="form-label" for="celular">Celular <span class="text-danger">*</span></label>
+  <div class="col-12">
+    <label class="form-label" for="celular">Teléfono <span class="text-danger">*</span></label>
     <input type="tel" class="form-control" id="celular" name="celular" required maxlength="30">
   </div>
 
-  <div class="col-md-6 col-lg-4">
-    <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
-    <input type="email" class="form-control" id="email" name="email" required maxlength="150">
+  <div class="col-12">
+    <label class="form-label" for="email">Email</label>
+    <input type="email" class="form-control" id="email" name="email" maxlength="100">
   </div>
 
   <div class="col-md-6 col-lg-4 js-campo-conexion" style="<?= $seccion === 'conexion' ? '' : 'display:none' ?>">

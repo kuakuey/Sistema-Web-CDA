@@ -99,6 +99,11 @@ function migrarColumnasEspanol(PDO $pdo): void
 
     if (tablaExiste($pdo, 'inscripciones')) {
         $pdo->exec("UPDATE inscripciones SET tipo_formulario = 'academia' WHERE tipo_formulario = 'academy'");
+
+        $emailCol = $pdo->query("SHOW COLUMNS FROM inscripciones LIKE 'email'")->fetch();
+        if ($emailCol && strtoupper((string) ($emailCol['Null'] ?? '')) === 'NO') {
+            $pdo->exec('ALTER TABLE inscripciones MODIFY email VARCHAR(100) DEFAULT NULL');
+        }
     }
 
     if (tablaExiste($pdo, 'usuarios')) {
@@ -177,7 +182,7 @@ function setupDatabase(): array
                 nombre VARCHAR(100) NOT NULL,
                 apellido VARCHAR(100) NOT NULL,
                 celular VARCHAR(30) NOT NULL,
-                email VARCHAR(100) NOT NULL,
+                email VARCHAR(100) DEFAULT NULL,
                 zona VARCHAR(50) DEFAULT NULL,
                 direccion VARCHAR(255) DEFAULT NULL,
                 contactado TINYINT(1) NOT NULL DEFAULT 0,

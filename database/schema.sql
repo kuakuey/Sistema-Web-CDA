@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS inscripciones (
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
     celular VARCHAR(30) NOT NULL,
-    email VARCHAR(100) NOT NULL,
+    email VARCHAR(100) DEFAULT NULL,
     zona VARCHAR(50) DEFAULT NULL,
     direccion VARCHAR(255) DEFAULT NULL,
     contactado TINYINT(1) NOT NULL DEFAULT 0,

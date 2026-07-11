@@ -245,7 +245,7 @@ if ($accion === 'crear_inscripcion') {
     $celular = trim((string) ($_POST['celular'] ?? ''));
     $email = trim((string) ($_POST['email'] ?? ''));
 
-    if ($nombre === '' || $apellido === '' || $celular === '' || $email === '') {
+    if ($nombre === '' || $apellido === '' || $celular === '') {
         header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode('Completa todos los campos obligatorios.'));
         exit;
     }
@@ -274,7 +274,7 @@ if ($accion === 'crear_inscripcion') {
             'nombre'         => $nombre,
             'apellido'       => $apellido,
             'celular'        => $celular,
-            'email'          => $email,
+            'email'          => $email !== '' ? $email : null,
             'zona'           => $zona,
             'direccion'      => $direccion,
             'ip_cliente'     => $_SERVER['REMOTE_ADDR'] ?? '',
@@ -412,7 +412,7 @@ if (in_array($accion, $accionesActualizar, true)) {
                 $celular = trim((string) ($_POST['celular'] ?? ''));
                 $email = trim((string) ($_POST['email'] ?? ''));
 
-                if ($nombre === '' || $apellido === '' || $celular === '' || $email === '') {
+                if ($nombre === '' || $apellido === '' || $celular === '') {
                     throw new InvalidArgumentException('Completa todos los campos obligatorios.');
                 }
 
@@ -420,7 +420,7 @@ if (in_array($accion, $accionesActualizar, true)) {
                     'nombre'      => $nombre,
                     'apellido'    => $apellido,
                     'celular'     => $celular,
-                    'email'       => $email,
+                    'email'       => $email !== '' ? $email : null,
                     'zona'        => trim((string) ($_POST['zona'] ?? '')),
                     'direccion'   => trim((string) ($_POST['direccion'] ?? '')),
                     'contactado'  => (int) ($_POST['contactado'] ?? 0),

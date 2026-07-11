@@ -62,10 +62,10 @@ try {
     if (in_array($tipoFormulario, $tiposInscripcion, true)) {
         $nombre   = trim((string) ($payload['nombre'] ?? ''));
         $apellido = trim((string) ($payload['apellido'] ?? ''));
-        $celular  = trim((string) ($payload['celular'] ?? ''));
+        $celular  = trim((string) ($payload['celular'] ?? $payload['telefono'] ?? ''));
         $email    = trim((string) ($payload['email'] ?? ''));
 
-        if ($nombre === '' || $apellido === '' || $celular === '' || $email === '') {
+        if ($nombre === '' || $apellido === '' || $celular === '') {
             throw new InvalidArgumentException('Completa todos los campos obligatorios.');
         }
 
@@ -90,7 +90,7 @@ try {
             'nombre'         => $nombre,
             'apellido'       => $apellido,
             'celular'        => $celular,
-            'email'          => $email,
+            'email'          => $email !== '' ? $email : null,
             'zona'           => $zona,
             'direccion'      => $direccion,
             'ip_cliente'     => $ip,

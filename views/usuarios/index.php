@@ -80,22 +80,35 @@
             <td class="text-muted small"><?= htmlspecialchars(formatearFechaHora($u['creado_en'])) ?></td>
             <?php if ($puedeEliminar): ?>
             <td class="text-end">
-              <?php if ((int) $u['id'] !== (int) $usuario['id']): ?>
-              <form
-                method="POST"
-                action="acciones.php"
-                class="d-inline js-form-confirmar"
-                data-confirm-title="Eliminar usuario"
-                data-confirm="¿Eliminar este usuario?"
-              >
-                <input type="hidden" name="accion" value="eliminar_usuario">
-                <input type="hidden" name="id" value="<?= (int) $u['id'] ?>">
-                <input type="hidden" name="redireccion" value="usuarios.php?pestaña=lista">
-                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
-                  <i class="bi bi-trash"></i>
+              <div class="d-inline-flex gap-1">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  title="Cambiar contraseña"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modalCambiarClave"
+                  data-usuario-id="<?= (int) $u['id'] ?>"
+                  data-usuario-nombre="<?= htmlspecialchars($u['usuario'], ENT_QUOTES) ?>"
+                >
+                  <i class="bi bi-key"></i>
                 </button>
-              </form>
-              <?php endif; ?>
+                <?php if ((int) $u['id'] !== (int) $usuario['id']): ?>
+                <form
+                  method="POST"
+                  action="acciones.php"
+                  class="d-inline js-form-confirmar"
+                  data-confirm-title="Eliminar usuario"
+                  data-confirm="¿Eliminar este usuario?"
+                >
+                  <input type="hidden" name="accion" value="eliminar_usuario">
+                  <input type="hidden" name="id" value="<?= (int) $u['id'] ?>">
+                  <input type="hidden" name="redireccion" value="usuarios.php?pestaña=lista">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+                <?php endif; ?>
+              </div>
             </td>
             <?php endif; ?>
           </tr>
@@ -105,6 +118,65 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="modalCambiarClave" tabindex="-1" aria-labelledby="modalCambiarClaveLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="acciones.php">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalCambiarClaveLabel">Cambiar contraseña</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="accion" value="cambiar_clave_usuario">
+          <input type="hidden" name="id" id="cambiarClaveUsuarioId" value="">
+          <input type="hidden" name="redireccion" value="usuarios.php?pestaña=lista">
+
+          <p class="text-muted small mb-3">
+            Nueva contraseña para <strong id="cambiarClaveUsuarioNombre"></strong>
+          </p>
+
+          <div class="mb-3">
+            <label class="form-label" for="cambiarClaveNueva">Nueva contraseña <span class="text-danger">*</span></label>
+            <input type="password" class="form-control" id="cambiarClaveNueva" name="clave" required minlength="6" autocomplete="new-password">
+          </div>
+
+          <div class="mb-0">
+            <label class="form-label" for="cambiarClaveConfirmacion">Confirmar contraseña <span class="text-danger">*</span></label>
+            <input type="password" class="form-control" id="cambiarClaveConfirmacion" name="clave_confirmacion" required minlength="6" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-key me-1"></i>Guardar contraseña
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modal = document.getElementById('modalCambiarClave');
+
+  if (!modal) {
+    return;
+  }
+
+  modal.addEventListener('show.bs.modal', function (evento) {
+    var boton = evento.relatedTarget;
+    var id = boton.getAttribute('data-usuario-id') || '';
+    var nombre = boton.getAttribute('data-usuario-nombre') || '';
+
+    document.getElementById('cambiarClaveUsuarioId').value = id;
+    document.getElementById('cambiarClaveUsuarioNombre').textContent = nombre;
+    document.getElementById('cambiarClaveNueva').value = '';
+    document.getElementById('cambiarClaveConfirmacion').value = '';
+  });
+})();
+</script>
 
 <?php elseif ($pestaña === 'registrar'): ?>
 <div class="card border-0 shadow-sm">

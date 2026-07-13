@@ -54,6 +54,44 @@ function crearUsuario(string $usuario, string $clave, string $nombre, string $ro
     return ['exito' => true, 'mensaje' => 'Usuario creado correctamente.', 'id' => (int) $pdo->lastInsertId()];
 }
 
+function cambiarClaveUsuario(int $id, string $clave, string $claveConfirmacion): array
+{
+    $clave = trim($clave);
+    $claveConfirmacion = trim($claveConfirmacion);
+
+    if ($id <= 0) {
+        return ['exito' => false, 'mensaje' => 'Usuario no válido.'];
+    }
+
+    if ($clave === '' || $claveConfirmacion === '') {
+        return ['exito' => false, 'mensaje' => 'Ingresa y confirma la nueva contraseña.'];
+    }
+
+    if ($clave !== $claveConfirmacion) {
+        return ['exito' => false, 'mensaje' => 'Las contraseñas no coinciden.'];
+    }
+
+    if (strlen($clave) < 6) {
+        return ['exito' => false, 'mensaje' => 'La contraseña debe tener al menos 6 caracteres.'];
+    }
+
+    $pdo = getConnection();
+    $existe = $pdo->prepare('SELECT id FROM usuarios WHERE id = ? LIMIT 1');
+    $existe->execute([$id]);
+
+    if (!$existe->fetch()) {
+        return ['exito' => false, 'mensaje' => 'Usuario no encontrado.'];
+    }
+
+    $stmt = $pdo->prepare('UPDATE usuarios SET clave = ? WHERE id = ?');
+    $stmt->execute([
+        password_hash($clave, PASSWORD_DEFAULT),
+        $id,
+    ]);
+
+    return ['exito' => true, 'mensaje' => 'Contraseña actualizada correctamente.'];
+}
+
 function eliminarUsuario(int $id, int $idUsuarioActual): array
 {
     if ($id === $idUsuarioActual) {

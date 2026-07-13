@@ -11,7 +11,6 @@ requerirSuperadmin();
 $usuario = obtenerUsuarioActual();
 $rol = $usuario['rol'];
 $mensaje = null;
-$error = null;
 
 $pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : 'lista';
 if (!in_array($pestaña, ['lista', 'registrar', 'permisos'], true)) {
@@ -36,10 +35,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'crear
 }
 
 if (isset($_GET['ok'])) {
-    $mensaje = $pestaña === 'permisos'
-        ? 'Permisos actualizados correctamente.'
-        : 'Usuario creado correctamente.';
+    if ($pestaña === 'permisos') {
+        $mensaje = 'Permisos actualizados correctamente.';
+    } elseif (isset($_GET['clave'])) {
+        $mensaje = 'Contraseña actualizada correctamente.';
+    } else {
+        $mensaje = 'Usuario creado correctamente.';
+    }
 }
+
+$error = isset($_GET['error']) ? (string) $_GET['error'] : null;
 
 $usuarios = obtenerTodosUsuarios();
 $etiquetasRoles = obtenerEtiquetasRoles();

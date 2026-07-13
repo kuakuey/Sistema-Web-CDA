@@ -142,6 +142,32 @@ if ($accion === 'guardar_permisos_rol') {
     exit;
 }
 
+if ($accion === 'cambiar_clave_usuario') {
+    if (!puedeGestionarUsuarios(obtenerUsuarioActual()['rol'])) {
+        header('Location: ' . $urlInicio);
+        exit;
+    }
+
+    require_once 'includes/users.php';
+
+    $redireccionClave = $_POST['redireccion'] ?? 'usuarios.php?pestaña=lista';
+    $resultado = cambiarClaveUsuario(
+        (int) ($_POST['id'] ?? 0),
+        (string) ($_POST['clave'] ?? ''),
+        (string) ($_POST['clave_confirmacion'] ?? '')
+    );
+
+    $sep = strpos($redireccionClave, '?') !== false ? '&' : '?';
+
+    if (!$resultado['exito']) {
+        header('Location: ' . $redireccionClave . $sep . 'error=' . urlencode($resultado['mensaje']));
+        exit;
+    }
+
+    header('Location: ' . $redireccionClave . $sep . 'ok=1&clave=1');
+    exit;
+}
+
 if ($accion === 'crear_consejeria') {
     if (!puedeRegistrarConsejerias(obtenerUsuarioActual()['rol'])) {
         header('Location: ' . $urlInicio);

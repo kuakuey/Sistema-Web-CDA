@@ -45,7 +45,7 @@
                 class="form-control"
                 id="clave"
                 name="clave"
-                placeholder="••••••••"
+                placeholder="Contraseña"
                 required
                 autocomplete="current-password"
               >

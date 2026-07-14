@@ -83,11 +83,9 @@ body {
   color: var(--cda-muted);
 }
 
-.main-content .table strong,
-.main-content .table b,
-.informe-page .table strong,
-.informe-page .table b {
-  font-weight: inherit;
+.main-content .table td strong,
+.informe-page .table td strong {
+  font-weight: var(--cda-font-semibold);
 }
 
 .table-dashboard th {

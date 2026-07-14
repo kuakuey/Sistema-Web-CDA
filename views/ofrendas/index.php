@@ -226,7 +226,7 @@
           <tr>
             <td><?= htmlspecialchars($fila['casa_vida'] ?? '—') ?></td>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['fecha_ofrenda'])) ?></td>
-            <td><?= htmlspecialchars(formatearMonto((float) $fila['monto'])) ?></td>
+            <td><strong><?= htmlspecialchars(formatearMonto((float) $fila['monto'])) ?></strong></td>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['creado_en'] ?? null)) ?></td>
             <td class="text-end">
               <?php

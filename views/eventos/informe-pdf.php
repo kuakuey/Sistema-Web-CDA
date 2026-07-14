@@ -103,7 +103,7 @@
     </tr>
     <tr>
       <td><span class="resumen-label">Tipo</span><span class="resumen-valor"><?= htmlspecialchars($informe['evento_tipo_etiqueta']) ?></span></td>
-      <td><span class="resumen-label">Valor del evento</span><span class="resumen-valor"><?= htmlspecialchars($informe['evento_valor_etiqueta']) ?></span></td>
+      <td><span class="resumen-label">Valor del evento</span><span class="resumen-valor"><strong><?= htmlspecialchars($informe['evento_valor_etiqueta']) ?></strong></span></td>
     </tr>
     <tr>
       <td><span class="resumen-label">Requiere numeración</span><span class="resumen-valor"><?= htmlspecialchars($informe['evento_numeracion_etiqueta']) ?></span></td>
@@ -120,7 +120,7 @@
       </td>
       <td>
         <span class="resumen-label">Total recaudado</span>
-        <span class="resumen-valor"><?= htmlspecialchars(formatearMonto((float) ($informe['resumen']['total_monto'] ?? 0))) ?></span>
+        <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) ($informe['resumen']['total_monto'] ?? 0))) ?></strong></span>
       </td>
       <td colspan="2">
         <span class="resumen-label">Por forma de pago</span>
@@ -135,7 +135,7 @@
                   . ': '
                   . (int) $datosPago['cantidad']
                   . ' ('
-                  . htmlspecialchars(formatearMonto((float) $datosPago['monto']))
+                  . '<strong>' . htmlspecialchars(formatearMonto((float) $datosPago['monto'])) . '</strong>'
                   . ')';
           }
           echo implode(' · ', $partesFormaPago);

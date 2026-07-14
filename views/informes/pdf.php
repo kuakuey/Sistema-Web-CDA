@@ -124,11 +124,11 @@ $resumen = $informe['resumen'];
       </td>
       <td>
         <span class="resumen-label">Total ofrendas</span>
-        <span class="resumen-valor"><?= htmlspecialchars(formatearMonto((float) $resumen['total_monto_ofrendas'])) ?></span>
+        <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) $resumen['total_monto_ofrendas'])) ?></strong></span>
       </td>
       <td>
         <span class="resumen-label">Total eventos</span>
-        <span class="resumen-valor"><?= htmlspecialchars(formatearMonto((float) ($resumen['total_monto_eventos'] ?? 0))) ?></span>
+        <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) ($resumen['total_monto_eventos'] ?? 0))) ?></strong></span>
       </td>
     </tr>
     <tr>
@@ -138,11 +138,11 @@ $resumen = $informe['resumen'];
       </td>
       <td>
         <span class="resumen-label">Valores adicionales</span>
-        <span class="resumen-valor"><?= htmlspecialchars(formatearMonto((float) $resumen['total_monto_valores'])) ?></span>
+        <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) $resumen['total_monto_valores'])) ?></strong></span>
       </td>
       <td>
         <span class="resumen-label">Total general</span>
-        <span class="resumen-valor"><?= htmlspecialchars(formatearMonto((float) $resumen['total_general'])) ?></span>
+        <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) $resumen['total_general'])) ?></strong></span>
       </td>
     </tr>
   </table>
@@ -170,7 +170,7 @@ $resumen = $informe['resumen'];
           <td><?= htmlspecialchars($ofrenda['casa_vida'] ?? '—') ?></td>
           <td><?= htmlspecialchars($ofrenda['territorio'] ?? '—') ?></td>
           <td><?= htmlspecialchars($ofrenda['lider'] ?? '—') ?></td>
-          <td><?= htmlspecialchars(formatearMonto((float) $ofrenda['monto'])) ?></td>
+          <td><strong><?= htmlspecialchars(formatearMonto((float) $ofrenda['monto'])) ?></strong></td>
           <td><?= htmlspecialchars($ofrenda['registrado_por_nombre'] ?? '—') ?></td>
           <td><?= htmlspecialchars(formatearFechaHora($ofrenda['creado_en'])) ?></td>
         </tr>
@@ -236,7 +236,7 @@ $resumen = $informe['resumen'];
         <td><?= htmlspecialchars(formatearFechaInforme($registroEvento['fecha'])) ?></td>
         <td><?= htmlspecialchars($registroEvento['telefono']) ?></td>
         <td><?= htmlspecialchars(etiquetaFormaPagoEvento($registroEvento['forma_pago'] ?? null)) ?></td>
-        <td><?= htmlspecialchars(formatearMonto((float) $registroEvento['valor'])) ?></td>
+        <td><strong><?= htmlspecialchars(formatearMonto((float) $registroEvento['valor'])) ?></strong></td>
         <td><?= $registroEvento['observacion'] ? htmlspecialchars($registroEvento['observacion']) : '—' ?></td>
         <td><?= htmlspecialchars($registroEvento['registrado_por_nombre'] ?? '—') ?></td>
         <td><?= htmlspecialchars(formatearFechaHora($registroEvento['creado_en'])) ?></td>
@@ -270,7 +270,7 @@ $resumen = $informe['resumen'];
         <td><?= htmlspecialchars($valor['nombre']) ?></td>
         <td><?= htmlspecialchars(formatearFechaInforme($valor['fecha'])) ?></td>
         <td><?= htmlspecialchars($valor['telefono']) ?></td>
-        <td><?= htmlspecialchars(formatearMonto((float) $valor['valor'])) ?></td>
+        <td><strong><?= htmlspecialchars(formatearMonto((float) $valor['valor'])) ?></strong></td>
         <td><?= $valor['observacion'] ? htmlspecialchars($valor['observacion']) : '—' ?></td>
         <td><?= htmlspecialchars($valor['registrado_por_nombre'] ?? '—') ?></td>
         <td><?= htmlspecialchars(formatearFechaHora($valor['creado_en'])) ?></td>

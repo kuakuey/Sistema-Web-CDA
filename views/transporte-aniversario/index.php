@@ -130,6 +130,16 @@
 
 <?php elseif ($pestaña === 'reporte' && !empty($puedeVerReporte) && $reporteAsignacion): ?>
 <?php $resumen = $reporteAsignacion['resumen']; ?>
+
+<div class="d-flex flex-wrap gap-2 mb-4">
+  <a href="transporte-aniversario.php?pestaña=reporte&amp;exportar=pdf" class="btn btn-primary btn-sm">
+    <i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF
+  </a>
+  <a href="transporte-aniversario.php?pestaña=reporte&amp;exportar=excel" class="btn btn-success btn-sm">
+    <i class="bi bi-file-earmark-excel me-1"></i>Descargar Excel
+  </a>
+</div>
+
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-4 col-xl-2">
     <div class="card border-0 shadow-sm h-100">

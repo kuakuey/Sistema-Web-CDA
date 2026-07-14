@@ -46,6 +46,39 @@ if (!in_array($pestaña, $pestañasPermitidas, true)) {
     $pestaña = $pestañasPermitidas[0];
 }
 
+$exportar = isset($_GET['exportar']) ? trim((string) $_GET['exportar']) : '';
+
+if ($exportar !== '') {
+    if (!puedeVerReporteTransporteAniversario($rol)) {
+        header('Location: transporte-aniversario.php?pestaña=reporte&error=' . urlencode('No tienes permiso para descargar el reporte.'));
+        exit;
+    }
+
+    try {
+        require_once 'includes/informe_transporte_aniversario.php';
+        $reporteExportacion = calcularAsignacionTransporteAniversario();
+
+        if ($exportar === 'pdf') {
+            enviarInformeTransporteAniversarioPdf($reporteExportacion);
+            exit;
+        }
+
+        if ($exportar === 'excel') {
+            enviarInformeTransporteAniversarioExcel($reporteExportacion);
+            exit;
+        }
+    } catch (RuntimeException $e) {
+        header('Location: transporte-aniversario.php?pestaña=reporte&error=' . urlencode($e->getMessage()));
+        exit;
+    } catch (Throwable $e) {
+        header('Location: transporte-aniversario.php?pestaña=reporte&error=' . urlencode('No se pudo generar el archivo de reporte.'));
+        exit;
+    }
+
+    header('Location: transporte-aniversario.php?pestaña=reporte&error=' . urlencode('Formato de exportación no válido.'));
+    exit;
+}
+
 $mensaje = null;
 
 if (isset($_GET['ok'])) {

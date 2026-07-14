@@ -209,6 +209,7 @@ function construirDetalleTransporteAniversario(array $fila): array
 
     $filas = [
         ['etiqueta' => 'Nombre completo', 'valor' => (string) ($fila['nombre_completo'] ?? '—')],
+        ['etiqueta' => 'Edad', 'valor' => formatearEdadTransporteAniversario($fila['edad'] ?? null)],
         [
             'etiqueta' => 'Tipo',
             'valor'    => etiquetaTipoTransporteAniversario($poseeMovilizacion),

@@ -372,6 +372,7 @@ function migrarTablaTransporteAniversario(PDO $pdo): void
             id INT AUTO_INCREMENT PRIMARY KEY,
             nombre_completo VARCHAR(200) NOT NULL,
             telefono VARCHAR(30) NOT NULL,
+            edad TINYINT UNSIGNED NOT NULL,
             posee_movilizacion TINYINT(1) NOT NULL DEFAULT 0,
             asientos_disponibles SMALLINT UNSIGNED DEFAULT NULL,
             registrado_por_id INT DEFAULT NULL,
@@ -382,6 +383,21 @@ function migrarTablaTransporteAniversario(PDO $pdo): void
             INDEX idx_creado_en (creado_en)
         ) ENGINE=InnoDB'
     );
+
+    asegurarColumnasTransporteAniversario($pdo);
+}
+
+function asegurarColumnasTransporteAniversario(PDO $pdo): void
+{
+    if (!tablaExiste($pdo, 'transporte_aniversario')) {
+        return;
+    }
+
+    $existe = $pdo->query("SHOW COLUMNS FROM transporte_aniversario LIKE 'edad'")->fetch();
+
+    if (!$existe) {
+        $pdo->exec('ALTER TABLE transporte_aniversario ADD COLUMN edad TINYINT UNSIGNED NULL AFTER telefono');
+    }
 }
 
 function migrarTablaConsejerias(PDO $pdo): void

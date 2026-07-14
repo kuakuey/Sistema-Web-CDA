@@ -313,6 +313,18 @@ $fila = $filaEditar;
               <label class="form-label">Teléfono <span class="text-danger">*</span></label>
               <input type="tel" class="form-control" name="telefono" required maxlength="30" value="<?= htmlspecialchars($fila['telefono'] ?? '') ?>">
             </div>
+            <div class="col-md-4">
+              <label class="form-label">Edad <span class="text-danger">*</span></label>
+              <input
+                type="number"
+                class="form-control"
+                name="edad"
+                required
+                min="1"
+                max="120"
+                value="<?= !empty($fila['edad']) ? (int) $fila['edad'] : '' ?>"
+              >
+            </div>
             <div class="col-12">
               <div class="form-check">
                 <input

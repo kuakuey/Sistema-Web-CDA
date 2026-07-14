@@ -131,12 +131,13 @@ function enviarInformeTransporteAniversarioExcel(array $reporte): void
 
     echo '<h3>Asignación por conductor</h3>';
     echo '<table border="1" cellpadding="4" cellspacing="0">';
-    echo '<tr><th>Conductor</th><th>Teléfono</th><th>Asientos usados</th><th>Asientos totales</th><th>Estado</th><th>Pasajeros asignados</th></tr>';
+    echo '<tr><th>Conductor</th><th>Edad</th><th>Teléfono</th><th>Asientos usados</th><th>Asientos totales</th><th>Estado</th><th>Pasajeros asignados</th></tr>';
 
     foreach ($informe['conductores'] ?? [] as $conductor) {
         $asignados = count($conductor['pasajeros'] ?? []);
         echo '<tr>';
         echo '<td>' . htmlspecialchars((string) ($conductor['nombre_completo'] ?? '')) . '</td>';
+        echo '<td>' . htmlspecialchars(formatearEdadTransporteAniversario($conductor['edad'] ?? null)) . '</td>';
         echo '<td>' . htmlspecialchars((string) ($conductor['telefono'] ?? '')) . '</td>';
         echo '<td>' . $asignados . '</td>';
         echo '<td>' . (int) ($conductor['asientos_total'] ?? 0) . '</td>';
@@ -149,14 +150,15 @@ function enviarInformeTransporteAniversarioExcel(array $reporte): void
 
     echo '<h3>Personas sin cupo asignado</h3>';
     echo '<table border="1" cellpadding="4" cellspacing="0">';
-    echo '<tr><th>Nombre completo</th><th>Teléfono</th></tr>';
+    echo '<tr><th>Nombre completo</th><th>Edad</th><th>Teléfono</th></tr>';
 
     if (empty($informe['sin_asignar'])) {
-        echo '<tr><td colspan="2">—</td></tr>';
+        echo '<tr><td colspan="3">—</td></tr>';
     } else {
         foreach ($informe['sin_asignar'] as $pasajero) {
             echo '<tr>';
             echo '<td>' . htmlspecialchars((string) ($pasajero['nombre_completo'] ?? '')) . '</td>';
+            echo '<td>' . htmlspecialchars(formatearEdadTransporteAniversario($pasajero['edad'] ?? null)) . '</td>';
             echo '<td>' . htmlspecialchars((string) ($pasajero['telefono'] ?? '')) . '</td>';
             echo '</tr>';
         }

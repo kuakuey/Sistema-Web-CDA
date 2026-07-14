@@ -92,6 +92,20 @@
         <input type="tel" class="form-control" id="telefono" name="telefono" required maxlength="30">
       </div>
 
+      <div class="col-12 col-md-4">
+        <label class="form-label" for="edad">Edad <span class="text-danger">*</span></label>
+        <input
+          type="number"
+          class="form-control"
+          id="edad"
+          name="edad"
+          required
+          min="1"
+          max="120"
+          placeholder="Ej. 25"
+        >
+      </div>
+
       <div class="col-12">
         <div class="form-check">
           <input
@@ -207,6 +221,7 @@
         <thead class="table-light">
           <tr>
             <th>Conductor</th>
+            <th>Edad</th>
             <th>Teléfono</th>
             <th class="text-center">Asientos</th>
             <th>Estado</th>
@@ -225,6 +240,7 @@
           ?>
           <tr>
             <td><?= htmlspecialchars($conductor['nombre_completo']) ?></td>
+            <td><?= htmlspecialchars(formatearEdadTransporteAniversario($conductor['edad'] ?? null)) ?></td>
             <td><?php $telefono = $conductor['telefono']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
             <td class="text-center">
               <?= $asignados ?> / <?= (int) $conductor['asientos_total'] ?>
@@ -261,6 +277,7 @@
         <thead class="table-light">
           <tr>
             <th>Nombre completo</th>
+            <th>Edad</th>
             <th>Teléfono</th>
           </tr>
         </thead>
@@ -268,6 +285,7 @@
           <?php foreach ($reporteAsignacion['sin_asignar'] as $pasajero): ?>
           <tr>
             <td><?= htmlspecialchars($pasajero['nombre_completo']) ?></td>
+            <td><?= htmlspecialchars(formatearEdadTransporteAniversario($pasajero['edad'] ?? null)) ?></td>
             <td><?php $telefono = $pasajero['telefono']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
           </tr>
           <?php endforeach; ?>
@@ -361,6 +379,7 @@
           <tr>
             <th class="text-center col-numero">#</th>
             <th>Nombre completo</th>
+            <th>Edad</th>
             <th>Tipo</th>
             <th>Teléfono</th>
             <th class="text-end">Acciones</th>
@@ -389,6 +408,7 @@
           <tr>
             <td class="text-center text-muted"><?= $numeroRegistro ?></td>
             <td><?= htmlspecialchars($fila['nombre_completo']) ?></td>
+            <td><?= htmlspecialchars(formatearEdadTransporteAniversario($fila['edad'] ?? null)) ?></td>
             <td>
               <span class="badge <?= claseBadgeTipoTransporteAniversario($poseeMovilizacion) ?>">
                 <?= htmlspecialchars(etiquetaTipoTransporteAniversario($poseeMovilizacion)) ?>

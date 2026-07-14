@@ -267,7 +267,7 @@
         <tbody>
           <?php foreach ($reporteAsignacion['sin_asignar'] as $pasajero): ?>
           <tr>
-            <td><strong><?= htmlspecialchars($pasajero['nombre_completo']) ?></strong></td>
+            <td><?= htmlspecialchars($pasajero['nombre_completo']) ?></td>
             <td><?php $telefono = $pasajero['telefono']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
           </tr>
           <?php endforeach; ?>
@@ -388,7 +388,7 @@
           ?>
           <tr>
             <td class="text-center text-muted"><?= $numeroRegistro ?></td>
-            <td><strong><?= htmlspecialchars($fila['nombre_completo']) ?></strong></td>
+            <td><?= htmlspecialchars($fila['nombre_completo']) ?></td>
             <td>
               <span class="badge <?= claseBadgeTipoTransporteAniversario($poseeMovilizacion) ?>">
                 <?= htmlspecialchars(etiquetaTipoTransporteAniversario($poseeMovilizacion)) ?>

@@ -224,7 +224,7 @@
               : 'Sin cupo';
           ?>
           <tr>
-            <td><strong><?= htmlspecialchars($conductor['nombre_completo']) ?></strong></td>
+            <td><?= htmlspecialchars($conductor['nombre_completo']) ?></td>
             <td><?php $telefono = $conductor['telefono']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
             <td class="text-center">
               <?= $asignados ?> / <?= (int) $conductor['asientos_total'] ?>

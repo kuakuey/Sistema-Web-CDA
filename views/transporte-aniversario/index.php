@@ -203,7 +203,7 @@
     </div>
     <?php else: ?>
     <div class="table-responsive">
-      <table class="table table-hover mb-0 align-middle">
+      <table class="table table-hover table-dashboard mb-0 align-middle">
         <thead class="table-light">
           <tr>
             <th>Conductor</th>
@@ -257,7 +257,7 @@
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
-      <table class="table table-hover mb-0 align-middle">
+      <table class="table table-hover table-dashboard mb-0 align-middle">
         <thead class="table-light">
           <tr>
             <th>Nombre completo</th>

@@ -45,9 +45,13 @@ body {
   font-size: var(--cda-text-xs);
 }
 
-.form-text,
-.form-check-label {
+.form-text {
   font-size: var(--cda-text-xs);
+}
+
+.form-check-label {
+  font-size: var(--cda-text-sm);
+  font-weight: var(--cda-font-normal);
 }
 
 .nav-tabs .nav-link,
@@ -63,6 +67,13 @@ body {
   padding: 0.4em 0.65em;
 }
 
+.stat-card__value {
+  font-size: var(--cda-text-xl);
+  font-weight: var(--cda-font-semibold);
+  line-height: var(--cda-leading-tight);
+}
+
+.table-dashboard th,
 .main-content .table:not(.table-sm) th,
 .informe-page .table th {
   font-size: var(--cda-text-xs);
@@ -72,9 +83,30 @@ body {
   color: var(--cda-muted);
 }
 
+.table-dashboard th {
+  white-space: nowrap;
+}
+
+.table-dashboard td,
 .main-content .table:not(.table-sm) td,
 .informe-page .table td {
   font-size: var(--cda-text-sm);
+}
+
+.main-content .table td ul {
+  font-size: var(--cda-text-sm);
+  margin-bottom: 0;
+}
+
+.main-content .table td li {
+  font-size: inherit;
+  line-height: var(--cda-leading-normal);
+}
+
+.filters-panel .form-label,
+.filters-panel .form-label.small {
+  font-size: var(--cda-text-xs);
+  font-weight: var(--cda-font-medium);
 }
 
 .btn {
@@ -592,26 +624,9 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
 
 .stat-card__label {
   font-size: var(--cda-text-xs);
+  font-weight: var(--cda-font-medium);
   color: var(--cda-muted);
   margin-bottom: 0.25rem;
-}
-
-.stat-card__value {
-  font-size: var(--cda-text-2xl);
-  font-weight: var(--cda-font-bold);
-  line-height: var(--cda-leading-tight);
-}
-
-.table-dashboard th {
-  font-size: var(--cda-text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--cda-muted);
-  white-space: nowrap;
-}
-
-.table-dashboard td {
-  font-size: var(--cda-text-sm);
 }
 
 .detalle-registro-list__row {

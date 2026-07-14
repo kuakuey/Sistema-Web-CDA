@@ -3,6 +3,21 @@
  * Edita solo este archivo para cambiar la apariencia.
  */
 :root {
+  /* Tipografía */
+  --cda-font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --cda-text-xs: 0.75rem;
+  --cda-text-sm: 0.875rem;
+  --cda-text-base: 1rem;
+  --cda-text-lg: 1.125rem;
+  --cda-text-xl: 1.25rem;
+  --cda-text-2xl: 1.5rem;
+  --cda-font-normal: 400;
+  --cda-font-medium: 500;
+  --cda-font-semibold: 600;
+  --cda-font-bold: 700;
+  --cda-leading-tight: 1.25;
+  --cda-leading-normal: 1.5;
+
   /* Marca / primario */
   --cda-primary: #E77E35;
   --cda-primary-hover: #cd6f2e;
@@ -41,6 +56,10 @@
   --cda-login-gradient-end: #764ba2;
 
   /* Sincronizar Bootstrap con el tema */
+  --bs-font-sans-serif: var(--cda-font-sans);
+  --bs-body-font-family: var(--cda-font-sans);
+  --bs-body-font-size: var(--cda-text-sm);
+  --bs-body-line-height: var(--cda-leading-normal);
   --bs-primary: var(--cda-primary);
   --bs-primary-rgb: var(--cda-primary-rgb);
   --bs-link-color: var(--cda-primary);

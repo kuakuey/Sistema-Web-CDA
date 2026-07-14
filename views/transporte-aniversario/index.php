@@ -142,50 +142,50 @@
 
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-4 col-xl-2">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 stat-card">
       <div class="card-body text-center">
-        <div class="text-muted small">Registrados</div>
-        <div class="fs-4 fw-semibold"><?= (int) $resumen['total'] ?></div>
+        <div class="stat-card__label">Registrados</div>
+        <div class="stat-card__value"><?= (int) $resumen['total'] ?></div>
       </div>
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl-2">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 stat-card">
       <div class="card-body text-center">
-        <div class="text-muted small">Con carro</div>
-        <div class="fs-4 fw-semibold text-success"><?= (int) $resumen['con_carro'] ?></div>
+        <div class="stat-card__label">Con carro</div>
+        <div class="stat-card__value text-success"><?= (int) $resumen['con_carro'] ?></div>
       </div>
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl-2">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 stat-card">
       <div class="card-body text-center">
-        <div class="text-muted small">Necesitan transporte</div>
-        <div class="fs-4 fw-semibold text-warning"><?= (int) $resumen['necesitan_transporte'] ?></div>
+        <div class="stat-card__label">Necesitan transporte</div>
+        <div class="stat-card__value text-warning"><?= (int) $resumen['necesitan_transporte'] ?></div>
       </div>
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl-2">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 stat-card">
       <div class="card-body text-center">
-        <div class="text-muted small">Asientos ofrecidos</div>
-        <div class="fs-4 fw-semibold"><?= (int) $resumen['asientos_ofrecidos'] ?></div>
+        <div class="stat-card__label">Asientos ofrecidos</div>
+        <div class="stat-card__value"><?= (int) $resumen['asientos_ofrecidos'] ?></div>
       </div>
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl-2">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 stat-card">
       <div class="card-body text-center">
-        <div class="text-muted small">Asignados</div>
-        <div class="fs-4 fw-semibold text-primary"><?= (int) $resumen['pasajeros_asignados'] ?></div>
+        <div class="stat-card__label">Asignados</div>
+        <div class="stat-card__value text-primary"><?= (int) $resumen['pasajeros_asignados'] ?></div>
       </div>
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl-2">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 stat-card">
       <div class="card-body text-center">
-        <div class="text-muted small">Sin cupo</div>
-        <div class="fs-4 fw-semibold text-danger"><?= (int) $resumen['pasajeros_sin_cupo'] ?></div>
+        <div class="stat-card__label">Sin cupo</div>
+        <div class="stat-card__value text-danger"><?= (int) $resumen['pasajeros_sin_cupo'] ?></div>
       </div>
     </div>
   </div>

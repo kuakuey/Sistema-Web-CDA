@@ -131,7 +131,7 @@
 <?php elseif ($pestaña === 'reporte' && !empty($puedeVerReporte) && $reporteAsignacion): ?>
 <?php $resumen = $reporteAsignacion['resumen']; ?>
 
-<div class="d-flex flex-wrap gap-2 mb-4">
+<div class="d-flex flex-wrap gap-2 mb-4 justify-content-end">
   <a href="transporte-aniversario.php?pestaña=reporte&amp;exportar=pdf" class="btn btn-primary btn-sm">
     <i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF
   </a>

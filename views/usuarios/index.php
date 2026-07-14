@@ -72,7 +72,7 @@
           <?php foreach ($usuarios as $indice => $u): ?>
           <tr>
             <td class="text-center text-muted"><?= $indice + 1 ?></td>
-            <td><strong><?= htmlspecialchars($u['usuario']) ?></strong></td>
+            <td><?= htmlspecialchars($u['usuario']) ?></td>
             <td><?= htmlspecialchars($u['nombre'] ?? '') ?></td>
             <td>
               <span class="badge bg-secondary"><?= htmlspecialchars($etiquetasRoles[$u['rol']] ?? $u['rol']) ?></span>

@@ -142,7 +142,7 @@
             <?php foreach ($lideres as $l): ?>
             <tr>
               <td class="text-muted"><?= (int) $l['id'] ?></td>
-              <td><strong><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></strong></td>
+              <td><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></td>
               <td><?= htmlspecialchars($l['celular'] ?? '—') ?></td>
               <td><?= htmlspecialchars($l['email'] ?? '—') ?></td>
               <td>
@@ -226,7 +226,7 @@
             <?php foreach ($casas as $c): ?>
             <tr>
               <td class="text-muted"><?= (int) $c['id'] ?></td>
-              <td><strong><?= htmlspecialchars($c['nombre']) ?></strong></td>
+              <td><?= htmlspecialchars($c['nombre']) ?></td>
               <td><?= htmlspecialchars($c['territorio_nombre']) ?></td>
               <td><?= htmlspecialchars($c['lider_nombre'] . ' ' . $c['lider_apellido']) ?></td>
               <td class="text-truncate-cell"><?= htmlspecialchars($c['direccion']) ?></td>

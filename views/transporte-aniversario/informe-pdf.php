@@ -51,7 +51,6 @@
 
     .resumen-valor {
       font-size: 12px;
-      font-weight: bold;
     }
 
     table.datos {

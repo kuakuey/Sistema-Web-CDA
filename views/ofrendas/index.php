@@ -224,9 +224,9 @@
             }
           ?>
           <tr>
-            <td><strong><?= htmlspecialchars($fila['casa_vida'] ?? '—') ?></strong></td>
+            <td><?= htmlspecialchars($fila['casa_vida'] ?? '—') ?></td>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['fecha_ofrenda'])) ?></td>
-            <td><strong><?= htmlspecialchars(formatearMonto((float) $fila['monto'])) ?></strong></td>
+            <td><?= htmlspecialchars(formatearMonto((float) $fila['monto'])) ?></td>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['creado_en'] ?? null)) ?></td>
             <td class="text-end">
               <?php

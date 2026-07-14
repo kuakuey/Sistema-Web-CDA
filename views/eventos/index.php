@@ -156,10 +156,10 @@
             }
           ?>
           <tr>
-            <td><strong><?= htmlspecialchars($fila['nombre']) ?></strong></td>
+            <td><?= htmlspecialchars($fila['nombre']) ?></td>
             <td><span class="badge bg-secondary"><?= htmlspecialchars($fila['evento_nombre'] ?? '—') ?></span></td>
             <td><?= htmlspecialchars($fila['numeracion'] ?? '—') ?></td>
-            <td><strong><?= htmlspecialchars(formatearMonto((float) $fila['valor'])) ?></strong></td>
+            <td><?= htmlspecialchars(formatearMonto((float) $fila['valor'])) ?></td>
             <td><?= htmlspecialchars(etiquetaFormaPagoEvento($fila['forma_pago'] ?? null)) ?></td>
             <td class="text-end">
               <?php
@@ -393,9 +393,9 @@
           <?php foreach ($eventos as $indice => $evento): ?>
           <tr>
             <td class="text-center text-muted"><?= $indice + 1 ?></td>
-            <td><strong><?= htmlspecialchars($evento['nombre']) ?></strong></td>
+            <td><?= htmlspecialchars($evento['nombre']) ?></td>
             <td><?= htmlspecialchars(formatearFechaTabla($evento['fecha'] ?? '')) ?></td>
-            <td><strong><?= htmlspecialchars(formatearMonto((float) ($evento['valor'] ?? 0))) ?></strong></td>
+            <td><?= htmlspecialchars(formatearMonto((float) ($evento['valor'] ?? 0))) ?></td>
             <td>
               <?php if ((int) ($evento['requiere_numeracion'] ?? 0) === 1): ?>
               <span class="badge bg-info text-dark">Sí</span>

@@ -345,10 +345,10 @@
             <td>
               <span class="badge bg-secondary"><?= htmlspecialchars(etiquetaTipoValorAdicional($fila['tipo'])) ?></span>
             </td>
-            <td><strong><?= htmlspecialchars($fila['nombre']) ?></strong></td>
+            <td><?= htmlspecialchars($fila['nombre']) ?></td>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['fecha'])) ?></td>
             <td><?php $telefono = $fila['telefono']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
-            <td><strong><?= htmlspecialchars(formatearMonto((float) $fila['valor'])) ?></strong></td>
+            <td><?= htmlspecialchars(formatearMonto((float) $fila['valor'])) ?></td>
             <td><?php include __DIR__ . '/../partials/celda-observacion.php'; ?></td>
             <td class="text-end">
               <?php

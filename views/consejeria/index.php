@@ -262,7 +262,7 @@
             <td>
               <span class="badge bg-secondary"><?= htmlspecialchars(etiquetaTipoConsejeria($fila['tipo_consejeria'])) ?></span>
             </td>
-            <td><strong><?= htmlspecialchars($fila['nombre_completo']) ?></strong></td>
+            <td><?= htmlspecialchars($fila['nombre_completo']) ?></td>
             <td><?= htmlspecialchars($fechaTabla) ?></td>
             <td><?php $telefono = $fila['telefono']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
             <td class="text-end">

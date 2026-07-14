@@ -230,7 +230,7 @@
               </span>
             </td>
             <?php endif; ?>
-            <td><strong><?= htmlspecialchars(trim($fila['nombre'] . ' ' . $fila['apellido'])) ?></strong></td>
+            <td><?= htmlspecialchars(trim($fila['nombre'] . ' ' . $fila['apellido'])) ?></td>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['creado_en'])) ?></td>
             <td><?php $telefono = $fila['celular']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
             <?php if ($mostrarEstado): ?>
@@ -304,7 +304,7 @@
           ?>
           <tr>
             <td class="text-center text-muted"><?= $numeroRegistro ?></td>
-            <td><strong><?= htmlspecialchars($fila['nombre_presentado']) ?></strong></td>
+            <td><?= htmlspecialchars($fila['nombre_presentado']) ?></td>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['creado_en'])) ?></td>
             <td><?= enlacesWhatsAppPresentacion($fila) ?></td>
             <td>

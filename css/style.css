@@ -77,10 +77,17 @@ body {
 .main-content .table:not(.table-sm) th,
 .informe-page .table th {
   font-size: var(--cda-text-xs);
-  font-weight: var(--cda-font-semibold);
+  font-weight: var(--cda-font-normal);
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--cda-muted);
+}
+
+.main-content .table strong,
+.main-content .table b,
+.informe-page .table strong,
+.informe-page .table b {
+  font-weight: inherit;
 }
 
 .table-dashboard th {

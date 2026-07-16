@@ -209,6 +209,7 @@ function setupDatabase(): array
                 telefono_mama VARCHAR(30) NOT NULL,
                 estado VARCHAR(20) NOT NULL DEFAULT "recibido",
                 fecha_presentacion DATE NULL,
+                estado_bloqueado TINYINT(1) NOT NULL DEFAULT 0,
                 ip_cliente VARCHAR(45) DEFAULT NULL,
                 agente_usuario VARCHAR(255) DEFAULT NULL,
                 creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -432,6 +433,18 @@ function asegurarColumnasPresentacionesNinos(PDO $pdo): void
             "UPDATE presentaciones_ninos
              SET fecha_presentacion = DATE(COALESCE(actualizado_en, creado_en))
              WHERE estado = 'presentado' AND fecha_presentacion IS NULL"
+        );
+    }
+
+    $bloqueadoExiste = $pdo->query("SHOW COLUMNS FROM presentaciones_ninos LIKE 'estado_bloqueado'")->fetch();
+
+    if (!$bloqueadoExiste) {
+        $pdo->exec(
+            'ALTER TABLE presentaciones_ninos
+             ADD COLUMN estado_bloqueado TINYINT(1) NOT NULL DEFAULT 0 AFTER fecha_presentacion'
+        );
+        $pdo->exec(
+            "UPDATE presentaciones_ninos SET estado_bloqueado = 1 WHERE estado = 'presentado'"
         );
     }
 }

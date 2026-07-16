@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS presentaciones_ninos (
     telefono_mama VARCHAR(30) NOT NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'recibido',
     fecha_presentacion DATE NULL,
+    estado_bloqueado TINYINT(1) NOT NULL DEFAULT 0,
     ip_cliente VARCHAR(45) DEFAULT NULL,
     agente_usuario VARCHAR(255) DEFAULT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

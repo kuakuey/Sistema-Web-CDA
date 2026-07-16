@@ -304,7 +304,9 @@ function actualizarPresentacionNino(int $id, array $datos): bool
     }
 
     $pdo = getConnection();
-    $stmtActual = $pdo->prepare('SELECT estado, fecha_presentacion FROM presentaciones_ninos WHERE id = ?');
+    $stmtActual = $pdo->prepare(
+        'SELECT estado, fecha_presentacion, estado_bloqueado FROM presentaciones_ninos WHERE id = ?'
+    );
     $stmtActual->execute([$id]);
     $actual = $stmtActual->fetch();
 
@@ -312,17 +314,25 @@ function actualizarPresentacionNino(int $id, array $datos): bool
         throw new InvalidArgumentException('Registro de presentación no encontrado.');
     }
 
+    $estadoActual = (string) ($actual['estado'] ?? '');
+    $bloqueado = !empty($actual['estado_bloqueado']);
+
+    if ($bloqueado && $estadoNuevo !== $estadoActual) {
+        throw new InvalidArgumentException('El estado ya fue marcado como Presentado y no puede modificarse desde aquí.');
+    }
+
     $fechaPresentacion = resolverFechaPresentacionNino(
         $estadoNuevo,
-        (string) ($actual['estado'] ?? ''),
+        $estadoActual,
         $actual['fecha_presentacion'] ?? null
     );
+    $marcarBloqueado = ($estadoNuevo === 'presentado') ? 1 : (int) $bloqueado;
 
     $stmt = $pdo->prepare(
         'UPDATE presentaciones_ninos SET
             nombre_padre = ?, nombre_madre = ?, nombre_presentado = ?, fecha_nacimiento = ?,
             telefono_papa = ?, telefono_mama = ?, estado = ?, fecha_presentacion = ?,
-            actualizado_en = NOW()
+            estado_bloqueado = ?, actualizado_en = NOW()
          WHERE id = ?'
     );
 
@@ -335,6 +345,7 @@ function actualizarPresentacionNino(int $id, array $datos): bool
         trim($datos['telefono_mama']),
         $estadoNuevo,
         $fechaPresentacion,
+        $marcarBloqueado,
         $id,
     ]);
 }
@@ -424,16 +435,19 @@ function formatearFechaHora(?string $fechaHora): string
     return $dt ? $dt->format('d/m/Y H:i') : $fechaHora;
 }
 
-function actualizarEstadoPresentacionNino(int $id, string $estado): bool
+function actualizarEstadoPresentacionNino(int $id, string $estado, string $rol): bool
 {
     require_once __DIR__ . '/filters.php';
+    require_once __DIR__ . '/roles.php';
 
     if (!esEstadoPresentacionValido($estado)) {
         throw new InvalidArgumentException('Estado no válido.');
     }
 
     $pdo = getConnection();
-    $stmtActual = $pdo->prepare('SELECT estado, fecha_presentacion FROM presentaciones_ninos WHERE id = ?');
+    $stmtActual = $pdo->prepare(
+        'SELECT estado, fecha_presentacion, estado_bloqueado FROM presentaciones_ninos WHERE id = ?'
+    );
     $stmtActual->execute([$id]);
     $actual = $stmtActual->fetch();
 
@@ -441,17 +455,48 @@ function actualizarEstadoPresentacionNino(int $id, string $estado): bool
         throw new InvalidArgumentException('Registro de presentación no encontrado.');
     }
 
+    $esSuperadmin = $rol === ROL_SUPERADMIN;
+    $bloqueado = !empty($actual['estado_bloqueado']);
+    $estadoActual = (string) ($actual['estado'] ?? '');
+
+    if (!$esSuperadmin && $bloqueado) {
+        throw new InvalidArgumentException('El estado ya fue marcado como Presentado y no puede modificarse.');
+    }
+
+    if ($estado !== 'presentado' && $estadoActual === 'presentado' && !$esSuperadmin) {
+        throw new InvalidArgumentException('Solo un superadministrador puede cambiar el estado desde Presentado.');
+    }
+
     $fechaPresentacion = resolverFechaPresentacionNino(
         $estado,
-        (string) ($actual['estado'] ?? ''),
+        $estadoActual,
         $actual['fecha_presentacion'] ?? null
     );
+    $marcarBloqueado = ($estado === 'presentado') ? 1 : ($esSuperadmin ? 0 : (int) $bloqueado);
 
     $stmt = $pdo->prepare(
-        'UPDATE presentaciones_ninos SET estado = ?, fecha_presentacion = ?, actualizado_en = NOW() WHERE id = ?'
+        'UPDATE presentaciones_ninos SET
+            estado = ?, fecha_presentacion = ?, estado_bloqueado = ?, actualizado_en = NOW()
+         WHERE id = ?'
     );
 
-    return $stmt->execute([$estado, $fechaPresentacion, $id]) && $stmt->rowCount() > 0;
+    return $stmt->execute([$estado, $fechaPresentacion, $marcarBloqueado, $id]) && $stmt->rowCount() > 0;
+}
+
+function restablecerEstadoPresentacionNino(int $id, string $rol): bool
+{
+    if ($rol !== ROL_SUPERADMIN) {
+        throw new InvalidArgumentException('Solo un superadministrador puede restablecer el estado de presentación.');
+    }
+
+    $pdo = getConnection();
+    $stmt = $pdo->prepare(
+        'UPDATE presentaciones_ninos SET
+            estado = ?, fecha_presentacion = NULL, estado_bloqueado = 0, actualizado_en = NOW()
+         WHERE id = ?'
+    );
+
+    return $stmt->execute(['recibido', $id]) && $stmt->rowCount() > 0;
 }
 
 function actualizarEstadoConexionInscripcion(int $id, int $contactado): bool

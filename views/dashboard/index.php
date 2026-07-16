@@ -343,6 +343,7 @@
             <td><?= enlacesWhatsAppPresentacion($fila) ?></td>
             <td>
               <?php
+              $puedeEditarEstado = $puedeVerPresentaciones ?? false;
               $urlRedireccion = $urlPaginaConFiltros;
               include __DIR__ . '/../partials/celda-estado-presentacion.php';
               ?>

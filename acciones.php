@@ -620,6 +620,7 @@ if ($id <= 0 && $accion !== '' && !in_array($accion, [
     'actualizar_estado_presentacion',
     'actualizar_estado_bautismo',
     'restablecer_estado_bautismo',
+    'restablecer_estado_presentacion',
 ], true)) {
     header('Location: ' . $redireccion);
     exit;
@@ -717,7 +718,7 @@ if ($accion === 'actualizar_estado_presentacion') {
     $estado = trim((string) ($_POST['estado'] ?? ''));
 
     try {
-        actualizarEstadoPresentacionNino($id, $estado);
+        actualizarEstadoPresentacionNino($id, $estado, obtenerUsuarioActual()['rol']);
     } catch (InvalidArgumentException $e) {
         // Sin mensaje flash; redirige igual
     }
@@ -796,6 +797,31 @@ if ($accion === 'restablecer_estado_bautismo') {
         exit;
     } catch (PDOException $e) {
         header('Location: ' . $redireccion . $sepRedireccion . 'error=' . urlencode('No se pudo restablecer el estado de bautismo.'));
+        exit;
+    }
+
+    header('Location: ' . $redireccion . $sepRedireccion . 'actualizado=1');
+    exit;
+}
+
+if ($accion === 'restablecer_estado_presentacion') {
+    if (obtenerUsuarioActual()['rol'] !== ROL_SUPERADMIN) {
+        header('Location: ' . $urlInicio);
+        exit;
+    }
+
+    if ($id <= 0) {
+        header('Location: ' . $redireccion);
+        exit;
+    }
+
+    try {
+        restablecerEstadoPresentacionNino($id, obtenerUsuarioActual()['rol']);
+    } catch (InvalidArgumentException $e) {
+        header('Location: ' . $redireccion . $sepRedireccion . 'error=' . urlencode($e->getMessage()));
+        exit;
+    } catch (PDOException $e) {
+        header('Location: ' . $redireccion . $sepRedireccion . 'error=' . urlencode('No se pudo restablecer el estado de presentación.'));
         exit;
     }
 

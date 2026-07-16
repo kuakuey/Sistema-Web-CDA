@@ -122,6 +122,9 @@ $fila = $filaEditar;
               <label class="form-label">Fecha de presentación</label>
               <p class="mb-0"><?= htmlspecialchars(formatearFechaTabla($fila['fecha_presentacion'] ?? null)) ?></p>
             </div>
+            <div class="col-12">
+              <p class="form-text mb-0">Para volver a Recibido usa el botón Restablecer debajo.</p>
+            </div>
             <?php else: ?>
             <div class="col-md-6">
               <label class="form-label">Estado <span class="text-danger">*</span></label>
@@ -409,6 +412,25 @@ $fila = $filaEditar;
         <input type="hidden" name="redireccion" value="<?= htmlspecialchars($redireccionEditar) ?>">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
           <span class="small text-muted">Restablece el estado para editar datos y cambiar nuevamente a Bautizado.</span>
+          <button type="submit" class="btn btn-outline-warning btn-sm">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer
+          </button>
+        </div>
+      </form>
+      <?php endif; ?>
+      <?php if ($tipoEditar === 'presentacion' && ($fila['estado'] ?? '') === 'presentado'): ?>
+      <form
+        method="POST"
+        action="acciones.php"
+        class="border-top px-3 py-3 bg-light"
+        data-sin-bloqueo="1"
+        onsubmit="return confirm('¿Restablecer este registro a Recibido? Volverá a mostrar el combobox de estado.');"
+      >
+        <input type="hidden" name="accion" value="restablecer_estado_presentacion">
+        <input type="hidden" name="id" value="<?= (int) $fila['id'] ?>">
+        <input type="hidden" name="redireccion" value="<?= htmlspecialchars($redireccionEditar) ?>">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <span class="small text-muted">Restablece el estado para editar datos y cambiar nuevamente a Presentado.</span>
           <button type="submit" class="btn btn-outline-warning btn-sm">
             <i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer
           </button>

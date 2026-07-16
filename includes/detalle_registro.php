@@ -71,11 +71,7 @@ function construirDetalleInscripcion(array $fila, array $etiquetasFormulario): a
     if (($fila['tipo_formulario'] ?? '') === 'bautismo') {
         $filas[] = [
             'etiqueta' => 'Estado',
-            'valor'    => etiquetaEstadoBautismo((string) ($fila['estado_bautismo'] ?? 'ingresado')),
-        ];
-        $filas[] = [
-            'etiqueta' => 'Fecha de bautismo',
-            'valor'    => formatearFechaTabla($fila['fecha_bautismo'] ?? null),
+            'valor'    => etiquetaEstadoBautismoRegistro($fila),
         ];
     }
 

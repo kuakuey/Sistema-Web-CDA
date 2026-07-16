@@ -255,7 +255,6 @@
             <td>
               <?php
               $puedeEditarEstado = $puedeGestionarEstadoBautismo ?? false;
-              $esSuperadmin = !empty($esSuperadmin);
               $urlRedireccion = $urlPaginaConFiltros;
               include __DIR__ . '/../partials/celda-estado-bautismo.php';
               ?>

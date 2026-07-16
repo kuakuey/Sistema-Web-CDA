@@ -66,6 +66,15 @@ $fila = $filaEditar;
             <input type="hidden" name="direccion" value="">
             <input type="hidden" name="contactado" value="0">
             <?php endif; ?>
+            <?php if (($fila['tipo_formulario'] ?? '') === 'bautismo' && ($fila['estado_bautismo'] ?? 'ingresado') === 'bautizado'): ?>
+            <div class="col-12">
+              <label class="form-label">Estado de bautismo</label>
+              <p class="mb-0">
+                <span class="badge bg-success"><?= htmlspecialchars(etiquetaEstadoBautismoRegistro($fila)) ?></span>
+              </p>
+              <p class="form-text mb-0">Para volver a Ingresado usa el botón Restablecer debajo.</p>
+            </div>
+            <?php endif; ?>
           </div>
 
           <?php elseif ($tipoEditar === 'presentacion'): ?>
@@ -363,6 +372,29 @@ $fila = $filaEditar;
           </button>
         </div>
       </form>
+      <?php if (
+          $tipoEditar === 'inscripcion'
+          && ($fila['tipo_formulario'] ?? '') === 'bautismo'
+          && ($fila['estado_bautismo'] ?? 'ingresado') === 'bautizado'
+      ): ?>
+      <form
+        method="POST"
+        action="acciones.php"
+        class="border-top px-3 py-3 bg-light"
+        data-sin-bloqueo="1"
+        onsubmit="return confirm('¿Restablecer este registro a Ingresado? Volverá a mostrar el combobox de estado.');"
+      >
+        <input type="hidden" name="accion" value="restablecer_estado_bautismo">
+        <input type="hidden" name="id" value="<?= (int) $fila['id'] ?>">
+        <input type="hidden" name="redireccion" value="<?= htmlspecialchars($redireccionEditar) ?>">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <span class="small text-muted">Restablece el estado para editar datos y cambiar nuevamente a Bautizado.</span>
+          <button type="submit" class="btn btn-outline-warning btn-sm">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer
+          </button>
+        </div>
+      </form>
+      <?php endif; ?>
     </div>
   </div>
 </div>

@@ -454,7 +454,7 @@ function actualizarEstadoBautismoInscripcion(
         $fecha = trim((string) ($fechaBautismo ?? ''));
 
         if ($fecha === '') {
-            throw new InvalidArgumentException('Indica la fecha de bautismo.');
+            $fecha = date('Y-m-d');
         }
 
         $dt = DateTime::createFromFormat('Y-m-d', $fecha);
@@ -497,6 +497,15 @@ function actualizarEstadoBautismoInscripcion(
         $id,
         'bautismo',
     ]) && $stmtUpdate->rowCount() > 0;
+}
+
+function restablecerEstadoBautismoInscripcion(int $id, string $rol): bool
+{
+    if ($rol !== ROL_SUPERADMIN) {
+        throw new InvalidArgumentException('Solo un superadministrador puede restablecer el estado de bautismo.');
+    }
+
+    return actualizarEstadoBautismoInscripcion($id, 'ingresado', null, $rol);
 }
 
 /**

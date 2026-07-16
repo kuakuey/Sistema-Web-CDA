@@ -314,3 +314,23 @@ function etiquetaEstadoBautismo(string $estado): string
 
     return $etiquetas[$estado] ?? $estado;
 }
+
+function etiquetaEstadoBautismoRegistro(array $fila): string
+{
+    $estado = (string) ($fila['estado_bautismo'] ?? 'ingresado');
+
+    if ($estado !== 'bautizado') {
+        return etiquetaEstadoBautismo($estado);
+    }
+
+    $fecha = $fila['fecha_bautismo'] ?? null;
+
+    if ($fecha) {
+        $dt = date_create((string) $fecha);
+        $fechaEtiqueta = $dt ? $dt->format('d/m/Y') : '—';
+    } else {
+        $fechaEtiqueta = date('d/m/Y');
+    }
+
+    return 'Bautizado - ' . $fechaEtiqueta;
+}

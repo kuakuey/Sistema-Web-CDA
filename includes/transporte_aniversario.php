@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/paginacion.php';
+require_once __DIR__ . '/submissions.php';
 
 function etiquetaTipoTransporteAniversario(bool $poseeMovilizacion): string
 {
@@ -32,7 +33,9 @@ function validarDatosTransporteAniversario(array $entrada): array
     $nombreCompleto = trim((string) ($entrada['nombre_completo'] ?? ''));
     $telefono = trim((string) ($entrada['telefono'] ?? ''));
     $edad = isset($entrada['edad']) ? (int) $entrada['edad'] : 0;
+    $zona = trim((string) ($entrada['zona'] ?? ''));
     $poseeMovilizacion = !empty($entrada['posee_movilizacion']);
+    $zonasOk = array_keys(obtenerZonasConexion());
 
     if ($nombreCompleto === '' || $telefono === '') {
         throw new InvalidArgumentException('Completa nombre completo y teléfono.');
@@ -40,6 +43,10 @@ function validarDatosTransporteAniversario(array $entrada): array
 
     if ($edad < 1 || $edad > 120) {
         throw new InvalidArgumentException('Indica una edad válida (entre 1 y 120 años).');
+    }
+
+    if ($zona === '' || !in_array($zona, $zonasOk, true)) {
+        throw new InvalidArgumentException('Selecciona una zona válida.');
     }
 
     $asientosDisponibles = null;
@@ -58,6 +65,7 @@ function validarDatosTransporteAniversario(array $entrada): array
         'nombre_completo'      => $nombreCompleto,
         'telefono'             => $telefono,
         'edad'                 => $edad,
+        'zona'                 => $zona,
         'posee_movilizacion'   => $poseeMovilizacion,
         'asientos_disponibles' => $asientosDisponibles,
     ];
@@ -69,15 +77,16 @@ function insertarTransporteAniversario(array $datos): int
 
     $stmt = $pdo->prepare(
         'INSERT INTO transporte_aniversario (
-            nombre_completo, telefono, edad, posee_movilizacion, asientos_disponibles,
+            nombre_completo, telefono, edad, zona, posee_movilizacion, asientos_disponibles,
             registrado_por_id, registrado_por_nombre, creado_en
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
     );
 
     $stmt->execute([
         $datos['nombre_completo'],
         $datos['telefono'],
         $datos['edad'],
+        $datos['zona'],
         !empty($datos['posee_movilizacion']) ? 1 : 0,
         $datos['asientos_disponibles'],
         $datos['registrado_por_id'],
@@ -92,7 +101,7 @@ function actualizarTransporteAniversario(int $id, array $datos): bool
     $pdo = getConnection();
     $stmt = $pdo->prepare(
         'UPDATE transporte_aniversario SET
-            nombre_completo = ?, telefono = ?, edad = ?, posee_movilizacion = ?, asientos_disponibles = ?
+            nombre_completo = ?, telefono = ?, edad = ?, zona = ?, posee_movilizacion = ?, asientos_disponibles = ?
          WHERE id = ?'
     );
 
@@ -100,6 +109,7 @@ function actualizarTransporteAniversario(int $id, array $datos): bool
         $datos['nombre_completo'],
         $datos['telefono'],
         $datos['edad'],
+        $datos['zona'],
         !empty($datos['posee_movilizacion']) ? 1 : 0,
         $datos['asientos_disponibles'],
         $id,
@@ -131,8 +141,8 @@ function construirSqlTransporteAniversario(array $filtros): array
 
     if ($filtros['buscar'] !== '') {
         $busqueda = '%' . $filtros['buscar'] . '%';
-        $condiciones[] = '(nombre_completo LIKE ? OR telefono LIKE ? OR registrado_por_nombre LIKE ?)';
-        $parametros = array_merge($parametros, [$busqueda, $busqueda, $busqueda]);
+        $condiciones[] = '(nombre_completo LIKE ? OR telefono LIKE ? OR zona LIKE ? OR registrado_por_nombre LIKE ?)';
+        $parametros = array_merge($parametros, [$busqueda, $busqueda, $busqueda, $busqueda]);
     }
 
     if (($filtros['tipo_transporte'] ?? '') === 'con_carro') {
@@ -247,6 +257,7 @@ function calcularAsignacionTransporteAniversario(): array
                 'nombre_completo'      => (string) $registro['nombre_completo'],
                 'telefono'             => (string) $registro['telefono'],
                 'edad'                 => (int) ($registro['edad'] ?? 0),
+                'zona'                 => (string) ($registro['zona'] ?? ''),
                 'asientos_total'       => (int) ($registro['asientos_disponibles'] ?? 0),
                 'asientos_restantes'   => (int) ($registro['asientos_disponibles'] ?? 0),
                 'pasajeros'            => [],
@@ -257,6 +268,7 @@ function calcularAsignacionTransporteAniversario(): array
                 'nombre_completo' => (string) $registro['nombre_completo'],
                 'telefono'        => (string) $registro['telefono'],
                 'edad'            => (int) ($registro['edad'] ?? 0),
+                'zona'            => (string) ($registro['zona'] ?? ''),
             ];
         }
     }

@@ -175,6 +175,8 @@ CREATE TABLE IF NOT EXISTS transporte_aniversario (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre_completo VARCHAR(200) NOT NULL,
     telefono VARCHAR(30) NOT NULL,
+    edad TINYINT UNSIGNED NOT NULL,
+    zona VARCHAR(50) DEFAULT NULL,
     posee_movilizacion TINYINT(1) NOT NULL DEFAULT 0,
     asientos_disponibles SMALLINT UNSIGNED DEFAULT NULL,
     registrado_por_id INT DEFAULT NULL,

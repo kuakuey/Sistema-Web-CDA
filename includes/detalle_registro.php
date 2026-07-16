@@ -223,6 +223,12 @@ function construirDetalleTransporteAniversario(array $fila): array
         ['etiqueta' => 'Nombre completo', 'valor' => (string) ($fila['nombre_completo'] ?? '—')],
         ['etiqueta' => 'Edad', 'valor' => formatearEdadTransporteAniversario($fila['edad'] ?? null)],
         [
+            'etiqueta' => 'Zona',
+            'valor'    => ($fila['zona'] ?? '') !== ''
+                ? etiquetaZonaConexion((string) $fila['zona'])
+                : '—',
+        ],
+        [
             'etiqueta' => 'Tipo',
             'valor'    => etiquetaTipoTransporteAniversario($poseeMovilizacion),
         ],

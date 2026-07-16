@@ -6,6 +6,7 @@ require_once 'includes/filters.php';
 require_once 'includes/paginacion.php';
 require_once 'includes/transporte_aniversario.php';
 require_once 'includes/detalle_registro.php';
+require_once 'includes/submissions.php';
 
 requerirSesion();
 
@@ -144,4 +145,5 @@ view('transporte-aniversario/index', [
     'offsetRegistros'        => $offsetRegistros,
     'archivoPagina'          => 'transporte-aniversario.php',
     'reporteAsignacion'      => $reporteAsignacion,
+    'zonas'                  => obtenerZonasConexion(),
 ], 'app');

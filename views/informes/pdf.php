@@ -299,6 +299,7 @@ $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
     </tbody>
   </table>
   <?php endif; ?>
+  <?php endif; ?>
 
   <?php if ($incluirValores): ?>
   <h2>Valores adicionales</h2>
@@ -333,6 +334,7 @@ $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
       <?php endforeach; ?>
     </tbody>
   </table>
+  <?php endif; ?>
   <?php endif; ?>
 </body>
 </html>

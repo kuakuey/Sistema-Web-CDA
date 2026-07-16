@@ -259,6 +259,7 @@
               include __DIR__ . '/../partials/celda-estado-bautismo.php';
               ?>
             </td>
+            <td class="text-muted"><?= htmlspecialchars(formatearFechaTabla($fila['fecha_bautismo'] ?? null)) ?></td>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['creado_en'])) ?></td>
             <?php else: ?>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['creado_en'])) ?></td>

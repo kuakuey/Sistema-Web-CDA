@@ -67,11 +67,17 @@ $fila = $filaEditar;
             <input type="hidden" name="contactado" value="0">
             <?php endif; ?>
             <?php if (($fila['tipo_formulario'] ?? '') === 'bautismo' && ($fila['estado_bautismo'] ?? 'ingresado') === 'bautizado'): ?>
-            <div class="col-12">
+            <div class="col-md-6">
               <label class="form-label">Estado de bautismo</label>
               <p class="mb-0">
-                <span class="badge bg-success"><?= htmlspecialchars(etiquetaEstadoBautismoRegistro($fila)) ?></span>
+                <span class="badge bg-success">Bautizado</span>
               </p>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Fecha de bautizo</label>
+              <p class="mb-0"><?= htmlspecialchars(formatearFechaTabla($fila['fecha_bautismo'] ?? null)) ?></p>
+            </div>
+            <div class="col-12">
               <p class="form-text mb-0">Para volver a Ingresado usa el botón Restablecer debajo.</p>
             </div>
             <?php endif; ?>

@@ -26,7 +26,7 @@ $puedeUsarCombobox = $puedeEditarEstado && $estado === 'ingresado' && !$bloquead
   </select>
 </form>
 <?php elseif ($estado === 'bautizado'): ?>
-<span class="badge bg-success"><?= htmlspecialchars(etiquetaEstadoBautismoRegistro($fila)) ?></span>
+<span class="badge bg-success">Bautizado</span>
 <?php else: ?>
 <span class="badge bg-secondary">Ingresado</span>
 <?php endif; ?>

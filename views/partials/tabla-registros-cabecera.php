@@ -22,6 +22,7 @@ $etiquetaFecha = $etiquetaFecha ?? 'Fecha';
   <?php if ($layoutBautismo): ?>
   <?php if ($mostrarTelefono): ?><th>Teléfono</th><?php endif; ?>
   <?php if ($mostrarEstado): ?><th>Estado</th><?php endif; ?>
+  <th>Fecha de bautizo</th>
   <th><?= htmlspecialchars($etiquetaFecha) ?></th>
   <?php else: ?>
   <th><?= htmlspecialchars($etiquetaFecha) ?></th>

@@ -106,16 +106,6 @@
         >
       </div>
 
-      <div class="col-12 col-md-4">
-        <label class="form-label" for="zona">Zona <span class="text-danger">*</span></label>
-        <select class="form-select" id="zona" name="zona" required>
-          <option value="">Selecciona…</option>
-          <?php foreach ($zonas ?? [] as $claveZona => $etiquetaZona): ?>
-          <option value="<?= htmlspecialchars($claveZona) ?>"><?= htmlspecialchars($etiquetaZona) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-
       <div class="col-12">
         <div class="form-check">
           <input
@@ -141,6 +131,18 @@
           placeholder="Ej. 3"
         >
         <div class="form-text">Indica cuántas personas puede transportar.</div>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" for="observacion">Observación</label>
+        <textarea
+          class="form-control"
+          id="observacion"
+          name="observacion"
+          rows="2"
+          maxlength="500"
+          placeholder="Notas opcionales…"
+        ></textarea>
       </div>
 
       <div class="col-12">
@@ -232,7 +234,7 @@
           <tr>
             <th>Conductor</th>
             <th>Edad</th>
-            <th>Zona</th>
+            <th>Observación</th>
             <th>Teléfono</th>
             <th class="text-center">Asientos</th>
             <th>Estado</th>
@@ -252,7 +254,7 @@
           <tr>
             <td><?= htmlspecialchars($conductor['nombre_completo']) ?></td>
             <td><?= htmlspecialchars(formatearEdadTransporteAniversario($conductor['edad'] ?? null)) ?></td>
-            <td><?= htmlspecialchars(($conductor['zona'] ?? '') !== '' ? etiquetaZonaConexion($conductor['zona']) : '—') ?></td>
+            <td><?= htmlspecialchars(($conductor['observacion'] ?? '') !== '' ? $conductor['observacion'] : '—') ?></td>
             <td><?php $telefono = $conductor['telefono']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
             <td class="text-center">
               <?= $asignados ?> / <?= (int) $conductor['asientos_total'] ?>
@@ -290,7 +292,7 @@
           <tr>
             <th>Nombre completo</th>
             <th>Edad</th>
-            <th>Zona</th>
+            <th>Observación</th>
             <th>Teléfono</th>
           </tr>
         </thead>
@@ -299,7 +301,7 @@
           <tr>
             <td><?= htmlspecialchars($pasajero['nombre_completo']) ?></td>
             <td><?= htmlspecialchars(formatearEdadTransporteAniversario($pasajero['edad'] ?? null)) ?></td>
-            <td><?= htmlspecialchars(($pasajero['zona'] ?? '') !== '' ? etiquetaZonaConexion($pasajero['zona']) : '—') ?></td>
+            <td><?= htmlspecialchars(($pasajero['observacion'] ?? '') !== '' ? $pasajero['observacion'] : '—') ?></td>
             <td><?php $telefono = $pasajero['telefono']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
           </tr>
           <?php endforeach; ?>
@@ -337,7 +339,7 @@
             id="buscar"
             name="buscar"
             value="<?= htmlspecialchars($filtros['buscar']) ?>"
-            placeholder="Nombre, teléfono, zona…"
+            placeholder="Nombre, teléfono, observación…"
           >
         </div>
 
@@ -394,8 +396,8 @@
             <th class="text-center col-numero">#</th>
             <th>Nombre completo</th>
             <th>Edad</th>
-            <th>Zona</th>
             <th>Tipo</th>
+            <th>Observación</th>
             <th>Teléfono</th>
             <th class="text-end">Acciones</th>
           </tr>
@@ -419,17 +421,18 @@
                     'redireccion' => $redireccionRegistros,
                 ];
             }
+            $observacion = $fila['observacion'] ?? null;
           ?>
           <tr>
             <td class="text-center text-muted"><?= $numeroRegistro ?></td>
             <td><?= htmlspecialchars($fila['nombre_completo']) ?></td>
             <td><?= htmlspecialchars(formatearEdadTransporteAniversario($fila['edad'] ?? null)) ?></td>
-            <td><?= htmlspecialchars(($fila['zona'] ?? '') !== '' ? etiquetaZonaConexion($fila['zona']) : '—') ?></td>
             <td>
               <span class="badge <?= claseBadgeTipoTransporteAniversario($poseeMovilizacion) ?>">
                 <?= htmlspecialchars(etiquetaTipoTransporteAniversario($poseeMovilizacion)) ?>
               </span>
             </td>
+            <td><?php include __DIR__ . '/../partials/celda-observacion.php'; ?></td>
             <td><?php $telefono = $fila['telefono']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
             <td class="text-end">
               <?php

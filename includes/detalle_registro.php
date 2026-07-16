@@ -223,16 +223,16 @@ function construirDetalleTransporteAniversario(array $fila): array
         ['etiqueta' => 'Nombre completo', 'valor' => (string) ($fila['nombre_completo'] ?? '—')],
         ['etiqueta' => 'Edad', 'valor' => formatearEdadTransporteAniversario($fila['edad'] ?? null)],
         [
-            'etiqueta' => 'Zona',
-            'valor'    => ($fila['zona'] ?? '') !== ''
-                ? etiquetaZonaConexion((string) $fila['zona'])
-                : '—',
-        ],
-        [
             'etiqueta' => 'Tipo',
             'valor'    => etiquetaTipoTransporteAniversario($poseeMovilizacion),
         ],
         filaDetalleHtml('Teléfono', enlaceWhatsApp($fila['telefono'] ?? null)),
+    ];
+
+    $observacion = trim((string) ($fila['observacion'] ?? ''));
+    $filas[] = [
+        'etiqueta' => 'Observación',
+        'valor'    => $observacion !== '' ? $observacion : '—',
     ];
 
     if ($poseeMovilizacion) {

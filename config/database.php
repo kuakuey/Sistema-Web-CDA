@@ -378,7 +378,7 @@ function migrarTablaTransporteAniversario(PDO $pdo): void
             nombre_completo VARCHAR(200) NOT NULL,
             telefono VARCHAR(30) NOT NULL,
             edad TINYINT UNSIGNED NOT NULL,
-            zona VARCHAR(50) DEFAULT NULL,
+            observacion VARCHAR(500) DEFAULT NULL,
             posee_movilizacion TINYINT(1) NOT NULL DEFAULT 0,
             asientos_disponibles SMALLINT UNSIGNED DEFAULT NULL,
             registrado_por_id INT DEFAULT NULL,
@@ -401,7 +401,7 @@ function asegurarColumnasTransporteAniversario(PDO $pdo): void
 
     $columnas = [
         'edad' => 'ADD COLUMN edad TINYINT UNSIGNED NULL AFTER telefono',
-        'zona' => 'ADD COLUMN zona VARCHAR(50) NULL AFTER edad',
+        'observacion' => 'ADD COLUMN observacion VARCHAR(500) NULL AFTER edad',
     ];
 
     foreach ($columnas as $nombre => $sqlAlter) {

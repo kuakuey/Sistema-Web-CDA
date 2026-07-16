@@ -124,7 +124,7 @@
       <tr>
         <th>Conductor</th>
         <th>Edad</th>
-        <th>Zona</th>
+        <th>Observación</th>
         <th>Teléfono</th>
         <th>Asientos</th>
         <th>Estado</th>
@@ -137,7 +137,7 @@
       <tr>
         <td><?= htmlspecialchars((string) ($conductor['nombre_completo'] ?? '')) ?></td>
         <td><?= htmlspecialchars(formatearEdadTransporteAniversario($conductor['edad'] ?? null)) ?></td>
-        <td><?= htmlspecialchars(($conductor['zona'] ?? '') !== '' ? etiquetaZonaConexion($conductor['zona']) : '—') ?></td>
+        <td><?= htmlspecialchars(($conductor['observacion'] ?? '') !== '' ? $conductor['observacion'] : '—') ?></td>
         <td><?= htmlspecialchars((string) ($conductor['telefono'] ?? '')) ?></td>
         <td><?= $asignados ?> / <?= (int) ($conductor['asientos_total'] ?? 0) ?></td>
         <td><?= htmlspecialchars(etiquetaEstadoConductorInforme($conductor)) ?></td>
@@ -157,7 +157,7 @@
       <tr>
         <th>Nombre completo</th>
         <th>Edad</th>
-        <th>Zona</th>
+        <th>Observación</th>
         <th>Teléfono</th>
       </tr>
     </thead>
@@ -166,7 +166,7 @@
       <tr>
         <td><?= htmlspecialchars((string) ($pasajero['nombre_completo'] ?? '')) ?></td>
         <td><?= htmlspecialchars(formatearEdadTransporteAniversario($pasajero['edad'] ?? null)) ?></td>
-        <td><?= htmlspecialchars(($pasajero['zona'] ?? '') !== '' ? etiquetaZonaConexion($pasajero['zona']) : '—') ?></td>
+        <td><?= htmlspecialchars(($pasajero['observacion'] ?? '') !== '' ? $pasajero['observacion'] : '—') ?></td>
         <td><?= htmlspecialchars((string) ($pasajero['telefono'] ?? '')) ?></td>
       </tr>
       <?php endforeach; ?>

@@ -325,17 +325,6 @@ $fila = $filaEditar;
                 value="<?= !empty($fila['edad']) ? (int) $fila['edad'] : '' ?>"
               >
             </div>
-            <div class="col-md-4">
-              <label class="form-label">Zona <span class="text-danger">*</span></label>
-              <select class="form-select" name="zona" required>
-                <option value="">Selecciona…</option>
-                <?php foreach ($zonas ?? [] as $claveZona => $etiquetaZona): ?>
-                <option value="<?= htmlspecialchars($claveZona) ?>" <?= ($fila['zona'] ?? '') === $claveZona ? 'selected' : '' ?>>
-                  <?= htmlspecialchars($etiquetaZona) ?>
-                </option>
-                <?php endforeach; ?>
-              </select>
-            </div>
             <div class="col-12">
               <div class="form-check">
                 <input
@@ -359,6 +348,10 @@ $fila = $filaEditar;
                 max="99"
                 value="<?= !empty($fila['asientos_disponibles']) ? (int) $fila['asientos_disponibles'] : '' ?>"
               >
+            </div>
+            <div class="col-12">
+              <label class="form-label">Observación</label>
+              <textarea class="form-control" name="observacion" rows="2" maxlength="500"><?= htmlspecialchars($fila['observacion'] ?? '') ?></textarea>
             </div>
           </div>
           <?php endif; ?>

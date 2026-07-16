@@ -204,6 +204,9 @@
     <?php
     $mostrarTipo = ($seccion === 'generales');
     $mostrarEstado = ($seccion === 'conexion' || $seccion === 'bautismo');
+    $mostrarNumero = ($seccion !== 'bautismo');
+    $layoutBautismo = ($seccion === 'bautismo');
+    $etiquetaFecha = ($seccion === 'bautismo') ? 'Fecha de registro' : 'Fecha';
     $modalesDetalle = [];
     $modalesEditar = [];
     ?>
@@ -236,7 +239,9 @@
             }
           ?>
           <tr>
+            <?php if ($mostrarNumero): ?>
             <td class="text-center text-muted"><?= $numeroRegistro ?></td>
+            <?php endif; ?>
             <?php if ($mostrarTipo): ?>
             <td>
               <span class="badge badge-form badge-form--<?= htmlspecialchars($fila['tipo_formulario']) ?>">
@@ -245,6 +250,18 @@
             </td>
             <?php endif; ?>
             <td><?= htmlspecialchars(trim($fila['nombre'] . ' ' . $fila['apellido'])) ?></td>
+            <?php if ($layoutBautismo): ?>
+            <td><?php $telefono = $fila['celular']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
+            <td>
+              <?php
+              $puedeEditarEstado = $puedeGestionarEstadoBautismo ?? false;
+              $esSuperadmin = !empty($esSuperadmin);
+              $urlRedireccion = $urlPaginaConFiltros;
+              include __DIR__ . '/../partials/celda-estado-bautismo.php';
+              ?>
+            </td>
+            <td><?= htmlspecialchars(formatearFechaTabla($fila['creado_en'])) ?></td>
+            <?php else: ?>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['creado_en'])) ?></td>
             <td><?php $telefono = $fila['celular']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
             <?php if ($mostrarEstado): ?>
@@ -255,14 +272,9 @@
               $urlRedireccion = $urlPaginaConFiltros;
               include __DIR__ . '/../partials/celda-estado-conexion.php';
               ?>
-              <?php elseif ($seccion === 'bautismo'): ?>
-              <?php
-              $puedeEditarEstado = $puedeGestionarEstadoBautismo ?? false;
-              $urlRedireccion = $urlPaginaConFiltros;
-              include __DIR__ . '/../partials/celda-estado-bautismo.php';
-              ?>
               <?php endif; ?>
             </td>
+            <?php endif; ?>
             <?php endif; ?>
             <td class="text-end">
               <?php

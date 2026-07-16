@@ -9,6 +9,7 @@ $estado = (string) ($fila['estado_bautismo'] ?? 'ingresado');
 $bloqueado = !empty($fila['estado_bautismo_bloqueado']);
 $puedeCambiar = $puedeEditarEstado && ($esSuperadmin || !$bloqueado);
 $formId = 'estado-bautismo-' . (int) $fila['id'];
+$puedeVolverIngresado = $esSuperadmin || $estado !== 'bautizado';
 ?>
 <?php if ($puedeCambiar): ?>
 <form method="POST" action="acciones.php" class="m-0 js-form-estado-bautismo" id="<?= htmlspecialchars($formId) ?>">
@@ -17,7 +18,9 @@ $formId = 'estado-bautismo-' . (int) $fila['id'];
   <input type="hidden" name="redireccion" value="<?= htmlspecialchars($urlRedireccion) ?>">
   <div class="d-flex flex-column gap-1" style="min-width: 10rem;">
     <select name="estado_bautismo" class="form-select form-select-sm js-estado-bautismo-select">
+      <?php if ($puedeVolverIngresado): ?>
       <option value="ingresado" <?= $estado === 'ingresado' ? 'selected' : '' ?>>Ingresado</option>
+      <?php endif; ?>
       <option value="bautizado" <?= $estado === 'bautizado' ? 'selected' : '' ?>>Bautizado</option>
     </select>
     <input
@@ -28,7 +31,6 @@ $formId = 'estado-bautismo-' . (int) $fila['id'];
       max="<?= date('Y-m-d') ?>"
       style="<?= $estado === 'bautizado' ? '' : 'display:none' ?>"
     >
-    <button type="submit" class="btn btn-outline-primary btn-sm py-0">Guardar</button>
   </div>
 </form>
 <?php else: ?>

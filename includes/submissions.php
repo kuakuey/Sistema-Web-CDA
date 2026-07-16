@@ -446,6 +446,10 @@ function actualizarEstadoBautismoInscripcion(
         throw new InvalidArgumentException('El estado de bautismo ya fue actualizado y no puede modificarse de nuevo.');
     }
 
+    if ($estado === 'ingresado' && $estadoActual === 'bautizado' && !$esSuperadmin) {
+        throw new InvalidArgumentException('Solo un superadministrador puede volver el estado a Ingresado.');
+    }
+
     if ($estado === 'bautizado') {
         $fecha = trim((string) ($fechaBautismo ?? ''));
 
@@ -470,7 +474,13 @@ function actualizarEstadoBautismoInscripcion(
         throw new InvalidArgumentException('No hay cambios por aplicar.');
     }
 
-    $marcarBloqueado = $esSuperadmin ? (int) $bloqueado : 1;
+    $marcarBloqueado = 1;
+
+    if ($estado === 'ingresado' && $esSuperadmin) {
+        $marcarBloqueado = 0;
+    } elseif ($esSuperadmin) {
+        $marcarBloqueado = (int) $bloqueado;
+    }
 
     $stmtUpdate = $pdo->prepare(
         'UPDATE inscripciones SET

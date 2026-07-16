@@ -115,6 +115,26 @@
 (function () {
   'use strict';
 
+  function enviarFormularioBautismo(formulario) {
+    var select = formulario.querySelector('.js-estado-bautismo-select');
+    var fecha = formulario.querySelector('.js-fecha-bautismo');
+
+    if (!select) {
+      return;
+    }
+
+    if (select.value === 'bautizado') {
+      if (!fecha || !fecha.value) {
+        if (fecha) {
+          fecha.focus();
+        }
+        return;
+      }
+    }
+
+    formulario.submit();
+  }
+
   function actualizarFechaBautismo(formulario) {
     var select = formulario.querySelector('.js-estado-bautismo-select');
     var fecha = formulario.querySelector('.js-fecha-bautismo');
@@ -134,10 +154,23 @@
 
   document.querySelectorAll('.js-form-estado-bautismo').forEach(function (formulario) {
     var select = formulario.querySelector('.js-estado-bautismo-select');
+    var fecha = formulario.querySelector('.js-fecha-bautismo');
 
     if (select) {
       select.addEventListener('change', function () {
         actualizarFechaBautismo(formulario);
+
+        if (select.value === 'ingresado') {
+          enviarFormularioBautismo(formulario);
+        }
+      });
+    }
+
+    if (fecha) {
+      fecha.addEventListener('change', function () {
+        if (select && select.value === 'bautizado' && fecha.value) {
+          enviarFormularioBautismo(formulario);
+        }
       });
     }
 

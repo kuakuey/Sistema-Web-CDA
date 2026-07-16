@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/submissions.php';
+require_once __DIR__ . '/filters.php';
 require_once __DIR__ . '/valores_adicionales.php';
 require_once __DIR__ . '/consejerias.php';
 require_once __DIR__ . '/transporte_aniversario.php';
@@ -64,6 +65,17 @@ function construirDetalleInscripcion(array $fila, array $etiquetasFormulario): a
         $filas[] = [
             'etiqueta' => 'Estado',
             'valor'    => etiquetaEstadoConexionInscripcion($fila),
+        ];
+    }
+
+    if (($fila['tipo_formulario'] ?? '') === 'bautismo') {
+        $filas[] = [
+            'etiqueta' => 'Estado',
+            'valor'    => etiquetaEstadoBautismo((string) ($fila['estado_bautismo'] ?? 'ingresado')),
+        ];
+        $filas[] = [
+            'etiqueta' => 'Fecha de bautismo',
+            'valor'    => formatearFechaTabla($fila['fecha_bautismo'] ?? null),
         ];
     }
 

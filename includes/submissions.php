@@ -17,12 +17,13 @@ function obtenerZonasConexion(): array
 function insertarInscripcion(string $tipoFormulario, array $datos): int
 {
     $pdo = getConnection();
+    $estadoBautismo = $tipoFormulario === 'bautismo' ? 'ingresado' : 'ingresado';
 
     $stmt = $pdo->prepare(
         'INSERT INTO inscripciones (
             tipo_formulario, nombre, apellido, celular, email, zona, direccion,
-            ip_cliente, agente_usuario, creado_en
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+            estado_bautismo, ip_cliente, agente_usuario, creado_en
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
     );
 
     $stmt->execute([
@@ -33,6 +34,7 @@ function insertarInscripcion(string $tipoFormulario, array $datos): int
         $datos['email'] ?? null,
         $datos['zona'] ?? '',
         $datos['direccion'] ?? '',
+        $estadoBautismo,
         $datos['ip_cliente'] ?? '',
         $datos['agente_usuario'] ?? '',
     ]);
@@ -409,6 +411,82 @@ function actualizarEstadoConexionInscripcion(int $id, int $contactado): bool
     );
 
     return $stmt->execute([$contactado ? 1 : 0, $id, 'conexion']);
+}
+
+function actualizarEstadoBautismoInscripcion(
+    int $id,
+    string $estado,
+    ?string $fechaBautismo,
+    string $rol
+): bool {
+    require_once __DIR__ . '/filters.php';
+    require_once __DIR__ . '/roles.php';
+
+    if (!esEstadoBautismoValido($estado)) {
+        throw new InvalidArgumentException('Estado de bautismo no válido.');
+    }
+
+    $pdo = getConnection();
+    $stmt = $pdo->prepare(
+        'SELECT estado_bautismo, estado_bautismo_bloqueado
+         FROM inscripciones WHERE id = ? AND tipo_formulario = ?'
+    );
+    $stmt->execute([$id, 'bautismo']);
+    $fila = $stmt->fetch();
+
+    if (!$fila) {
+        throw new InvalidArgumentException('Registro de bautismo no encontrado.');
+    }
+
+    $esSuperadmin = $rol === ROL_SUPERADMIN;
+    $bloqueado = !empty($fila['estado_bautismo_bloqueado']);
+    $estadoActual = (string) ($fila['estado_bautismo'] ?? 'ingresado');
+
+    if (!$esSuperadmin && $bloqueado) {
+        throw new InvalidArgumentException('El estado de bautismo ya fue actualizado y no puede modificarse de nuevo.');
+    }
+
+    if ($estado === 'bautizado') {
+        $fecha = trim((string) ($fechaBautismo ?? ''));
+
+        if ($fecha === '') {
+            throw new InvalidArgumentException('Indica la fecha de bautismo.');
+        }
+
+        $dt = DateTime::createFromFormat('Y-m-d', $fecha);
+
+        if (!$dt || $dt->format('Y-m-d') !== $fecha) {
+            throw new InvalidArgumentException('La fecha de bautismo no es válida.');
+        }
+
+        if ($fecha > date('Y-m-d')) {
+            throw new InvalidArgumentException('La fecha de bautismo no puede ser futura.');
+        }
+    } else {
+        $fecha = null;
+    }
+
+    if ($estado === $estadoActual && $estado === 'ingresado' && empty($fila['fecha_bautismo'])) {
+        throw new InvalidArgumentException('No hay cambios por aplicar.');
+    }
+
+    $marcarBloqueado = $esSuperadmin ? (int) $bloqueado : 1;
+
+    $stmtUpdate = $pdo->prepare(
+        'UPDATE inscripciones SET
+            estado_bautismo = ?,
+            fecha_bautismo = ?,
+            estado_bautismo_bloqueado = ?
+         WHERE id = ? AND tipo_formulario = ?'
+    );
+
+    return $stmtUpdate->execute([
+        $estado,
+        $fecha,
+        $marcarBloqueado,
+        $id,
+        'bautismo',
+    ]) && $stmtUpdate->rowCount() > 0;
 }
 
 /**

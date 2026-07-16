@@ -92,16 +92,24 @@
 <body>
 <?php
 $resumen = $informe['resumen'];
+$seccionExportacion = normalizarSeccionInforme($informe['seccion_exportacion'] ?? 'completo');
+$incluirOfrendas = in_array($seccionExportacion, ['completo', 'ofrendas'], true);
+$incluirEventos = in_array($seccionExportacion, ['completo', 'eventos'], true);
+$incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
 ?>
 
-  <h1>Informe financiero CDA</h1>
+  <h1><?= htmlspecialchars(tituloSeccionInforme($seccionExportacion)) ?></h1>
   <p class="subtitulo">
     Periodo de registro: <?= htmlspecialchars($informe['fecha_desde_etiqueta']) ?>
     al <?= htmlspecialchars($informe['fecha_hasta_etiqueta']) ?>
-    · Turno: <?= htmlspecialchars($informe['turno_etiqueta']) ?>
+    · Jornada: <?= htmlspecialchars($informe['turno_etiqueta']) ?>
+    <?php if ($incluirOfrendas): ?>
+    · Estado: <?= htmlspecialchars($informe['estado_ofrenda_etiqueta'] ?? 'Todos') ?>
+    <?php endif; ?>
     · Generado: <?= htmlspecialchars($informe['generado_en']) ?>
   </p>
 
+  <?php if ($seccionExportacion === 'completo'): ?>
   <table class="resumen">
     <tr>
       <td>
@@ -146,7 +154,52 @@ $resumen = $informe['resumen'];
       </td>
     </tr>
   </table>
+  <?php elseif ($incluirOfrendas): ?>
+  <table class="resumen">
+    <tr>
+      <td>
+        <span class="resumen-label">Casas de vida</span>
+        <span class="resumen-valor"><?= (int) $resumen['total_casas'] ?></span>
+      </td>
+      <td>
+        <span class="resumen-label">Dieron ofrenda</span>
+        <span class="resumen-valor"><?= (int) $resumen['casas_dieron'] ?></span>
+      </td>
+      <td>
+        <span class="resumen-label">Total ofrendas</span>
+        <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) $resumen['total_monto_ofrendas'])) ?></strong></span>
+      </td>
+    </tr>
+  </table>
+  <?php elseif ($incluirEventos): ?>
+  <table class="resumen">
+    <tr>
+      <td>
+        <span class="resumen-label">Registros de eventos</span>
+        <span class="resumen-valor"><?= (int) ($resumen['cantidad_registros_eventos'] ?? 0) ?></span>
+      </td>
+      <td>
+        <span class="resumen-label">Total recaudado</span>
+        <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) ($resumen['total_monto_eventos'] ?? 0))) ?></strong></span>
+      </td>
+    </tr>
+  </table>
+  <?php elseif ($incluirValores): ?>
+  <table class="resumen">
+    <tr>
+      <td>
+        <span class="resumen-label">Registros</span>
+        <span class="resumen-valor"><?= (int) ($resumen['cantidad_valores_adicionales'] ?? 0) ?></span>
+      </td>
+      <td>
+        <span class="resumen-label">Total valores</span>
+        <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) $resumen['total_monto_valores'])) ?></strong></span>
+      </td>
+    </tr>
+  </table>
+  <?php endif; ?>
 
+  <?php if ($incluirOfrendas): ?>
   <h2>Ofrendas por fecha</h2>
   <?php if (empty($informe['ofrendas_por_fecha'])): ?>
   <p class="vacio">No hay ofrendas registradas en este periodo.</p>
@@ -207,7 +260,9 @@ $resumen = $informe['resumen'];
   </table>
   <?php endif; ?>
   <?php endif; ?>
+  <?php endif; ?>
 
+  <?php if ($incluirEventos): ?>
   <h2>Eventos</h2>
   <?php if (empty($informe['registros_eventos'])): ?>
   <p class="vacio">No hay registros de eventos en este periodo.</p>
@@ -246,6 +301,7 @@ $resumen = $informe['resumen'];
   </table>
   <?php endif; ?>
 
+  <?php if ($incluirValores): ?>
   <h2>Valores adicionales</h2>
   <?php if (empty($informe['valores_adicionales'])): ?>
   <p class="vacio">No hay valores adicionales registrados en este periodo.</p>

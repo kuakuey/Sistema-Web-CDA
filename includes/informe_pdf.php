@@ -3,14 +3,19 @@
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
-function nombreArchivoInformePdf(array $informe): string
+function nombreArchivoInformePdf(array $informe, string $seccion = 'completo'): string
 {
-    return 'informe-' . $informe['fecha_desde'] . '-' . $informe['fecha_hasta'] . '.pdf';
+    $seccion = normalizarSeccionInforme($seccion);
+    $prefijo = $seccion === 'completo' ? 'informe' : 'informe-' . $seccion;
+
+    return $prefijo . '-' . $informe['fecha_desde'] . '-' . $informe['fecha_hasta'] . '.pdf';
 }
 
-function renderizarHtmlInformePdf(array $informe): string
+function renderizarHtmlInformePdf(array $informe, string $seccion = 'completo'): string
 {
     require_once __DIR__ . '/eventos.php';
+
+    $informe['seccion_exportacion'] = normalizarSeccionInforme($seccion);
 
     ob_start();
     include __DIR__ . '/../views/informes/pdf.php';
@@ -18,8 +23,9 @@ function renderizarHtmlInformePdf(array $informe): string
     return (string) ob_get_clean();
 }
 
-function enviarInformePdf(array $informe): void
+function enviarInformePdf(array $informe, string $seccion = 'completo'): void
 {
+    $seccion = normalizarSeccionInforme($seccion);
     $autoload = __DIR__ . '/../vendor/autoload.php';
 
     if (!is_file($autoload)) {
@@ -36,11 +42,11 @@ function enviarInformePdf(array $informe): void
     $opciones->set('defaultFont', 'DejaVu Sans');
 
     $dompdf = new Dompdf($opciones);
-    $dompdf->loadHtml(renderizarHtmlInformePdf($informe));
+    $dompdf->loadHtml(renderizarHtmlInformePdf($informe, $seccion));
     $dompdf->setPaper('A4', 'portrait');
     $dompdf->render();
 
-    $dompdf->stream(nombreArchivoInformePdf($informe), [
+    $dompdf->stream(nombreArchivoInformePdf($informe, $seccion), [
         'Attachment' => true,
     ]);
 }

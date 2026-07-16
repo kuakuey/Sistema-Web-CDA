@@ -214,6 +214,11 @@ function puedeGestionarEstadoConexion(string $rol): bool
     return in_array($rol, [ROL_SUPERADMIN, ROL_ADMIN, ROL_CONEXION], true);
 }
 
+function puedeGestionarEstadoBautismo(string $rol): bool
+{
+    return puedeVerBautismo($rol);
+}
+
 function puedeVerSeccion(string $rol, string $seccion): bool
 {
     if ($seccion === 'generales') {

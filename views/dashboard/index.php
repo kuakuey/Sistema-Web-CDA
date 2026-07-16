@@ -161,6 +161,20 @@
       </div>
       <?php endif; ?>
 
+      <?php if ($tipoRegistro === 'inscripciones' && $seccion === 'bautismo'): ?>
+      <div class="col-md-2">
+        <label class="form-label small" for="estado">Estado</label>
+        <select class="form-select form-select-sm" id="estado" name="estado">
+          <option value="">Todos</option>
+          <?php foreach ($estadosBautismo as $estadoBautismo): ?>
+          <option value="<?= htmlspecialchars($estadoBautismo) ?>" <?= $filtros['estado'] === $estadoBautismo ? 'selected' : '' ?>>
+            <?= htmlspecialchars($etiquetasEstadosBautismo[$estadoBautismo] ?? $estadoBautismo) ?>
+          </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <?php endif; ?>
+
       <div class="col-md-auto d-flex gap-2">
         <button type="submit" class="btn btn-primary btn-sm">
           <i class="bi bi-funnel me-1"></i>Filtrar
@@ -189,7 +203,7 @@
     <?php elseif ($tipoRegistro === 'inscripciones'): ?>
     <?php
     $mostrarTipo = ($seccion === 'generales');
-    $mostrarEstado = ($seccion === 'conexion');
+    $mostrarEstado = ($seccion === 'conexion' || $seccion === 'bautismo');
     $modalesDetalle = [];
     $modalesEditar = [];
     ?>
@@ -235,11 +249,19 @@
             <td><?php $telefono = $fila['celular']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
             <?php if ($mostrarEstado): ?>
             <td>
+              <?php if ($seccion === 'conexion'): ?>
               <?php
               $puedeEditarEstado = $puedeGestionarEstadoConexion ?? false;
               $urlRedireccion = $urlPaginaConFiltros;
               include __DIR__ . '/../partials/celda-estado-conexion.php';
               ?>
+              <?php elseif ($seccion === 'bautismo'): ?>
+              <?php
+              $puedeEditarEstado = $puedeGestionarEstadoBautismo ?? false;
+              $urlRedireccion = $urlPaginaConFiltros;
+              include __DIR__ . '/../partials/celda-estado-bautismo.php';
+              ?>
+              <?php endif; ?>
             </td>
             <?php endif; ?>
             <td class="text-end">

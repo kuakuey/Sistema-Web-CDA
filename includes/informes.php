@@ -45,10 +45,69 @@ function normalizarTurnoInforme(string $turno): string
 function obtenerEtiquetasTurnoInforme(): array
 {
     return [
-        'manana' => 'Mañana',
-        'tarde'  => 'Tarde',
-        'todos'  => 'Todos',
+        'manana' => 'Matutina',
+        'tarde'  => 'Vespertina',
+        'todos'  => 'Todas',
     ];
+}
+
+function normalizarSeccionInforme(string $seccion): string
+{
+    $seccion = trim(mb_strtolower($seccion));
+
+    if (in_array($seccion, ['completo', 'ofrendas', 'eventos', 'valores'], true)) {
+        return $seccion;
+    }
+
+    return 'completo';
+}
+
+function normalizarFormatoInforme(string $formato): string
+{
+    $formato = trim(mb_strtolower($formato));
+
+    return in_array($formato, ['pdf', 'excel'], true) ? $formato : 'pdf';
+}
+
+function normalizarEstadoInforme(string $estado): string
+{
+    $estado = trim(mb_strtolower($estado));
+
+    if (in_array($estado, ['todos', 'entregaron', 'sin_entregar'], true)) {
+        return $estado;
+    }
+
+    return 'todos';
+}
+
+function obtenerEtiquetasEstadoInforme(): array
+{
+    return [
+        'todos'         => 'Todos',
+        'entregaron'    => 'Entregaron ofrenda',
+        'sin_entregar'  => 'Sin entregar',
+    ];
+}
+
+function etiquetaEstadoInforme(string $estado): string
+{
+    $etiquetas = obtenerEtiquetasEstadoInforme();
+
+    return $etiquetas[normalizarEstadoInforme($estado)] ?? 'Todos';
+}
+
+function tituloSeccionInforme(string $seccion): string
+{
+    switch (normalizarSeccionInforme($seccion)) {
+        case 'ofrendas':
+            return 'Informe de ofrendas';
+        case 'eventos':
+            return 'Informe de eventos';
+        case 'valores':
+            return 'Informe de valores adicionales';
+        default:
+            return 'Informe financiero CDA';
+    }
 }
 
 function etiquetaTurnoInforme(string $turno): string
@@ -221,12 +280,20 @@ function generarInformeOfrendasYValores(
     string $fechaDesde,
     string $fechaHasta,
     bool $mostrarSinEntregar = false,
-    string $turno = 'todos'
+    string $turno = 'todos',
+    string $estadoOfrenda = 'todos'
 ): array {
     $rango = validarRangoFechasInforme($fechaDesde, $fechaHasta);
     $desde = $rango['desde'];
     $hasta = $rango['hasta'];
     $turno = normalizarTurnoInforme($turno);
+    $estadoOfrenda = normalizarEstadoInforme($estadoOfrenda);
+
+    if ($estadoOfrenda === 'sin_entregar') {
+        $mostrarSinEntregar = true;
+    } elseif ($estadoOfrenda === 'entregaron') {
+        $mostrarSinEntregar = false;
+    }
 
     $casas = obtenerCasasVida();
     $ofrendas = obtenerOfrendasPorRangoRegistro($desde, $hasta, $turno);
@@ -322,6 +389,15 @@ function generarInformeOfrendasYValores(
         $totalMontoValores += (float) $valor['valor'];
     }
 
+    if ($estadoOfrenda === 'sin_entregar') {
+        $ofrendas = [];
+        $ofrendasPorFecha = [];
+        $casasDieron = [];
+        $totalMontoOfrendas = 0.0;
+    } elseif ($estadoOfrenda === 'entregaron') {
+        $casasNoDieron = [];
+    }
+
     return [
         'fecha_desde'          => $desde,
         'fecha_hasta'          => $hasta,
@@ -331,6 +407,9 @@ function generarInformeOfrendasYValores(
         'mostrar_sin_entregar' => $mostrarSinEntregar,
         'turno'                => $turno,
         'turno_etiqueta'       => etiquetaTurnoInforme($turno),
+        'estado_ofrenda'       => $estadoOfrenda,
+        'estado_ofrenda_etiqueta' => etiquetaEstadoInforme($estadoOfrenda),
+        'seccion_exportacion'  => 'completo',
         'resumen'              => [
             'total_casas'                   => count($casas),
             'casas_dieron'                  => count($casasDieron),

@@ -111,3 +111,36 @@
 
   llenarCasas(territorioSelect.value);
 })();
+
+(function () {
+  'use strict';
+
+  function actualizarFechaBautismo(formulario) {
+    var select = formulario.querySelector('.js-estado-bautismo-select');
+    var fecha = formulario.querySelector('.js-fecha-bautismo');
+
+    if (!select || !fecha) {
+      return;
+    }
+
+    var esBautizado = select.value === 'bautizado';
+    fecha.style.display = esBautizado ? '' : 'none';
+    fecha.required = esBautizado;
+
+    if (!esBautizado) {
+      fecha.value = '';
+    }
+  }
+
+  document.querySelectorAll('.js-form-estado-bautismo').forEach(function (formulario) {
+    var select = formulario.querySelector('.js-estado-bautismo-select');
+
+    if (select) {
+      select.addEventListener('change', function () {
+        actualizarFechaBautismo(formulario);
+      });
+    }
+
+    actualizarFechaBautismo(formulario);
+  });
+})();

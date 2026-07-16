@@ -614,7 +614,7 @@ if (in_array($accion, $accionesActualizar, true)) {
     exit;
 }
 
-if ($id <= 0 && $accion !== '' && !in_array($accion, ['asignar_cita_consejeria', 'actualizar_estado_conexion', 'actualizar_estado_presentacion'], true)) {
+if ($id <= 0 && $accion !== '' && !in_array($accion, ['asignar_cita_consejeria', 'actualizar_estado_conexion', 'actualizar_estado_presentacion', 'actualizar_estado_bautismo'], true)) {
     header('Location: ' . $redireccion);
     exit;
 }
@@ -740,6 +740,35 @@ if ($accion === 'actualizar_estado_conexion') {
     }
 
     header('Location: ' . $redireccion);
+    exit;
+}
+
+if ($accion === 'actualizar_estado_bautismo') {
+    if (!puedeGestionarEstadoBautismo(obtenerUsuarioActual()['rol'])) {
+        header('Location: ' . $urlInicio);
+        exit;
+    }
+
+    if ($id <= 0) {
+        header('Location: ' . $redireccion);
+        exit;
+    }
+
+    $estado = trim((string) ($_POST['estado_bautismo'] ?? ''));
+    $fechaBautismo = trim((string) ($_POST['fecha_bautismo'] ?? ''));
+    $rol = obtenerUsuarioActual()['rol'];
+
+    try {
+        actualizarEstadoBautismoInscripcion($id, $estado, $fechaBautismo !== '' ? $fechaBautismo : null, $rol);
+    } catch (InvalidArgumentException $e) {
+        header('Location: ' . $redireccion . $sepRedireccion . 'error=' . urlencode($e->getMessage()));
+        exit;
+    } catch (PDOException $e) {
+        header('Location: ' . $redireccion . $sepRedireccion . 'error=' . urlencode('No se pudo actualizar el estado de bautismo.'));
+        exit;
+    }
+
+    header('Location: ' . $redireccion . $sepRedireccion . 'actualizado=1');
     exit;
 }
 

@@ -186,11 +186,15 @@ function setupDatabase(): array
                 zona VARCHAR(50) DEFAULT NULL,
                 direccion VARCHAR(255) DEFAULT NULL,
                 contactado TINYINT(1) NOT NULL DEFAULT 0,
+                estado_bautismo VARCHAR(20) NOT NULL DEFAULT "ingresado",
+                fecha_bautismo DATE DEFAULT NULL,
+                estado_bautismo_bloqueado TINYINT(1) NOT NULL DEFAULT 0,
                 ip_cliente VARCHAR(45) DEFAULT NULL,
                 agente_usuario VARCHAR(255) DEFAULT NULL,
                 creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_tipo_formulario (tipo_formulario),
-                INDEX idx_creado_en (creado_en)
+                INDEX idx_creado_en (creado_en),
+                INDEX idx_estado_bautismo (estado_bautismo)
             ) ENGINE=InnoDB'
         );
 
@@ -237,6 +241,7 @@ function setupDatabase(): array
         migrarTablaTransporteAniversario($pdo);
         migrarTablaRolPermisos($pdo);
         migrarColumnasEspanol($pdo);
+        asegurarColumnasBautismoInscripciones($pdo);
 
         $adminHash = '$2y$12$IAeuaVZ.DxfMzkDongA4ouBkTyb5fVAp0gSsKiqu2EuTJAFBT7TZW';
         $stmt = $pdo->prepare('SELECT id FROM usuarios WHERE usuario = ?');
@@ -397,6 +402,27 @@ function asegurarColumnasTransporteAniversario(PDO $pdo): void
 
     if (!$existe) {
         $pdo->exec('ALTER TABLE transporte_aniversario ADD COLUMN edad TINYINT UNSIGNED NULL AFTER telefono');
+    }
+}
+
+function asegurarColumnasBautismoInscripciones(PDO $pdo): void
+{
+    if (!tablaExiste($pdo, 'inscripciones')) {
+        return;
+    }
+
+    $columnas = [
+        'estado_bautismo' => 'ADD COLUMN estado_bautismo VARCHAR(20) NOT NULL DEFAULT "ingresado" AFTER contactado',
+        'fecha_bautismo'  => 'ADD COLUMN fecha_bautismo DATE NULL AFTER estado_bautismo',
+        'estado_bautismo_bloqueado' => 'ADD COLUMN estado_bautismo_bloqueado TINYINT(1) NOT NULL DEFAULT 0 AFTER fecha_bautismo',
+    ];
+
+    foreach ($columnas as $nombre => $sqlAlter) {
+        $existe = $pdo->query("SHOW COLUMNS FROM inscripciones LIKE '$nombre'")->fetch();
+
+        if (!$existe) {
+            $pdo->exec("ALTER TABLE inscripciones $sqlAlter");
+        }
     }
 }
 

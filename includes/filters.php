@@ -81,6 +81,11 @@ function construirSqlInscripciones(array $tiposFormulario, ?string $tipoUnico, a
         $parametros[] = (int) $filtros['contactado'];
     }
 
+    if ($filtros['estado'] !== '' && $tipoUnico === 'bautismo') {
+        $condiciones[] = 'estado_bautismo = ?';
+        $parametros[] = $filtros['estado'];
+    }
+
     $sql = 'SELECT * FROM inscripciones WHERE ' . implode(' AND ', $condiciones)
         . ' ORDER BY creado_en DESC, id DESC';
 
@@ -281,6 +286,31 @@ function esEstadoPresentacionValido(string $estado): bool
 function etiquetaEstadoPresentacion(string $estado): string
 {
     $etiquetas = obtenerEtiquetasEstadosPresentacion();
+
+    return $etiquetas[$estado] ?? $estado;
+}
+
+function obtenerEstadosBautismo(): array
+{
+    return ['ingresado', 'bautizado'];
+}
+
+function obtenerEtiquetasEstadosBautismo(): array
+{
+    return [
+        'ingresado'  => 'Ingresado',
+        'bautizado'  => 'Bautizado',
+    ];
+}
+
+function esEstadoBautismoValido(string $estado): bool
+{
+    return in_array($estado, obtenerEstadosBautismo(), true);
+}
+
+function etiquetaEstadoBautismo(string $estado): string
+{
+    $etiquetas = obtenerEtiquetasEstadosBautismo();
 
     return $etiquetas[$estado] ?? $estado;
 }

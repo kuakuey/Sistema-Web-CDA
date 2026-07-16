@@ -116,64 +116,66 @@
   'use strict';
 
   function enviarFormularioBautismo(formulario) {
-    var select = formulario.querySelector('.js-estado-bautismo-select');
-    var fecha = formulario.querySelector('.js-fecha-bautismo');
-
-    if (!select) {
+    if (!formulario) {
       return;
-    }
-
-    if (select.value === 'bautizado') {
-      if (!fecha || !fecha.value) {
-        if (fecha) {
-          fecha.focus();
-        }
-        return;
-      }
     }
 
     formulario.submit();
   }
 
-  function actualizarFechaBautismo(formulario) {
-    var select = formulario.querySelector('.js-estado-bautismo-select');
-    var fecha = formulario.querySelector('.js-fecha-bautismo');
+  window.cdaEstadoBautismoCambio = function (select) {
+    var formulario = select && select.form;
 
-    if (!select || !fecha) {
+    if (!formulario) {
       return;
     }
 
-    var esBautizado = select.value === 'bautizado';
-    fecha.style.display = esBautizado ? '' : 'none';
-    fecha.required = esBautizado;
-
-    if (!esBautizado) {
-      fecha.value = '';
-    }
-  }
-
-  document.querySelectorAll('.js-form-estado-bautismo').forEach(function (formulario) {
-    var select = formulario.querySelector('.js-estado-bautismo-select');
     var fecha = formulario.querySelector('.js-fecha-bautismo');
-
-    if (select) {
-      select.addEventListener('change', function () {
-        actualizarFechaBautismo(formulario);
-
-        if (select.value === 'ingresado') {
-          enviarFormularioBautismo(formulario);
-        }
-      });
-    }
+    var esBautizado = select.value === 'bautizado';
 
     if (fecha) {
-      fecha.addEventListener('change', function () {
-        if (select && select.value === 'bautizado' && fecha.value) {
-          enviarFormularioBautismo(formulario);
+      fecha.style.display = esBautizado ? '' : 'none';
+
+      if (!esBautizado) {
+        fecha.value = '';
+        enviarFormularioBautismo(formulario);
+        return;
+      }
+
+      if (fecha.value) {
+        enviarFormularioBautismo(formulario);
+        return;
+      }
+
+      fecha.focus();
+
+      if (typeof fecha.showPicker === 'function') {
+        try {
+          fecha.showPicker();
+        } catch (error) {
+          // Algunos navegadores bloquean showPicker fuera de un gesto directo.
         }
-      });
+      }
+
+      return;
     }
 
-    actualizarFechaBautismo(formulario);
-  });
+    if (!esBautizado) {
+      enviarFormularioBautismo(formulario);
+    }
+  };
+
+  window.cdaFechaBautismoCambio = function (input) {
+    var formulario = input && input.form;
+
+    if (!formulario) {
+      return;
+    }
+
+    var select = formulario.querySelector('.js-estado-bautismo-select');
+
+    if (select && select.value === 'bautizado' && input.value) {
+      enviarFormularioBautismo(formulario);
+    }
+  };
 })();

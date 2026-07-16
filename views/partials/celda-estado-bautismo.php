@@ -12,12 +12,16 @@ $formId = 'estado-bautismo-' . (int) $fila['id'];
 $puedeVolverIngresado = $esSuperadmin || $estado !== 'bautizado';
 ?>
 <?php if ($puedeCambiar): ?>
-<form method="POST" action="acciones.php" class="m-0 js-form-estado-bautismo" id="<?= htmlspecialchars($formId) ?>">
+<form method="POST" action="acciones.php" class="m-0 js-form-estado-bautismo" id="<?= htmlspecialchars($formId) ?>" novalidate data-sin-bloqueo="1">
   <input type="hidden" name="accion" value="actualizar_estado_bautismo">
   <input type="hidden" name="id" value="<?= (int) $fila['id'] ?>">
   <input type="hidden" name="redireccion" value="<?= htmlspecialchars($urlRedireccion) ?>">
   <div class="d-flex flex-column gap-1" style="min-width: 10rem;">
-    <select name="estado_bautismo" class="form-select form-select-sm js-estado-bautismo-select">
+    <select
+      name="estado_bautismo"
+      class="form-select form-select-sm js-estado-bautismo-select"
+      onchange="cdaEstadoBautismoCambio(this)"
+    >
       <?php if ($puedeVolverIngresado): ?>
       <option value="ingresado" <?= $estado === 'ingresado' ? 'selected' : '' ?>>Ingresado</option>
       <?php endif; ?>
@@ -30,6 +34,8 @@ $puedeVolverIngresado = $esSuperadmin || $estado !== 'bautizado';
       value="<?= htmlspecialchars((string) ($fila['fecha_bautismo'] ?? '')) ?>"
       max="<?= date('Y-m-d') ?>"
       style="<?= $estado === 'bautizado' ? '' : 'display:none' ?>"
+      onchange="cdaFechaBautismoCambio(this)"
+      oninput="cdaFechaBautismoCambio(this)"
     >
   </div>
 </form>

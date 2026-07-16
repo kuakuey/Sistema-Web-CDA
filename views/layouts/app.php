@@ -30,7 +30,11 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="js/theme.js"></script>
-  <script src="js/app.js"></script>
+  <?php
+  $appJs = dirname(__DIR__, 2) . '/js/app.js';
+  $appJsVersion = is_file($appJs) ? (string) filemtime($appJs) : '1';
+  ?>
+  <script src="js/app.js?v=<?= htmlspecialchars($appJsVersion) ?>"></script>
   <?php
   $sweetalertJs = dirname(__DIR__, 2) . '/js/sweetalert-app.js';
   $sweetalertJsVersion = is_file($sweetalertJs) ? (string) filemtime($sweetalertJs) : '1';

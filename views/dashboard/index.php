@@ -305,6 +305,9 @@
     <?php
     $modalesDetalle = [];
     $modalesEditar = [];
+    $mostrarNumero = false;
+    $layoutPresentacion = true;
+    $etiquetaFecha = 'Fecha de registro';
     ?>
     <div class="table-responsive">
       <table class="table table-hover table-dashboard mb-0 align-middle">
@@ -319,7 +322,6 @@
         </thead>
         <tbody>
           <?php foreach ($registros as $indice => $fila):
-            $numeroRegistro = $offsetRegistros + $indice + 1;
             $modalId = 'detalle-presentacion-' . (int) $fila['id'];
             $modalesDetalle[] = [
                 'id'     => $modalId,
@@ -337,9 +339,7 @@
             }
           ?>
           <tr>
-            <td class="text-center text-muted"><?= $numeroRegistro ?></td>
             <td><?= htmlspecialchars($fila['nombre_presentado']) ?></td>
-            <td><?= htmlspecialchars(formatearFechaTabla($fila['creado_en'])) ?></td>
             <td><?= enlacesWhatsAppPresentacion($fila) ?></td>
             <td>
               <?php
@@ -347,6 +347,8 @@
               include __DIR__ . '/../partials/celda-estado-presentacion.php';
               ?>
             </td>
+            <td class="text-muted"><?= htmlspecialchars(formatearFechaTabla($fila['fecha_presentacion'] ?? null)) ?></td>
+            <td><?= htmlspecialchars(formatearFechaTabla($fila['creado_en'])) ?></td>
             <td class="text-end">
               <?php
               $eliminarAccion = 'eliminar_presentacion';

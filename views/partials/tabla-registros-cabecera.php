@@ -4,7 +4,7 @@
  *
  * Variables: $mostrarTipo, $mostrarValor, $mostrarObservacion, $mostrarEstado,
  *            $mostrarTelefono (bool, default true), $mostrarNumero (bool, default true),
- *            $layoutBautismo (bool), $etiquetaFecha (string, default Fecha)
+ *            $layoutBautismo (bool), $layoutPresentacion (bool), $etiquetaFecha (string, default Fecha)
  */
 $mostrarTipo = !empty($mostrarTipo);
 $mostrarValor = !empty($mostrarValor);
@@ -13,13 +13,19 @@ $mostrarEstado = !empty($mostrarEstado);
 $mostrarTelefono = !isset($mostrarTelefono) || !empty($mostrarTelefono);
 $mostrarNumero = !isset($mostrarNumero) || !empty($mostrarNumero);
 $layoutBautismo = !empty($layoutBautismo);
+$layoutPresentacion = !empty($layoutPresentacion);
 $etiquetaFecha = $etiquetaFecha ?? 'Fecha';
 ?>
 <tr>
   <?php if ($mostrarNumero): ?><th class="text-center col-numero">#</th><?php endif; ?>
   <?php if ($mostrarTipo): ?><th>Tipo</th><?php endif; ?>
   <th>Nombre</th>
-  <?php if ($layoutBautismo): ?>
+  <?php if ($layoutPresentacion): ?>
+  <th>Contactos</th>
+  <?php if ($mostrarEstado): ?><th>Estado</th><?php endif; ?>
+  <th>Fecha de Presentación</th>
+  <th><?= htmlspecialchars($etiquetaFecha) ?></th>
+  <?php elseif ($layoutBautismo): ?>
   <?php if ($mostrarTelefono): ?><th>Teléfono</th><?php endif; ?>
   <?php if ($mostrarEstado): ?><th>Estado</th><?php endif; ?>
   <th>Fecha de bautizo</th>

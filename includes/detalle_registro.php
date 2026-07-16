@@ -104,6 +104,10 @@ function construirDetallePresentacion(array $fila, array $etiquetasEstados): arr
             'etiqueta' => 'Estado',
             'valor'    => $etiquetasEstados[$fila['estado'] ?? ''] ?? ($fila['estado'] ?? '—'),
         ],
+        [
+            'etiqueta' => 'Fecha de presentación',
+            'valor'    => formatearFechaTabla($fila['fecha_presentacion'] ?? null),
+        ],
     ];
 
     return array_merge($filas, filasMetaRegistro($fila));
@@ -321,14 +325,16 @@ function enlaceWhatsApp(?string $telefono, ?string $etiqueta = null): string
 function enlacesWhatsAppPresentacion(array $fila): string
 {
     $partes = [];
-    $papa = trim((string) ($fila['telefono_papa'] ?? ''));
-    $mama = trim((string) ($fila['telefono_mama'] ?? ''));
+    $telefonoPapa = trim((string) ($fila['telefono_papa'] ?? ''));
+    $telefonoMama = trim((string) ($fila['telefono_mama'] ?? ''));
+    $nombrePadre = trim((string) ($fila['nombre_padre'] ?? ''));
+    $nombreMadre = trim((string) ($fila['nombre_madre'] ?? ''));
 
-    if ($papa !== '') {
-        $partes[] = enlaceWhatsApp($papa, 'Papá: ' . $papa);
+    if ($telefonoPapa !== '') {
+        $partes[] = enlaceWhatsApp($telefonoPapa, $nombrePadre !== '' ? $nombrePadre : 'Papá');
     }
-    if ($mama !== '') {
-        $partes[] = enlaceWhatsApp($mama, 'Mamá: ' . $mama);
+    if ($telefonoMama !== '') {
+        $partes[] = enlaceWhatsApp($telefonoMama, $nombreMadre !== '' ? $nombreMadre : 'Mamá');
     }
 
     return $partes ? implode('<br>', $partes) : '—';

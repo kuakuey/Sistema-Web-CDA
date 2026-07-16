@@ -110,6 +110,19 @@ $fila = $filaEditar;
               <label class="form-label">Teléfono mamá <span class="text-danger">*</span></label>
               <input type="tel" class="form-control" name="telefono_mama" required maxlength="30" value="<?= htmlspecialchars($fila['telefono_mama'] ?? '') ?>">
             </div>
+            <?php if (($fila['estado'] ?? '') === 'presentado'): ?>
+            <div class="col-md-6">
+              <label class="form-label">Estado</label>
+              <p class="mb-0">
+                <span class="badge bg-success">Presentado</span>
+              </p>
+              <input type="hidden" name="estado" value="presentado">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Fecha de presentación</label>
+              <p class="mb-0"><?= htmlspecialchars(formatearFechaTabla($fila['fecha_presentacion'] ?? null)) ?></p>
+            </div>
+            <?php else: ?>
             <div class="col-md-6">
               <label class="form-label">Estado <span class="text-danger">*</span></label>
               <select class="form-select" name="estado" required>
@@ -120,6 +133,7 @@ $fila = $filaEditar;
                 <?php endforeach; ?>
               </select>
             </div>
+            <?php endif; ?>
           </div>
 
           <?php elseif ($tipoEditar === 'ofrenda'): ?>

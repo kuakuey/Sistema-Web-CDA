@@ -280,13 +280,49 @@ function eliminarPresentacionNino(int $id): bool
     return $stmt->execute([$id]) && $stmt->rowCount() > 0;
 }
 
+function resolverFechaPresentacionNino(string $estadoNuevo, string $estadoActual, ?string $fechaActual): ?string
+{
+    if ($estadoNuevo !== 'presentado') {
+        return null;
+    }
+
+    if ($estadoActual === 'presentado' && $fechaActual !== null && $fechaActual !== '') {
+        return $fechaActual;
+    }
+
+    return date('Y-m-d');
+}
+
 function actualizarPresentacionNino(int $id, array $datos): bool
 {
+    require_once __DIR__ . '/filters.php';
+
+    $estadoNuevo = trim((string) ($datos['estado'] ?? ''));
+
+    if (!esEstadoPresentacionValido($estadoNuevo)) {
+        throw new InvalidArgumentException('Estado no válido.');
+    }
+
     $pdo = getConnection();
+    $stmtActual = $pdo->prepare('SELECT estado, fecha_presentacion FROM presentaciones_ninos WHERE id = ?');
+    $stmtActual->execute([$id]);
+    $actual = $stmtActual->fetch();
+
+    if (!$actual) {
+        throw new InvalidArgumentException('Registro de presentación no encontrado.');
+    }
+
+    $fechaPresentacion = resolverFechaPresentacionNino(
+        $estadoNuevo,
+        (string) ($actual['estado'] ?? ''),
+        $actual['fecha_presentacion'] ?? null
+    );
+
     $stmt = $pdo->prepare(
         'UPDATE presentaciones_ninos SET
             nombre_padre = ?, nombre_madre = ?, nombre_presentado = ?, fecha_nacimiento = ?,
-            telefono_papa = ?, telefono_mama = ?, estado = ?, actualizado_en = NOW()
+            telefono_papa = ?, telefono_mama = ?, estado = ?, fecha_presentacion = ?,
+            actualizado_en = NOW()
          WHERE id = ?'
     );
 
@@ -297,7 +333,8 @@ function actualizarPresentacionNino(int $id, array $datos): bool
         $datos['fecha_nacimiento'],
         trim($datos['telefono_papa']),
         trim($datos['telefono_mama']),
-        trim($datos['estado']),
+        $estadoNuevo,
+        $fechaPresentacion,
         $id,
     ]);
 }
@@ -396,11 +433,25 @@ function actualizarEstadoPresentacionNino(int $id, string $estado): bool
     }
 
     $pdo = getConnection();
-    $stmt = $pdo->prepare(
-        'UPDATE presentaciones_ninos SET estado = ?, actualizado_en = NOW() WHERE id = ?'
+    $stmtActual = $pdo->prepare('SELECT estado, fecha_presentacion FROM presentaciones_ninos WHERE id = ?');
+    $stmtActual->execute([$id]);
+    $actual = $stmtActual->fetch();
+
+    if (!$actual) {
+        throw new InvalidArgumentException('Registro de presentación no encontrado.');
+    }
+
+    $fechaPresentacion = resolverFechaPresentacionNino(
+        $estado,
+        (string) ($actual['estado'] ?? ''),
+        $actual['fecha_presentacion'] ?? null
     );
 
-    return $stmt->execute([$estado, $id]) && $stmt->rowCount() > 0;
+    $stmt = $pdo->prepare(
+        'UPDATE presentaciones_ninos SET estado = ?, fecha_presentacion = ?, actualizado_en = NOW() WHERE id = ?'
+    );
+
+    return $stmt->execute([$estado, $fechaPresentacion, $id]) && $stmt->rowCount() > 0;
 }
 
 function actualizarEstadoConexionInscripcion(int $id, int $contactado): bool

@@ -208,6 +208,7 @@ function setupDatabase(): array
                 telefono_papa VARCHAR(30) NOT NULL,
                 telefono_mama VARCHAR(30) NOT NULL,
                 estado VARCHAR(20) NOT NULL DEFAULT "recibido",
+                fecha_presentacion DATE NULL,
                 ip_cliente VARCHAR(45) DEFAULT NULL,
                 agente_usuario VARCHAR(255) DEFAULT NULL,
                 creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -242,6 +243,7 @@ function setupDatabase(): array
         migrarTablaRolPermisos($pdo);
         migrarColumnasEspanol($pdo);
         asegurarColumnasBautismoInscripciones($pdo);
+        asegurarColumnasPresentacionesNinos($pdo);
 
         $adminHash = '$2y$12$IAeuaVZ.DxfMzkDongA4ouBkTyb5fVAp0gSsKiqu2EuTJAFBT7TZW';
         $stmt = $pdo->prepare('SELECT id FROM usuarios WHERE usuario = ?');
@@ -410,6 +412,27 @@ function asegurarColumnasTransporteAniversario(PDO $pdo): void
         if (!$existe) {
             $pdo->exec("ALTER TABLE transporte_aniversario $sqlAlter");
         }
+    }
+}
+
+function asegurarColumnasPresentacionesNinos(PDO $pdo): void
+{
+    if (!tablaExiste($pdo, 'presentaciones_ninos')) {
+        return;
+    }
+
+    $existe = $pdo->query("SHOW COLUMNS FROM presentaciones_ninos LIKE 'fecha_presentacion'")->fetch();
+
+    if (!$existe) {
+        $pdo->exec(
+            'ALTER TABLE presentaciones_ninos
+             ADD COLUMN fecha_presentacion DATE NULL AFTER estado'
+        );
+        $pdo->exec(
+            "UPDATE presentaciones_ninos
+             SET fecha_presentacion = DATE(COALESCE(actualizado_en, creado_en))
+             WHERE estado = 'presentado' AND fecha_presentacion IS NULL"
+        );
     }
 }
 

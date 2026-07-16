@@ -272,12 +272,11 @@ $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
         <th>Evento</th>
         <th>Nombre</th>
         <th>Numeración</th>
-        <th>Fecha</th>
         <th>Teléfono</th>
-        <th>Forma de pago</th>
         <th>Valor</th>
+        <th>Forma de pago</th>
         <th>Observación</th>
-        <th>Registró</th>
+        <th>Registro</th>
         <th>Registrado el</th>
       </tr>
     </thead>
@@ -287,10 +286,9 @@ $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
         <td><?= htmlspecialchars($registroEvento['evento_nombre'] ?? '—') ?></td>
         <td><?= htmlspecialchars($registroEvento['nombre']) ?></td>
         <td><?= htmlspecialchars($registroEvento['numeracion'] ?? '—') ?></td>
-        <td><?= htmlspecialchars(formatearFechaInforme($registroEvento['fecha'])) ?></td>
         <td><?= htmlspecialchars($registroEvento['telefono']) ?></td>
-        <td><?= htmlspecialchars(etiquetaFormaPagoEvento($registroEvento['forma_pago'] ?? null)) ?></td>
         <td><strong><?= htmlspecialchars(formatearMonto((float) $registroEvento['valor'])) ?></strong></td>
+        <td><?= htmlspecialchars(etiquetaFormaPagoEvento($registroEvento['forma_pago'] ?? null)) ?></td>
         <td><?= $registroEvento['observacion'] ? htmlspecialchars($registroEvento['observacion']) : '—' ?></td>
         <td><?= htmlspecialchars($registroEvento['registrado_por_nombre'] ?? '—') ?></td>
         <td><?= htmlspecialchars(formatearFechaHora($registroEvento['creado_en'])) ?></td>

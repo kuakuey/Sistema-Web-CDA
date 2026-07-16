@@ -109,6 +109,9 @@
             <button type="button" class="btn btn-success js-descargar-informe" data-formato="excel">
               <i class="bi bi-file-earmark-excel me-1"></i>Excel
             </button>
+            <a href="generar-informe.php" class="btn btn-outline-secondary">
+              <i class="bi bi-x-circle me-1"></i>Limpiar filtros
+            </a>
           </div>
         </div>
       </form>

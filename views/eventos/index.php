@@ -59,13 +59,6 @@
     </a>
   </li>
   <?php endif; ?>
-  <?php if (!empty($puedeVerInforme)): ?>
-  <li class="nav-item" role="presentation">
-    <a class="nav-link <?= $pestaña === 'informe' ? 'active' : '' ?>" href="eventos.php?pestaña=informe" role="tab">
-      <i class="bi bi-file-earmark-pdf me-1"></i>Informe
-    </a>
-  </li>
-  <?php endif; ?>
 </ul>
 
 <?php if ($pestaña === 'tabla'): ?>
@@ -321,46 +314,6 @@
         <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Agregar evento</button>
       </div>
     </form>
-  </div>
-</div>
-
-<?php elseif ($pestaña === 'informe' && !empty($puedeVerInforme)): ?>
-<div class="card border-0 shadow-sm">
-  <div class="card-header bg-white py-3">
-    <h3 class="h6 mb-0"><i class="bi bi-file-earmark-pdf me-2"></i>Informe de evento</h3>
-  </div>
-  <div class="card-body">
-    <p class="text-muted small mb-4">Selecciona un evento para descargar un PDF con todos los participantes registrados.</p>
-    <?php if (empty($eventos)): ?>
-    <div class="alert alert-warning mb-0">
-      <i class="bi bi-exclamation-triangle me-1"></i>
-      No hay eventos en el catálogo. Crea un evento primero.
-    </div>
-    <?php else: ?>
-    <form method="GET" action="eventos.php" class="row g-3 align-items-end">
-      <input type="hidden" name="pestaña" value="informe">
-      <input type="hidden" name="generar" value="1">
-      <div class="col-md-6 col-lg-5">
-        <label class="form-label" for="evento_informe">Evento <span class="text-danger">*</span></label>
-        <select class="form-select" id="evento_informe" name="evento_id" required>
-          <option value="">Seleccione evento…</option>
-          <?php foreach ($eventos as $evento): ?>
-          <option
-            value="<?= (int) $evento['id'] ?>"
-            <?= (int) ($eventoInformeSeleccionado ?? 0) === (int) $evento['id'] ? 'selected' : '' ?>
-          >
-            <?= htmlspecialchars($evento['nombre']) ?> (<?= (int) ($evento['total_registros'] ?? 0) ?> registro(s))
-          </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="col-md-auto">
-        <button type="submit" class="btn btn-primary">
-          <i class="bi bi-download me-1"></i>Descargar PDF
-        </button>
-      </div>
-    </form>
-    <?php endif; ?>
   </div>
 </div>
 

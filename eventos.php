@@ -38,10 +38,6 @@ if (puedeVerCatalogoEventos($rol)) {
     $pestañasPermitidas[] = 'catalogo';
 }
 
-if (puedeVerInformeEventos($rol)) {
-    $pestañasPermitidas[] = 'informe';
-}
-
 if ($pestañasPermitidas === []) {
     header('Location: ' . obtenerUrlInicioPorRol($rol));
     exit;
@@ -49,26 +45,6 @@ if ($pestañasPermitidas === []) {
 
 if (!in_array($pestaña, $pestañasPermitidas, true)) {
     $pestaña = $pestañasPermitidas[0];
-}
-
-if (isset($_GET['generar']) && $_GET['generar'] === '1') {
-    if (!puedeVerInformeEventos($rol)) {
-        header('Location: eventos.php?pestaña=informe&error=' . urlencode('No tienes permiso para generar informes.'));
-        exit;
-    }
-
-    try {
-        require_once 'includes/informe_evento_pdf.php';
-        $informe = generarInformeEvento((int) ($_GET['evento_id'] ?? 0));
-        enviarInformeEventoPdf($informe);
-        exit;
-    } catch (InvalidArgumentException $e) {
-        header('Location: eventos.php?pestaña=informe&error=' . urlencode($e->getMessage()));
-        exit;
-    } catch (RuntimeException $e) {
-        header('Location: eventos.php?pestaña=informe&error=' . urlencode($e->getMessage()));
-        exit;
-    }
 }
 
 $filtros = parsearFiltrosRegistros($_GET);
@@ -180,8 +156,6 @@ view('eventos/index', [
     'puedeRegistrar'         => puedeRegistrarEventos($rol),
     'puedeVerTabla'          => puedeVerTablaEventos($rol),
     'puedeVerCatalogo'       => puedeVerCatalogoEventos($rol),
-    'puedeVerInforme'        => puedeVerInformeEventos($rol),
-    'eventoInformeSeleccionado' => isset($_GET['evento_id']) ? (int) $_GET['evento_id'] : 0,
     'eventos'                => $eventos,
     'eventosHabilitados'     => $eventosHabilitados,
     'registros'              => $registros,

@@ -100,11 +100,10 @@ $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
 
   <h1><?= htmlspecialchars(tituloSeccionInforme($seccionExportacion)) ?></h1>
   <p class="subtitulo">
-    Periodo de registro: <?= htmlspecialchars($informe['fecha_desde_etiqueta']) ?>
-    al <?= htmlspecialchars($informe['fecha_hasta_etiqueta']) ?>
+    Periodo de registro: <?= htmlspecialchars($informe['periodo_etiqueta'] ?? ($informe['fecha_desde_etiqueta'] . ' al ' . $informe['fecha_hasta_etiqueta'])) ?>
     · Jornada: <?= htmlspecialchars($informe['turno_etiqueta']) ?>
-    <?php if ($incluirOfrendas): ?>
-    · Estado: <?= htmlspecialchars($informe['estado_ofrenda_etiqueta'] ?? 'Todos') ?>
+    <?php if ($incluirEventos && ($informe['evento_id'] ?? 0) > 0): ?>
+    · Evento: <?= htmlspecialchars($informe['evento_etiqueta'] ?? '—') ?>
     <?php endif; ?>
     · Generado: <?= htmlspecialchars($informe['generado_en']) ?>
   </p>

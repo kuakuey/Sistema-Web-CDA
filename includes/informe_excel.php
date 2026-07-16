@@ -27,11 +27,12 @@ function enviarInformeExcel(array $informe, string $seccion = 'completo'): void
     echo "\xEF\xBB\xBF";
     echo '<html><head><meta charset="UTF-8"></head><body>';
     echo '<h2>' . htmlspecialchars(tituloSeccionInforme($seccion)) . '</h2>';
-    echo '<p>Periodo de registro: ' . htmlspecialchars($informe['fecha_desde_etiqueta'])
-        . ' al ' . htmlspecialchars($informe['fecha_hasta_etiqueta'])
-        . ' · Jornada: ' . htmlspecialchars($informe['turno_etiqueta'])
-        . ' · Estado: ' . htmlspecialchars($informe['estado_ofrenda_etiqueta'] ?? 'Todos')
-        . ' · Generado: ' . htmlspecialchars($informe['generado_en']) . '</p>';
+    echo '<p>Periodo de registro: ' . htmlspecialchars($informe['periodo_etiqueta'] ?? ($informe['fecha_desde_etiqueta'] . ' al ' . $informe['fecha_hasta_etiqueta']))
+        . ' · Jornada: ' . htmlspecialchars($informe['turno_etiqueta']);
+    if ($seccion === 'eventos' && ($informe['evento_id'] ?? 0) > 0) {
+        echo ' · Evento: ' . htmlspecialchars($informe['evento_etiqueta'] ?? '—');
+    }
+    echo ' · Generado: ' . htmlspecialchars($informe['generado_en']) . '</p>';
 
     if (in_array($seccion, ['completo', 'ofrendas'], true)) {
         echo '<h3>Resumen de ofrendas</h3>';

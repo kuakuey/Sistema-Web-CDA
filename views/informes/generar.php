@@ -1,7 +1,7 @@
 <div class="informe-page">
   <div class="mb-3">
     <h2 class="h4 mb-1">Generar informe</h2>
-    <p class="text-muted small mb-0">Descarga informes generales o por sección en PDF o Excel</p>
+    <p class="text-muted small mb-0">Configura los filtros, elige el tipo de informe y descárgalo en PDF o Excel</p>
   </div>
 
   <?php if ($error): ?>
@@ -16,31 +16,35 @@
   </div>
   <?php endif; ?>
 
-  <div class="card border-0 shadow-sm mb-4">
+  <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3">
-      <h3 class="h6 mb-0"><i class="bi bi-calendar-range me-2"></i>Filtros del informe</h3>
+      <h3 class="h6 mb-0"><i class="bi bi-file-earmark-bar-graph me-2"></i>Descargar informe</h3>
     </div>
     <div class="card-body">
-      <p class="text-muted small mb-3">
+      <p class="text-muted small mb-4">
         El informe filtra por la fecha en que se registró cada ofrenda, evento o valor adicional en el sistema,
-        no por la fecha de ofrenda o del evento.
+        no por la fecha de ofrenda o del evento. Si dejas vacías las fechas, se incluirán todos los registros.
       </p>
-      <form method="GET" action="generar-informe.php" class="row g-3 align-items-end" id="formInformeFiltros">
+
+      <form method="GET" action="generar-informe.php" class="row g-3" id="formInformeFiltros">
         <input type="hidden" name="generar" value="1">
-        <input type="hidden" name="seccion" id="informeSeccion" value="completo">
         <input type="hidden" name="formato" id="informeFormato" value="pdf">
 
-        <div class="col-md-3">
-          <label class="form-label" for="fecha_desde">Desde <span class="text-danger">*</span></label>
-          <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" required value="<?= htmlspecialchars($fechaDesde) ?>">
+        <div class="col-12">
+          <h4 class="h6 text-muted mb-0">Filtros</h4>
         </div>
 
-        <div class="col-md-3">
-          <label class="form-label" for="fecha_hasta">Hasta <span class="text-danger">*</span></label>
-          <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" required value="<?= htmlspecialchars($fechaHasta) ?>">
+        <div class="col-md-4">
+          <label class="form-label" for="fecha_desde">Desde</label>
+          <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="<?= htmlspecialchars($fechaDesde) ?>">
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-4">
+          <label class="form-label" for="fecha_hasta">Hasta</label>
+          <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="<?= htmlspecialchars($fechaHasta) ?>">
+        </div>
+
+        <div class="col-md-4">
           <label class="form-label" for="turno">Jornada</label>
           <select class="form-select" id="turno" name="turno">
             <?php foreach ($etiquetasTurno as $clave => $etiqueta): ?>
@@ -51,19 +55,8 @@
           </select>
         </div>
 
-        <div class="col-md-3">
-          <label class="form-label" for="estado">Estado (ofrendas)</label>
-          <select class="form-select" id="estado" name="estado">
-            <?php foreach ($etiquetasEstado as $clave => $etiqueta): ?>
-            <option value="<?= htmlspecialchars($clave) ?>" <?= $estado === $clave ? 'selected' : '' ?>>
-              <?= htmlspecialchars($etiqueta) ?>
-            </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-
-        <div class="col-md-6">
-          <div class="form-check mt-2">
+        <div class="col-12 js-campo-sin-entregar" style="<?= $seccion === 'ofrendas' ? '' : 'display:none' ?>">
+          <div class="form-check">
             <input
               class="form-check-input"
               type="checkbox"
@@ -77,50 +70,48 @@
             </label>
           </div>
         </div>
+
+        <div class="col-12">
+          <hr class="my-1">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label" for="seccion">Informe</label>
+          <select class="form-select" id="seccion" name="seccion">
+            <?php foreach ($etiquetasSeccionInforme as $clave => $etiqueta): ?>
+            <option value="<?= htmlspecialchars($clave) ?>" <?= $seccion === $clave ? 'selected' : '' ?>>
+              <?= htmlspecialchars($etiqueta) ?>
+            </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="col-md-4 js-campo-evento" style="<?= $seccion === 'eventos' ? '' : 'display:none' ?>">
+          <label class="form-label" for="evento_id">Evento</label>
+          <select class="form-select" id="evento_id" name="evento_id">
+            <option value="">Todos los eventos</option>
+            <?php foreach ($eventos ?? [] as $evento): ?>
+            <option
+              value="<?= (int) $evento['id'] ?>"
+              <?= (int) ($eventoId ?? 0) === (int) $evento['id'] ? 'selected' : '' ?>
+            >
+              <?= htmlspecialchars($evento['nombre']) ?> (<?= (int) ($evento['total_registros'] ?? 0) ?> registro(s))
+            </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <div class="d-flex flex-wrap gap-2 pt-2">
+            <button type="button" class="btn btn-primary js-descargar-informe" data-formato="pdf">
+              <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+            </button>
+            <button type="button" class="btn btn-success js-descargar-informe" data-formato="excel">
+              <i class="bi bi-file-earmark-excel me-1"></i>Excel
+            </button>
+          </div>
+        </div>
       </form>
-    </div>
-  </div>
-
-  <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3">
-      <h3 class="h6 mb-0"><i class="bi bi-download me-2"></i>Descargas</h3>
-    </div>
-    <div class="card-body">
-      <div class="mb-4">
-        <h4 class="h6 text-muted mb-2">Informe general</h4>
-        <div class="d-flex flex-wrap gap-2">
-          <button type="button" class="btn btn-primary btn-sm js-descargar-informe" data-seccion="completo" data-formato="pdf">
-            <i class="bi bi-file-earmark-pdf me-1"></i>PDF completo
-          </button>
-          <button type="button" class="btn btn-success btn-sm js-descargar-informe" data-seccion="completo" data-formato="excel">
-            <i class="bi bi-file-earmark-excel me-1"></i>Excel completo
-          </button>
-        </div>
-      </div>
-
-      <div class="row g-4">
-        <div class="col-md-4">
-          <h4 class="h6 mb-2">Ofrendas</h4>
-          <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-outline-primary btn-sm js-descargar-informe" data-seccion="ofrendas" data-formato="pdf">PDF</button>
-            <button type="button" class="btn btn-outline-success btn-sm js-descargar-informe" data-seccion="ofrendas" data-formato="excel">Excel</button>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <h4 class="h6 mb-2">Eventos</h4>
-          <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-outline-primary btn-sm js-descargar-informe" data-seccion="eventos" data-formato="pdf">PDF</button>
-            <button type="button" class="btn btn-outline-success btn-sm js-descargar-informe" data-seccion="eventos" data-formato="excel">Excel</button>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <h4 class="h6 mb-2">Valores adicionales</h4>
-          <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-outline-primary btn-sm js-descargar-informe" data-seccion="valores" data-formato="pdf">PDF</button>
-            <button type="button" class="btn btn-outline-success btn-sm js-descargar-informe" data-seccion="valores" data-formato="excel">Excel</button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -128,20 +119,38 @@
 <script>
 (function () {
   var formulario = document.getElementById('formInformeFiltros');
-  var campoSeccion = document.getElementById('informeSeccion');
   var campoFormato = document.getElementById('informeFormato');
+  var selectorSeccion = document.getElementById('seccion');
+  var campoEvento = document.querySelector('.js-campo-evento');
+  var campoSinEntregar = document.querySelector('.js-campo-sin-entregar');
+  var checkboxSinEntregar = document.getElementById('mostrar_sin_entregar');
 
-  if (!formulario || !campoSeccion || !campoFormato) {
+  if (!formulario || !campoFormato || !selectorSeccion) {
     return;
   }
 
+  function actualizarCamposDependientes() {
+    var seccion = selectorSeccion.value;
+
+    if (campoEvento) {
+      campoEvento.style.display = seccion === 'eventos' ? '' : 'none';
+    }
+
+    if (campoSinEntregar) {
+      var mostrarOfrendas = seccion === 'ofrendas';
+      campoSinEntregar.style.display = mostrarOfrendas ? '' : 'none';
+
+      if (!mostrarOfrendas && checkboxSinEntregar) {
+        checkboxSinEntregar.checked = false;
+      }
+    }
+  }
+
+  selectorSeccion.addEventListener('change', actualizarCamposDependientes);
+  actualizarCamposDependientes();
+
   document.querySelectorAll('.js-descargar-informe').forEach(function (boton) {
     boton.addEventListener('click', function () {
-      if (!formulario.reportValidity()) {
-        return;
-      }
-
-      campoSeccion.value = boton.getAttribute('data-seccion') || 'completo';
       campoFormato.value = boton.getAttribute('data-formato') || 'pdf';
       formulario.submit();
     });

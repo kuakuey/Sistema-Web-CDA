@@ -6,15 +6,33 @@ require_once __DIR__ . '/valores_adicionales.php';
 require_once __DIR__ . '/submissions.php';
 
 /**
- * @return array{desde: string, hasta: string}
+ * @return array{
+ *     desde: ?string,
+ *     hasta: ?string,
+ *     fecha_desde_etiqueta: string,
+ *     fecha_hasta_etiqueta: string,
+ *     periodo_etiqueta: string,
+ *     sin_filtro_fecha: bool
+ * }
  */
-function validarRangoFechasInforme(string $fechaDesde, string $fechaHasta): array
+function resolverRangoFechasInforme(string $fechaDesde, string $fechaHasta): array
 {
     $desde = trim($fechaDesde);
     $hasta = trim($fechaHasta);
 
+    if ($desde === '' && $hasta === '') {
+        return [
+            'desde'                  => null,
+            'hasta'                  => null,
+            'fecha_desde_etiqueta'   => '—',
+            'fecha_hasta_etiqueta'   => '—',
+            'periodo_etiqueta'       => 'Todos los registros',
+            'sin_filtro_fecha'       => true,
+        ];
+    }
+
     if ($desde === '' || $hasta === '') {
-        throw new InvalidArgumentException('Selecciona la fecha desde y la fecha hasta.');
+        throw new InvalidArgumentException('Indica ambas fechas (desde y hasta) o déjalas vacías para descargar todo.');
     }
 
     $dtDesde = DateTime::createFromFormat('Y-m-d', $desde);
@@ -28,7 +46,54 @@ function validarRangoFechasInforme(string $fechaDesde, string $fechaHasta): arra
         throw new InvalidArgumentException('La fecha desde no puede ser posterior a la fecha hasta.');
     }
 
-    return ['desde' => $desde, 'hasta' => $hasta];
+    return [
+        'desde'                  => $desde,
+        'hasta'                  => $hasta,
+        'fecha_desde_etiqueta'   => formatearFechaInforme($desde),
+        'fecha_hasta_etiqueta'   => formatearFechaInforme($hasta),
+        'periodo_etiqueta'       => formatearFechaInforme($desde) . ' al ' . formatearFechaInforme($hasta),
+        'sin_filtro_fecha'       => false,
+    ];
+}
+
+/**
+ * @deprecated Usar resolverRangoFechasInforme()
+ * @return array{desde: string, hasta: string}
+ */
+function validarRangoFechasInforme(string $fechaDesde, string $fechaHasta): array
+{
+    $rango = resolverRangoFechasInforme($fechaDesde, $fechaHasta);
+
+    if ($rango['sin_filtro_fecha']) {
+        throw new InvalidArgumentException('Selecciona la fecha desde y la fecha hasta.');
+    }
+
+    return ['desde' => (string) $rango['desde'], 'hasta' => (string) $rango['hasta']];
+}
+
+function obtenerEtiquetasSeccionInforme(): array
+{
+    return [
+        'completo' => 'General',
+        'ofrendas' => 'Ofrendas',
+        'valores'  => 'Valores adicionales',
+        'eventos'  => 'Eventos',
+    ];
+}
+
+/**
+ * @return array{0: string, 1: array<int, string>}
+ */
+function construirCondicionFechaRegistro(?string $fechaDesde, ?string $fechaHasta, string $columna = 'creado_en'): array
+{
+    if ($fechaDesde === null || $fechaHasta === null) {
+        return ['1 = 1', []];
+    }
+
+    return [
+        $columna . ' >= ? AND ' . $columna . ' <= ?',
+        [$fechaDesde . ' 00:00:00', $fechaHasta . ' 23:59:59'],
+    ];
 }
 
 function normalizarTurnoInforme(string $turno): string
@@ -137,18 +202,16 @@ function construirCondicionHoraTurno(string $turno): array
 /**
  * @return array<int, array<string, mixed>>
  */
-function obtenerOfrendasPorRangoRegistro(string $fechaDesde, string $fechaHasta, string $turno = 'todos'): array
+function obtenerOfrendasPorRangoRegistro(?string $fechaDesde, ?string $fechaHasta, string $turno = 'todos'): array
 {
     $pdo = getConnection();
+    [$condicionFecha, $parametrosFecha] = construirCondicionFechaRegistro($fechaDesde, $fechaHasta);
     [$condicionHora, $parametrosHora] = construirCondicionHoraTurno($turno);
     $sql = 'SELECT * FROM ofrendas
-         WHERE creado_en >= ? AND creado_en <= ?
-         AND ' . $condicionHora .
+         WHERE ' . $condicionFecha .
+        ' AND ' . $condicionHora .
         ' ORDER BY fecha_ofrenda ASC, casa_vida ASC, id ASC';
-    $parametros = array_merge(
-        [$fechaDesde . ' 00:00:00', $fechaHasta . ' 23:59:59'],
-        $parametrosHora
-    );
+    $parametros = array_merge($parametrosFecha, $parametrosHora);
     $stmt = $pdo->prepare($sql);
     $stmt->execute($parametros);
 
@@ -158,20 +221,18 @@ function obtenerOfrendasPorRangoRegistro(string $fechaDesde, string $fechaHasta,
 /**
  * @return array<int, array<string, mixed>>
  */
-function obtenerValoresAdicionalesPorRangoRegistro(string $fechaDesde, string $fechaHasta, string $turno = 'todos'): array
+function obtenerValoresAdicionalesPorRangoRegistro(?string $fechaDesde, ?string $fechaHasta, string $turno = 'todos'): array
 {
     $pdo = getConnection();
+    [$condicionFecha, $parametrosFecha] = construirCondicionFechaRegistro($fechaDesde, $fechaHasta, 'v.creado_en');
     [$condicionHora, $parametrosHora] = construirCondicionHoraTurno($turno);
     $condicionHora = str_replace('creado_en', 'v.creado_en', $condicionHora);
     $sql = sqlSelectValoresAdicionales() .
         " WHERE v.tipo != '" . TIPO_VALOR_EVENTOS_INTERNO . "'
-         AND v.creado_en >= ? AND v.creado_en <= ?
-         AND " . $condicionHora .
+         AND " . $condicionFecha .
+        ' AND ' . $condicionHora .
         ' ORDER BY v.creado_en DESC, v.id DESC';
-    $parametros = array_merge(
-        [$fechaDesde . ' 00:00:00', $fechaHasta . ' 23:59:59'],
-        $parametrosHora
-    );
+    $parametros = array_merge($parametrosFecha, $parametrosHora);
     $stmt = $pdo->prepare($sql);
     $stmt->execute($parametros);
 
@@ -181,24 +242,36 @@ function obtenerValoresAdicionalesPorRangoRegistro(string $fechaDesde, string $f
 /**
  * @return array<int, array<string, mixed>>
  */
-function obtenerRegistrosEventosPorRangoRegistro(string $fechaDesde, string $fechaHasta, string $turno = 'todos'): array
-{
+function obtenerRegistrosEventosPorRangoRegistro(
+    ?string $fechaDesde,
+    ?string $fechaHasta,
+    string $turno = 'todos',
+    int $eventoId = 0
+): array {
     require_once __DIR__ . '/eventos.php';
 
     $pdo = getConnection();
+    [$condicionFecha, $parametrosFecha] = construirCondicionFechaRegistro($fechaDesde, $fechaHasta, 'v.creado_en');
     [$condicionHora, $parametrosHora] = construirCondicionHoraTurno($turno);
     $condicionHora = str_replace('creado_en', 'v.creado_en', $condicionHora);
+
+    $condiciones = [
+        'v.tipo = ?',
+        $condicionFecha,
+        $condicionHora,
+    ];
+    $parametros = array_merge([TIPO_VALOR_EVENTOS_INTERNO], $parametrosFecha, $parametrosHora);
+
+    if ($eventoId > 0) {
+        $condiciones[] = 'v.evento_id = ?';
+        $parametros[] = $eventoId;
+    }
+
     $sql = 'SELECT v.*, e.nombre AS evento_nombre
             FROM valores_adicionales v
             LEFT JOIN eventos e ON e.id = v.evento_id
-            WHERE v.tipo = ?
-              AND v.creado_en >= ? AND v.creado_en <= ?
-              AND ' . $condicionHora .
+            WHERE ' . implode(' AND ', $condiciones) .
         ' ORDER BY v.creado_en DESC, v.id DESC';
-    $parametros = array_merge(
-        [TIPO_VALOR_EVENTOS_INTERNO, $fechaDesde . ' 00:00:00', $fechaHasta . ' 23:59:59'],
-        $parametrosHora
-    );
     $stmt = $pdo->prepare($sql);
     $stmt->execute($parametros);
 
@@ -281,13 +354,15 @@ function generarInformeOfrendasYValores(
     string $fechaHasta,
     bool $mostrarSinEntregar = false,
     string $turno = 'todos',
-    string $estadoOfrenda = 'todos'
+    string $estadoOfrenda = 'todos',
+    int $eventoId = 0
 ): array {
-    $rango = validarRangoFechasInforme($fechaDesde, $fechaHasta);
+    $rango = resolverRangoFechasInforme($fechaDesde, $fechaHasta);
     $desde = $rango['desde'];
     $hasta = $rango['hasta'];
     $turno = normalizarTurnoInforme($turno);
     $estadoOfrenda = normalizarEstadoInforme($estadoOfrenda);
+    $eventoId = max(0, $eventoId);
 
     if ($estadoOfrenda === 'sin_entregar') {
         $mostrarSinEntregar = true;
@@ -297,7 +372,7 @@ function generarInformeOfrendasYValores(
 
     $casas = obtenerCasasVida();
     $ofrendas = obtenerOfrendasPorRangoRegistro($desde, $hasta, $turno);
-    $registrosEventos = obtenerRegistrosEventosPorRangoRegistro($desde, $hasta, $turno);
+    $registrosEventos = obtenerRegistrosEventosPorRangoRegistro($desde, $hasta, $turno, $eventoId);
     $valoresAdicionales = obtenerValoresAdicionalesPorRangoRegistro($desde, $hasta, $turno);
 
     $territorioPorCasaId = [];
@@ -398,17 +473,29 @@ function generarInformeOfrendasYValores(
         $casasNoDieron = [];
     }
 
+    $eventoEtiqueta = 'Todos los eventos';
+
+    if ($eventoId > 0) {
+        require_once __DIR__ . '/eventos.php';
+        $evento = obtenerEvento($eventoId);
+        $eventoEtiqueta = $evento ? (string) ($evento['nombre'] ?? 'Evento #' . $eventoId) : 'Evento #' . $eventoId;
+    }
+
     return [
-        'fecha_desde'          => $desde,
-        'fecha_hasta'          => $hasta,
-        'fecha_desde_etiqueta' => formatearFechaInforme($desde),
-        'fecha_hasta_etiqueta' => formatearFechaInforme($hasta),
+        'fecha_desde'          => $desde ?? 'todo',
+        'fecha_hasta'          => $hasta ?? 'todo',
+        'fecha_desde_etiqueta' => $rango['fecha_desde_etiqueta'],
+        'fecha_hasta_etiqueta' => $rango['fecha_hasta_etiqueta'],
+        'periodo_etiqueta'     => $rango['periodo_etiqueta'],
+        'sin_filtro_fecha'     => $rango['sin_filtro_fecha'],
         'generado_en'          => date('d/m/Y H:i'),
         'mostrar_sin_entregar' => $mostrarSinEntregar,
         'turno'                => $turno,
         'turno_etiqueta'       => etiquetaTurnoInforme($turno),
         'estado_ofrenda'       => $estadoOfrenda,
         'estado_ofrenda_etiqueta' => etiquetaEstadoInforme($estadoOfrenda),
+        'evento_id'            => $eventoId,
+        'evento_etiqueta'      => $eventoEtiqueta,
         'seccion_exportacion'  => 'completo',
         'resumen'              => [
             'total_casas'                   => count($casas),

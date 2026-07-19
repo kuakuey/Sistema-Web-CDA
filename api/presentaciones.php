@@ -100,4 +100,7 @@ try {
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['exito' => false, 'mensaje' => 'Error al procesar la solicitud.']);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['exito' => false, 'mensaje' => 'Error al procesar la solicitud.']);
 }

@@ -672,13 +672,3 @@ function listarPresentacionesNinosPorEstados(array $estados, int $limite = 300):
 
     return $stmt->fetchAll();
 }
-
-/**
- * @return array<string, mixed>
- */
-function formatearPresentacionParaApi(array $fila): array
-{
-    require_once __DIR__ . '/presentaciones_api.php';
-
-    return formatearPresentacionParaApi($fila);
-}

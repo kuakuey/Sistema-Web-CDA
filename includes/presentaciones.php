@@ -152,6 +152,38 @@ function formatearNombreRepresentantePresentacion(array $fila, int $numero): str
     return $parentesco . ': ' . $representante['nombre'];
 }
 
+function primerNombrePersona(?string $nombre): string
+{
+    $nombre = trim((string) $nombre);
+    if ($nombre === '') {
+        return '';
+    }
+
+    $partes = preg_split('/\s+/u', $nombre, 2);
+
+    return $partes[0] ?? $nombre;
+}
+
+/**
+ * @param array<string, mixed>|null $representante
+ * @return array<string, mixed>|null
+ */
+function acortarRepresentantePresentacionPublico(?array $representante): ?array
+{
+    if ($representante === null) {
+        return null;
+    }
+
+    $nombreCorto = primerNombrePersona($representante['nombre'] ?? '');
+    $parentescoEtiqueta = (string) ($representante['parentesco_etiqueta'] ?? 'Representante');
+    $representante['nombre'] = $nombreCorto;
+    $representante['etiqueta'] = $nombreCorto !== ''
+        ? $parentescoEtiqueta . ': ' . $nombreCorto
+        : '—';
+
+    return $representante;
+}
+
 /**
  * @param array<string, mixed> $datos
  * @return array<int, array{nombre_presentado: string, fecha_nacimiento: string}>

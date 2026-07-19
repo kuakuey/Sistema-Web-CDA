@@ -66,6 +66,18 @@ function formatearPresentacionPublicaParaApi(array $fila): array
     $presentacion = formatearPresentacionParaApi($fila);
     unset($presentacion['creado_en']);
 
+    $presentacion['representante_1'] = acortarRepresentantePresentacionPublico($presentacion['representante_1'] ?? null);
+    $presentacion['representante_2'] = acortarRepresentantePresentacionPublico($presentacion['representante_2'] ?? null);
+
+    $representantes = [];
+    if ($presentacion['representante_1']) {
+        $representantes[] = $presentacion['representante_1'];
+    }
+    if ($presentacion['representante_2']) {
+        $representantes[] = $presentacion['representante_2'];
+    }
+    $presentacion['representantes'] = $representantes;
+
     return $presentacion;
 }
 

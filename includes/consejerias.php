@@ -27,6 +27,9 @@ function etiquetaTipoConsejeria(string $tipo): string
 
 function insertarConsejeria(array $datos): int
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarCamposTextoOrdenado($datos, ['nombre_completo', 'registrado_por_nombre']);
+
     $pdo = getConnection();
 
     $stmt = $pdo->prepare(
@@ -79,6 +82,9 @@ function actualizarCitaConsejeria(int $id, ?string $fecha, ?string $hora): bool
 
 function actualizarConsejeria(int $id, array $datos): bool
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarCamposTextoOrdenado($datos, ['nombre_completo']);
+
     $pdo = getConnection();
 
     $fecha = trim((string) ($datos['cita_fecha'] ?? ''));

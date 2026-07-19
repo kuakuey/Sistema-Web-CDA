@@ -92,7 +92,9 @@ function etiquetaFormaPagoEvento(?string $formaPago): string
  */
 function normalizarDatosEventoCatalogo(array $datos): array
 {
-    $nombre = trim((string) ($datos['nombre'] ?? ''));
+    require_once __DIR__ . '/texto.php';
+
+    $nombre = normalizarTextoOrdenado($datos['nombre'] ?? '');
     $fecha = trim((string) ($datos['fecha'] ?? ''));
     $tipoCobro = trim(mb_strtolower((string) ($datos['tipo_cobro'] ?? 'pago')));
     $valor = isset($datos['valor']) ? (float) $datos['valor'] : 0;
@@ -126,12 +128,14 @@ function normalizarDatosEventoCatalogo(array $datos): array
  */
 function validarDatosRegistroEvento(array $entrada, ?array $evento = null): array
 {
+    require_once __DIR__ . '/texto.php';
+
     $eventoId = isset($entrada['evento_id']) ? (int) $entrada['evento_id'] : 0;
-    $nombre = trim((string) ($entrada['nombre'] ?? ''));
+    $nombre = normalizarTextoOrdenado($entrada['nombre'] ?? '');
     $fecha = trim((string) ($entrada['fecha'] ?? ''));
     $telefono = trim((string) ($entrada['telefono'] ?? ''));
     $valor = isset($entrada['valor']) ? (float) $entrada['valor'] : 0;
-    $observacion = trim((string) ($entrada['observacion'] ?? ''));
+    $observacion = normalizarTextoOrdenado($entrada['observacion'] ?? '');
     $numeracion = trim((string) ($entrada['numeracion'] ?? ''));
     $formaPago = normalizarFormaPagoEvento((string) ($entrada['forma_pago'] ?? ''));
 

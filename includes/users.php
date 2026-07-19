@@ -17,8 +17,10 @@ function obtenerTodosUsuarios(): array
 
 function crearUsuario(string $usuario, string $clave, string $nombre, string $rol): array
 {
+    require_once __DIR__ . '/texto.php';
+
     $usuario = trim($usuario);
-    $nombre  = trim($nombre);
+    $nombre  = normalizarTextoOrdenado($nombre);
 
     if ($usuario === '' || $clave === '') {
         return ['exito' => false, 'mensaje' => 'Usuario y contraseña son obligatorios.'];

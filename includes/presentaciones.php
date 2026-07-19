@@ -106,15 +106,17 @@ function mapearCamposLegacyRepresentantesPresentacion(array $datos): array
  */
 function normalizarRepresentantesPresentacion(array $datos): array
 {
+    require_once __DIR__ . '/texto.php';
+
     $datos = mapearCamposLegacyRepresentantesPresentacion($datos);
     $rep1 = [
         'parentesco' => trim((string) ($datos['representante_1_parentesco'] ?? '')),
-        'nombre'     => trim((string) ($datos['representante_1_nombre'] ?? '')),
+        'nombre'     => normalizarTextoOrdenado($datos['representante_1_nombre'] ?? ''),
         'telefono'   => trim((string) ($datos['representante_1_telefono'] ?? '')),
     ];
     $rep2 = [
         'parentesco' => trim((string) ($datos['representante_2_parentesco'] ?? '')),
-        'nombre'     => trim((string) ($datos['representante_2_nombre'] ?? '')),
+        'nombre'     => normalizarTextoOrdenado($datos['representante_2_nombre'] ?? ''),
         'telefono'   => trim((string) ($datos['representante_2_telefono'] ?? '')),
     ];
 
@@ -191,6 +193,7 @@ function acortarRepresentantePresentacionPublico(?array $representante): ?array
 function parsearPresentadosPresentacion(array $datos): array
 {
     require_once __DIR__ . '/submissions.php';
+    require_once __DIR__ . '/texto.php';
 
     if (isset($datos['presentados']) && is_array($datos['presentados'])) {
         $presentados = [];
@@ -202,7 +205,7 @@ function parsearPresentadosPresentacion(array $datos): array
                 continue;
             }
 
-            $nombre = trim((string) ($item['nombre'] ?? $item['nombre_presentado'] ?? ''));
+            $nombre = normalizarTextoOrdenado($item['nombre'] ?? $item['nombre_presentado'] ?? '');
             if ($nombre === '') {
                 $numero++;
                 continue;
@@ -229,7 +232,7 @@ function parsearPresentadosPresentacion(array $datos): array
         return $presentados;
     }
 
-    $nombre = trim((string) ($datos['nombre_presentado'] ?? ''));
+    $nombre = normalizarTextoOrdenado($datos['nombre_presentado'] ?? '');
     if ($nombre === '') {
         throw new InvalidArgumentException('Agrega al menos un presentado con nombre y fecha de nacimiento.');
     }

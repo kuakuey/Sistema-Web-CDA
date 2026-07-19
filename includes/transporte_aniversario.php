@@ -29,10 +29,12 @@ function formatearEdadTransporteAniversario($edad): string
  */
 function validarDatosTransporteAniversario(array $entrada): array
 {
-    $nombreCompleto = trim((string) ($entrada['nombre_completo'] ?? ''));
+    require_once __DIR__ . '/texto.php';
+
+    $nombreCompleto = normalizarTextoOrdenado($entrada['nombre_completo'] ?? '');
     $telefono = trim((string) ($entrada['telefono'] ?? ''));
     $edad = isset($entrada['edad']) ? (int) $entrada['edad'] : 0;
-    $observacion = trim((string) ($entrada['observacion'] ?? ''));
+    $observacion = normalizarTextoOrdenado($entrada['observacion'] ?? '');
     $poseeMovilizacion = !empty($entrada['posee_movilizacion']);
 
     if ($nombreCompleto === '' || $telefono === '') {
@@ -71,6 +73,9 @@ function validarDatosTransporteAniversario(array $entrada): array
 
 function insertarTransporteAniversario(array $datos): int
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarCamposTextoOrdenado($datos, ['registrado_por_nombre']);
+
     $pdo = getConnection();
 
     $stmt = $pdo->prepare(

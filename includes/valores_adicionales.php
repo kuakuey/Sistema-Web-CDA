@@ -131,9 +131,10 @@ function generarClaveTipoValor(string $etiqueta, ?int $excluirId = null): string
 
 function crearTipoValorAdicional(string $etiqueta): int
 {
+    require_once __DIR__ . '/texto.php';
     asegurarTablaTiposValorAdicional();
 
-    $etiqueta = trim($etiqueta);
+    $etiqueta = normalizarTextoOrdenado($etiqueta);
 
     if ($etiqueta === '') {
         throw new InvalidArgumentException('La etiqueta del tipo es obligatoria.');
@@ -151,9 +152,10 @@ function crearTipoValorAdicional(string $etiqueta): int
 
 function actualizarTipoValorAdicional(int $id, string $etiqueta): bool
 {
+    require_once __DIR__ . '/texto.php';
     asegurarTablaTiposValorAdicional();
 
-    $etiqueta = trim($etiqueta);
+    $etiqueta = normalizarTextoOrdenado($etiqueta);
 
     if ($id <= 0 || $etiqueta === '') {
         throw new InvalidArgumentException('Datos de tipo inválidos.');
@@ -252,6 +254,9 @@ function sqlSelectValoresAdicionales(): string
 
 function insertarValorAdicional(array $datos): int
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarCamposTextoOrdenado($datos, ['nombre', 'observacion', 'registrado_por_nombre']);
+
     $pdo = getConnection();
     asegurarColumnasValoresAdicionales($pdo);
 
@@ -289,6 +294,9 @@ function eliminarValorAdicional(int $id): bool
 
 function actualizarValorAdicional(int $id, array $datos): bool
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarCamposTextoOrdenado($datos, ['nombre', 'observacion']);
+
     $pdo = getConnection();
     asegurarColumnasValoresAdicionales($pdo);
 

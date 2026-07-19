@@ -16,6 +16,9 @@ function obtenerZonasConexion(): array
 
 function insertarInscripcion(string $tipoFormulario, array $datos): int
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarDatosPersona($datos);
+
     $pdo = getConnection();
     $estadoBautismo = $tipoFormulario === 'bautismo' ? 'ingresado' : 'ingresado';
 
@@ -44,6 +47,9 @@ function insertarInscripcion(string $tipoFormulario, array $datos): int
 
 function insertarPresentacionNino(array $datos): int
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarDatosPersona($datos);
+
     $pdo = getConnection();
 
     $stmt = $pdo->prepare(
@@ -324,6 +330,9 @@ function eliminarInscripcion(int $id): bool
 
 function actualizarInscripcion(int $id, array $datos): bool
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarDatosPersona($datos);
+
     $pdo = getConnection();
     $stmt = $pdo->prepare(
         'UPDATE inscripciones SET nombre = ?, apellido = ?, celular = ?, email = ?, zona = ?, direccion = ?, contactado = ? WHERE id = ?'
@@ -365,6 +374,8 @@ function resolverFechaPresentacionNino(string $estadoNuevo, string $estadoActual
 function actualizarPresentacionNino(int $id, array $datos): bool
 {
     require_once __DIR__ . '/filters.php';
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarDatosPersona($datos);
 
     $estadoNuevo = trim((string) ($datos['estado'] ?? ''));
 

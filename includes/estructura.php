@@ -21,6 +21,9 @@ function obtenerTerritorios(): array
 
 function crearTerritorio(string $nombre): int
 {
+    require_once __DIR__ . '/texto.php';
+    $nombre = normalizarTextoOrdenado($nombre);
+
     $pdo = getConnection();
     $maximo = (int) $pdo->query('SELECT COALESCE(MAX(orden), 0) FROM territorios')->fetchColumn();
 
@@ -34,6 +37,9 @@ function crearTerritorio(string $nombre): int
 
 function actualizarTerritorio(int $id, string $nombre): bool
 {
+    require_once __DIR__ . '/texto.php';
+    $nombre = normalizarTextoOrdenado($nombre);
+
     $pdo = getConnection();
     $stmt = $pdo->prepare('UPDATE territorios SET nombre = ? WHERE id = ?');
 
@@ -62,6 +68,9 @@ function obtenerLideres(): array
 
 function crearLider(array $datos): int
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarDatosPersona($datos);
+
     $pdo = getConnection();
     $stmt = $pdo->prepare(
         'INSERT INTO lideres (nombre, apellido, cedula, celular, email, notas, creado_en)
@@ -81,6 +90,9 @@ function crearLider(array $datos): int
 
 function actualizarLider(int $id, array $datos): bool
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarDatosPersona($datos);
+
     $pdo = getConnection();
     $stmt = $pdo->prepare(
         'UPDATE lideres SET nombre = ?, apellido = ?, cedula = ?, celular = ?, email = ?, notas = ? WHERE id = ?'
@@ -140,6 +152,9 @@ function obtenerCasaVida(int $id): ?array
 
 function crearCasaVida(array $datos): int
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarCamposTextoOrdenado($datos, ['nombre', 'direccion']);
+
     $pdo = getConnection();
     $stmt = $pdo->prepare(
         'INSERT INTO casas_vida (territorio_id, lider_id, nombre, direccion, creado_en)
@@ -157,6 +172,9 @@ function crearCasaVida(array $datos): int
 
 function actualizarCasaVida(int $id, array $datos): bool
 {
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarCamposTextoOrdenado($datos, ['nombre', 'direccion']);
+
     $pdo = getConnection();
     $stmt = $pdo->prepare(
         'UPDATE casas_vida SET territorio_id = ?, lider_id = ?, nombre = ?, direccion = ? WHERE id = ?'

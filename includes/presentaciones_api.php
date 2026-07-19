@@ -159,6 +159,47 @@ function responderListaPresentacionesPublica(): void
 }
 
 /**
+ * Marca Entregar Diploma desde el portal privado (solo clave API, sin sesión de usuario).
+ */
+function responderEntregarDiplomaDesdeApi(int $id): void
+{
+    require_once __DIR__ . '/roles.php';
+
+    if ($id <= 0) {
+        throw new InvalidArgumentException('ID no válido.');
+    }
+
+    $pdo = getConnection();
+    $stmtActual = $pdo->prepare('SELECT estado FROM presentaciones_ninos WHERE id = ?');
+    $stmtActual->execute([$id]);
+    $filaActual = $stmtActual->fetch();
+
+    if (!$filaActual) {
+        throw new InvalidArgumentException('No se encontró el registro.');
+    }
+
+    $estadoActual = (string) ($filaActual['estado'] ?? '');
+
+    if (!in_array($estadoActual, ['contactado', 'confirmado'], true)) {
+        throw new InvalidArgumentException('Solo puedes marcar Entregar Diploma desde Contactado o Confirmado.');
+    }
+
+    $estado = 'entregar_diploma';
+
+    if (!actualizarEstadoPresentacionNino($id, $estado, ROL_ADMIN)) {
+        throw new InvalidArgumentException('No se pudo actualizar el estado.');
+    }
+
+    echo json_encode([
+        'exito'           => true,
+        'mensaje'         => 'Estado actualizado a ' . etiquetaEstadoPresentacion($estado) . '.',
+        'id'              => $id,
+        'estado'          => $estado,
+        'estado_etiqueta' => etiquetaEstadoPresentacion($estado),
+    ]);
+}
+
+/**
  * @param array<string, mixed> $payload
  * @param array<string, mixed> $meta
  */

@@ -61,6 +61,12 @@ try {
         exit;
     }
 
+    if ($accion === 'entregar_diploma') {
+        $id = (int) ($payload['id'] ?? 0);
+        responderEntregarDiplomaDesdeApi($id);
+        exit;
+    }
+
     $token = obtenerTokenSesionDesdeRequest($payload);
     $usuarioSesion = validarTokenSesionApi($token);
 

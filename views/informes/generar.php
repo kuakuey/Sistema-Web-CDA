@@ -101,6 +101,28 @@
           </select>
         </div>
 
+        <div class="col-12 js-campo-presentaciones-estados" style="<?= $seccion === 'presentaciones' ? '' : 'display:none' ?>">
+          <label class="form-label d-block">Estados de presentación</label>
+          <div class="d-flex flex-wrap gap-3">
+            <?php foreach ($etiquetasEstadosPresentacion ?? [] as $claveEstado => $etiquetaEstado): ?>
+            <div class="form-check">
+              <input
+                class="form-check-input js-estado-presentacion-informe"
+                type="checkbox"
+                id="estado_presentacion_<?= htmlspecialchars($claveEstado) ?>"
+                name="estados_presentacion[]"
+                value="<?= htmlspecialchars($claveEstado) ?>"
+                <?= in_array($claveEstado, $estadosPresentacionInforme ?? [], true) ? 'checked' : '' ?>
+              >
+              <label class="form-check-label" for="estado_presentacion_<?= htmlspecialchars($claveEstado) ?>">
+                <?= htmlspecialchars($etiquetaEstado) ?>
+              </label>
+            </div>
+            <?php endforeach; ?>
+          </div>
+          <p class="form-text mb-0">Selecciona uno o más estados para incluir en el informe.</p>
+        </div>
+
         <div class="col-12">
           <div class="d-flex flex-wrap gap-2 pt-2">
             <button type="button" class="btn btn-primary js-descargar-informe" data-formato="pdf">
@@ -126,7 +148,9 @@
   var selectorSeccion = document.getElementById('seccion');
   var campoEvento = document.querySelector('.js-campo-evento');
   var campoSinEntregar = document.querySelector('.js-campo-sin-entregar');
+  var campoPresentacionesEstados = document.querySelector('.js-campo-presentaciones-estados');
   var checkboxSinEntregar = document.getElementById('mostrar_sin_entregar');
+  var checkboxesEstadosPresentacion = document.querySelectorAll('.js-estado-presentacion-informe');
 
   if (!formulario || !campoFormato || !selectorSeccion) {
     return;
@@ -147,6 +171,10 @@
         checkboxSinEntregar.checked = false;
       }
     }
+
+    if (campoPresentacionesEstados) {
+      campoPresentacionesEstados.style.display = seccion === 'presentaciones' ? '' : 'none';
+    }
   }
 
   selectorSeccion.addEventListener('change', actualizarCamposDependientes);
@@ -154,6 +182,21 @@
 
   document.querySelectorAll('.js-descargar-informe').forEach(function (boton) {
     boton.addEventListener('click', function () {
+      if (selectorSeccion.value === 'presentaciones') {
+        var algunoMarcado = false;
+
+        checkboxesEstadosPresentacion.forEach(function (checkbox) {
+          if (checkbox.checked) {
+            algunoMarcado = true;
+          }
+        });
+
+        if (!algunoMarcado) {
+          window.alert('Selecciona al menos un estado de presentación.');
+          return;
+        }
+      }
+
       campoFormato.value = boton.getAttribute('data-formato') || 'pdf';
       formulario.submit();
     });

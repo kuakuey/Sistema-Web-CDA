@@ -32,6 +32,9 @@ function enviarInformeExcel(array $informe, string $seccion = 'completo'): void
     if ($seccion === 'eventos' && ($informe['evento_id'] ?? 0) > 0) {
         echo ' · Evento: ' . htmlspecialchars($informe['evento_etiqueta'] ?? '—');
     }
+    if ($seccion === 'presentaciones') {
+        echo ' · Estados: ' . htmlspecialchars($informe['estados_presentacion_etiqueta'] ?? '—');
+    }
     echo ' · Generado: ' . htmlspecialchars($informe['generado_en']) . '</p>';
 
     if (in_array($seccion, ['completo', 'ofrendas'], true)) {
@@ -130,6 +133,26 @@ function enviarInformeExcel(array $informe, string $seccion = 'completo'): void
                 echo '<td>' . ($valor['observacion'] ? htmlspecialchars($valor['observacion']) : '—') . '</td>';
                 echo '<td>' . htmlspecialchars($valor['registrado_por_nombre'] ?? '—') . '</td>';
                 echo '<td>' . htmlspecialchars(formatearFechaHora($valor['creado_en'])) . '</td>';
+                echo '</tr>';
+            }
+        }
+        echo '</table>';
+    }
+
+    if ($seccion === 'presentaciones') {
+        echo '<h3>Presentación de niños</h3>';
+        echo '<p>Registros: ' . (int) ($resumen['cantidad_presentaciones'] ?? 0) . '</p>';
+        echo '<table border="1" cellpadding="4" cellspacing="0">';
+        echo '<tr><th>Nombre niño/a</th><th>Edad</th><th>Nombre papá</th><th>Nombre mamá</th></tr>';
+        if (empty($informe['presentaciones'])) {
+            echo '<tr><td colspan="4">—</td></tr>';
+        } else {
+            foreach ($informe['presentaciones'] as $presentacion) {
+                echo '<tr>';
+                echo '<td>' . htmlspecialchars($presentacion['nombre_presentado'] ?? '—') . '</td>';
+                echo '<td>' . htmlspecialchars($presentacion['edad_etiqueta'] ?? formatearEdadPresentacion($presentacion['fecha_nacimiento'] ?? null)) . '</td>';
+                echo '<td>' . htmlspecialchars($presentacion['nombre_padre'] ?? '—') . '</td>';
+                echo '<td>' . htmlspecialchars($presentacion['nombre_madre'] ?? '—') . '</td>';
                 echo '</tr>';
             }
         }

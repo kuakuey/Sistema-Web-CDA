@@ -7,6 +7,7 @@ require_once 'includes/informes.php';
 require_once 'includes/informe_pdf.php';
 require_once 'includes/informe_excel.php';
 require_once 'includes/eventos.php';
+require_once 'includes/filters.php';
 
 requerirSesion();
 
@@ -29,6 +30,9 @@ $turno = isset($_GET['turno']) ? trim((string) $_GET['turno']) : 'todos';
 $seccion = isset($_GET['seccion']) ? trim((string) $_GET['seccion']) : 'completo';
 $formato = isset($_GET['formato']) ? trim((string) $_GET['formato']) : 'pdf';
 $eventoId = isset($_GET['evento_id']) ? (int) $_GET['evento_id'] : 0;
+$estadosPresentacionInforme = isset($_GET['estados_presentacion']) && is_array($_GET['estados_presentacion'])
+    ? $_GET['estados_presentacion']
+    : obtenerEstadosPresentacion();
 $generar = isset($_GET['generar']);
 
 $error = isset($_GET['error']) ? trim((string) $_GET['error']) : null;
@@ -50,14 +54,23 @@ try {
             throw new InvalidArgumentException('Selecciona un evento válido.');
         }
 
-        $informe = generarInformeOfrendasYValores(
-            $fechaDesde,
-            $fechaHasta,
-            $mostrarSinEntregar,
-            $turno,
-            'todos',
-            $eventoId
-        );
+        if ($seccion === 'presentaciones') {
+            $informe = generarInformePresentaciones(
+                $fechaDesde,
+                $fechaHasta,
+                $turno,
+                $estadosPresentacionInforme
+            );
+        } else {
+            $informe = generarInformeOfrendasYValores(
+                $fechaDesde,
+                $fechaHasta,
+                $mostrarSinEntregar,
+                $turno,
+                'todos',
+                $eventoId
+            );
+        }
         $informe['seccion_exportacion'] = $seccion;
 
         if (normalizarFormatoInforme($formato) === 'excel') {
@@ -97,6 +110,8 @@ view('informes/generar', [
     'eventos'                => obtenerEventos(),
     'etiquetasTurno'         => obtenerEtiquetasTurnoInforme(),
     'etiquetasSeccionInforme'=> obtenerEtiquetasSeccionInforme(),
+    'etiquetasEstadosPresentacion' => obtenerEtiquetasEstadosPresentacion(),
+    'estadosPresentacionInforme' => normalizarEstadosPresentacionInforme($estadosPresentacionInforme),
     'error'                  => $error,
     'errorBd'                => $errorBd,
 ], 'app');

@@ -96,6 +96,7 @@ $seccionExportacion = normalizarSeccionInforme($informe['seccion_exportacion'] ?
 $incluirOfrendas = in_array($seccionExportacion, ['completo', 'ofrendas'], true);
 $incluirEventos = in_array($seccionExportacion, ['completo', 'eventos'], true);
 $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
+$incluirPresentaciones = $seccionExportacion === 'presentaciones';
 ?>
 
   <h1><?= htmlspecialchars(tituloSeccionInforme($seccionExportacion)) ?></h1>
@@ -104,6 +105,9 @@ $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
     · Jornada: <?= htmlspecialchars($informe['turno_etiqueta']) ?>
     <?php if ($incluirEventos && ($informe['evento_id'] ?? 0) > 0): ?>
     · Evento: <?= htmlspecialchars($informe['evento_etiqueta'] ?? '—') ?>
+    <?php endif; ?>
+    <?php if ($incluirPresentaciones): ?>
+    · Estados: <?= htmlspecialchars($informe['estados_presentacion_etiqueta'] ?? '—') ?>
     <?php endif; ?>
     · Generado: <?= htmlspecialchars($informe['generado_en']) ?>
   </p>
@@ -193,6 +197,19 @@ $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
       <td>
         <span class="resumen-label">Total valores</span>
         <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) $resumen['total_monto_valores'])) ?></strong></span>
+      </td>
+    </tr>
+  </table>
+  <?php elseif ($incluirPresentaciones): ?>
+  <table class="resumen">
+    <tr>
+      <td>
+        <span class="resumen-label">Registros</span>
+        <span class="resumen-valor"><?= (int) ($resumen['cantidad_presentaciones'] ?? 0) ?></span>
+      </td>
+      <td>
+        <span class="resumen-label">Estados incluidos</span>
+        <span class="resumen-valor"><?= htmlspecialchars($informe['estados_presentacion_etiqueta'] ?? '—') ?></span>
       </td>
     </tr>
   </table>
@@ -328,6 +345,34 @@ $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
         <td><?= $valor['observacion'] ? htmlspecialchars($valor['observacion']) : '—' ?></td>
         <td><?= htmlspecialchars($valor['registrado_por_nombre'] ?? '—') ?></td>
         <td><?= htmlspecialchars(formatearFechaHora($valor['creado_en'])) ?></td>
+      </tr>
+      <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php endif; ?>
+  <?php endif; ?>
+
+  <?php if ($incluirPresentaciones): ?>
+  <h2>Presentación de niños</h2>
+  <?php if (empty($informe['presentaciones'])): ?>
+  <p class="vacio">No hay registros de presentación con los filtros seleccionados.</p>
+  <?php else: ?>
+  <table class="datos">
+    <thead>
+      <tr>
+        <th>Nombre niño/a</th>
+        <th>Edad</th>
+        <th>Nombre papá</th>
+        <th>Nombre mamá</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php foreach ($informe['presentaciones'] as $presentacion): ?>
+      <tr>
+        <td><?= htmlspecialchars($presentacion['nombre_presentado'] ?? '—') ?></td>
+        <td><?= htmlspecialchars($presentacion['edad_etiqueta'] ?? formatearEdadPresentacion($presentacion['fecha_nacimiento'] ?? null)) ?></td>
+        <td><?= htmlspecialchars($presentacion['nombre_padre'] ?? '—') ?></td>
+        <td><?= htmlspecialchars($presentacion['nombre_madre'] ?? '—') ?></td>
       </tr>
       <?php endforeach; ?>
     </tbody>

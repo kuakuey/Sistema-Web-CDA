@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/estructura.php';
 require_once __DIR__ . '/valores_adicionales.php';
 require_once __DIR__ . '/submissions.php';
+require_once __DIR__ . '/filters.php';
 
 /**
  * @return array{
@@ -74,10 +75,11 @@ function validarRangoFechasInforme(string $fechaDesde, string $fechaHasta): arra
 function obtenerEtiquetasSeccionInforme(): array
 {
     return [
-        'completo' => 'General',
-        'ofrendas' => 'Ofrendas',
-        'valores'  => 'Valores adicionales',
-        'eventos'  => 'Eventos',
+        'completo'       => 'General',
+        'ofrendas'       => 'Ofrendas',
+        'valores'        => 'Valores adicionales',
+        'eventos'        => 'Eventos',
+        'presentaciones' => 'Presentación de niños',
     ];
 }
 
@@ -120,7 +122,7 @@ function normalizarSeccionInforme(string $seccion): string
 {
     $seccion = trim(mb_strtolower($seccion));
 
-    if (in_array($seccion, ['completo', 'ofrendas', 'eventos', 'valores'], true)) {
+    if (in_array($seccion, ['completo', 'ofrendas', 'eventos', 'valores', 'presentaciones'], true)) {
         return $seccion;
     }
 
@@ -170,6 +172,8 @@ function tituloSeccionInforme(string $seccion): string
             return 'Informe de eventos';
         case 'valores':
             return 'Informe de valores adicionales';
+        case 'presentaciones':
+            return 'Informe de presentación de niños';
         default:
             return 'Informe financiero CDA';
     }
@@ -276,6 +280,118 @@ function obtenerRegistrosEventosPorRangoRegistro(
     $stmt->execute($parametros);
 
     return $stmt->fetchAll();
+}
+
+/**
+ * @param array<int, string> $estados
+ * @return array<int, string>
+ */
+function normalizarEstadosPresentacionInforme(array $estados): array
+{
+    $validos = obtenerEstadosPresentacion();
+    $filtrados = [];
+
+    foreach ($estados as $estado) {
+        $estado = trim((string) $estado);
+
+        if ($estado !== '' && in_array($estado, $validos, true)) {
+            $filtrados[] = $estado;
+        }
+    }
+
+    return array_values(array_unique($filtrados));
+}
+
+function etiquetasEstadosPresentacionInforme(array $estados): string
+{
+    if ($estados === []) {
+        return '—';
+    }
+
+    $etiquetas = obtenerEtiquetasEstadosPresentacion();
+    $partes = [];
+
+    foreach ($estados as $estado) {
+        $partes[] = $etiquetas[$estado] ?? $estado;
+    }
+
+    return implode(', ', $partes);
+}
+
+/**
+ * @param array<int, string> $estados
+ * @return array<int, array<string, mixed>>
+ */
+function obtenerPresentacionesPorRangoRegistro(
+    ?string $fechaDesde,
+    ?string $fechaHasta,
+    string $turno = 'todos',
+    array $estados = []
+): array {
+    $estados = normalizarEstadosPresentacionInforme($estados);
+
+    if ($estados === []) {
+        return [];
+    }
+
+    $pdo = getConnection();
+    [$condicionFecha, $parametrosFecha] = construirCondicionFechaRegistro($fechaDesde, $fechaHasta);
+    [$condicionHora, $parametrosHora] = construirCondicionHoraTurno($turno);
+    $marcadores = implode(', ', array_fill(0, count($estados), '?'));
+    $sql = 'SELECT * FROM presentaciones_ninos
+         WHERE ' . $condicionFecha .
+        ' AND ' . $condicionHora .
+        ' AND estado IN (' . $marcadores . ')' .
+        ' ORDER BY creado_en DESC, id DESC';
+    $parametros = array_merge($parametrosFecha, $parametrosHora, $estados);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($parametros);
+
+    return $stmt->fetchAll();
+}
+
+/**
+ * @param array<int, string> $estadosPresentacion
+ * @return array<string, mixed>
+ */
+function generarInformePresentaciones(
+    string $fechaDesde,
+    string $fechaHasta,
+    string $turno = 'todos',
+    array $estadosPresentacion = []
+): array {
+    $rango = resolverRangoFechasInforme($fechaDesde, $fechaHasta);
+    $turno = normalizarTurnoInforme($turno);
+    $estados = normalizarEstadosPresentacionInforme($estadosPresentacion);
+
+    if ($estados === []) {
+        throw new InvalidArgumentException('Selecciona al menos un estado de presentación.');
+    }
+
+    $presentaciones = obtenerPresentacionesPorRangoRegistro($rango['desde'], $rango['hasta'], $turno, $estados);
+
+    foreach ($presentaciones as $indice => $fila) {
+        $presentaciones[$indice]['edad_etiqueta'] = formatearEdadPresentacion($fila['fecha_nacimiento'] ?? null);
+    }
+
+    return [
+        'fecha_desde'                    => $rango['desde'] ?? 'todo',
+        'fecha_hasta'                    => $rango['hasta'] ?? 'todo',
+        'fecha_desde_etiqueta'           => $rango['fecha_desde_etiqueta'],
+        'fecha_hasta_etiqueta'           => $rango['fecha_hasta_etiqueta'],
+        'periodo_etiqueta'               => $rango['periodo_etiqueta'],
+        'sin_filtro_fecha'               => $rango['sin_filtro_fecha'],
+        'generado_en'                    => date('d/m/Y H:i'),
+        'turno'                          => $turno,
+        'turno_etiqueta'                 => etiquetaTurnoInforme($turno),
+        'estados_presentacion'           => $estados,
+        'estados_presentacion_etiqueta'  => etiquetasEstadosPresentacionInforme($estados),
+        'seccion_exportacion'            => 'presentaciones',
+        'resumen'                        => [
+            'cantidad_presentaciones' => count($presentaciones),
+        ],
+        'presentaciones'                 => $presentaciones,
+    ];
 }
 
 function formatearFechaInforme(?string $fecha): string

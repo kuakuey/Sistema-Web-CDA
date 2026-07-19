@@ -110,26 +110,11 @@ try {
     }
 
     if ($tipoFormulario === 'presentacion_ninos') {
-        require_once __DIR__ . '/../includes/presentaciones.php';
+        require_once __DIR__ . '/../includes/presentaciones_api.php';
 
-        try {
-            $representantes = normalizarRepresentantesPresentacion($payload);
-            $presentados = parsearPresentadosPresentacion($payload);
-        } catch (InvalidArgumentException $e) {
-            throw $e;
-        }
-
-        $cantidad = insertarPresentacionesNinosGrupo($representantes, $presentados, [
+        responderRegistroPresentacionesPublico($payload, [
             'ip_cliente'     => $ip,
             'agente_usuario' => $agente,
-        ]);
-
-        echo json_encode([
-            'exito'    => true,
-            'mensaje'  => $cantidad > 1
-                ? $cantidad . ' inscripciones de presentación enviadas correctamente.'
-                : 'Inscripción de presentación enviada correctamente.',
-            'cantidad' => $cantidad,
         ]);
         exit;
     }

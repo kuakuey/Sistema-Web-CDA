@@ -65,6 +65,22 @@ function tieneSegundoRepresentantePresentacion(array $fila): bool
 
 function mapearCamposLegacyRepresentantesPresentacion(array $datos): array
 {
+    if (isset($datos['representantes']) && is_array($datos['representantes'])) {
+        $representantes = array_values($datos['representantes']);
+
+        if (isset($representantes[0]) && is_array($representantes[0])) {
+            $datos['representante_1_parentesco'] = $representantes[0]['parentesco'] ?? '';
+            $datos['representante_1_nombre'] = $representantes[0]['nombre'] ?? '';
+            $datos['representante_1_telefono'] = $representantes[0]['telefono'] ?? '';
+        }
+
+        if (isset($representantes[1]) && is_array($representantes[1])) {
+            $datos['representante_2_parentesco'] = $representantes[1]['parentesco'] ?? '';
+            $datos['representante_2_nombre'] = $representantes[1]['nombre'] ?? '';
+            $datos['representante_2_telefono'] = $representantes[1]['telefono'] ?? '';
+        }
+    }
+
     if (trim((string) ($datos['representante_1_nombre'] ?? '')) === '' && trim((string) ($datos['nombre_padre'] ?? '')) !== '') {
         $datos['representante_1_nombre'] = $datos['nombre_padre'];
         $datos['representante_1_telefono'] = $datos['telefono_papa'] ?? '';
@@ -154,7 +170,7 @@ function parsearPresentadosPresentacion(array $datos): array
                 continue;
             }
 
-            $nombre = trim((string) ($item['nombre'] ?? ''));
+            $nombre = trim((string) ($item['nombre'] ?? $item['nombre_presentado'] ?? ''));
             if ($nombre === '') {
                 $numero++;
                 continue;

@@ -76,23 +76,23 @@ function insertarPresentacionNino(array $datos): int
  * @param array<string, string|null> $representantes
  * @param array<int, array{nombre_presentado: string, fecha_nacimiento: string}> $presentados
  * @param array<string, mixed> $meta
+ * @return array<int, int>
  */
-function insertarPresentacionesNinosGrupo(array $representantes, array $presentados, array $meta): int
+function insertarPresentacionesNinosGrupo(array $representantes, array $presentados, array $meta): array
 {
     $pdo = getConnection();
     $pdo->beginTransaction();
 
     try {
-        $insertados = 0;
+        $ids = [];
 
         foreach ($presentados as $presentado) {
-            insertarPresentacionNino(array_merge($representantes, $presentado, $meta));
-            $insertados++;
+            $ids[] = insertarPresentacionNino(array_merge($representantes, $presentado, $meta));
         }
 
         $pdo->commit();
 
-        return $insertados;
+        return $ids;
     } catch (Throwable $e) {
         $pdo->rollBack();
 
@@ -678,28 +678,7 @@ function listarPresentacionesNinosPorEstados(array $estados, int $limite = 300):
  */
 function formatearPresentacionParaApi(array $fila): array
 {
-    require_once __DIR__ . '/filters.php';
-    require_once __DIR__ . '/presentaciones.php';
+    require_once __DIR__ . '/presentaciones_api.php';
 
-    return [
-        'id'                => (int) $fila['id'],
-        'nombre_presentado' => $fila['nombre_presentado'],
-        'fecha_nacimiento'  => $fila['fecha_nacimiento'] ?? null,
-        'fecha_nacimiento_etiqueta' => formatearFechaNacimiento($fila['fecha_nacimiento'] ?? null),
-        'edad'              => calcularEdadDesdeFechaNacimiento($fila['fecha_nacimiento'] ?? null),
-        'edad_etiqueta'     => formatearEdadPresentacion($fila['fecha_nacimiento'] ?? null),
-        'parentesco_representante_1' => $fila['parentesco_representante_1'] ?? null,
-        'parentesco_representante_2' => $fila['parentesco_representante_2'] ?? null,
-        'nombre_padre'      => $fila['nombre_padre'],
-        'nombre_madre'      => $fila['nombre_madre'],
-        'telefono_papa'     => $fila['telefono_papa'],
-        'telefono_mama'     => $fila['telefono_mama'],
-        'representante_1'   => formatearNombreRepresentantePresentacion($fila, 1),
-        'representante_2'   => tieneSegundoRepresentantePresentacion($fila)
-            ? formatearNombreRepresentantePresentacion($fila, 2)
-            : null,
-        'estado'            => $fila['estado'],
-        'estado_etiqueta'   => etiquetaEstadoPresentacion($fila['estado']),
-        'creado_en'         => $fila['creado_en'],
-    ];
+    return formatearPresentacionParaApi($fila);
 }

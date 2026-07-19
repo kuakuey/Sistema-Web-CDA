@@ -364,10 +364,11 @@ if ($accion === 'crear_presentacion') {
     }
 
     try {
-        $cantidad = insertarPresentacionesNinosGrupo($representantes, $presentados, [
+        $ids = insertarPresentacionesNinosGrupo($representantes, $presentados, [
             'ip_cliente'     => $_SERVER['REMOTE_ADDR'] ?? '',
             'agente_usuario' => 'Sistema Web — ' . ($usuarioActual['usuario'] ?? 'interno'),
         ]);
+        $cantidad = count($ids);
     } catch (PDOException $e) {
         header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode('No se pudo guardar el registro.'));
         exit;

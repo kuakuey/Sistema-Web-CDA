@@ -28,6 +28,16 @@ if (!is_array($payload)) {
 
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        $accion = trim((string) ($_GET['accion'] ?? 'listar'));
+
+        if ($accion === 'meta') {
+            echo json_encode([
+                'exito' => true,
+                'meta'  => metaPresentacionesApi(),
+            ]);
+            exit;
+        }
+
         responderListaPresentacionesPublica();
         exit;
     }
@@ -35,6 +45,19 @@ try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
         echo json_encode(['exito' => false, 'mensaje' => 'Método no permitido.']);
+        exit;
+    }
+
+    $accion = trim((string) ($payload['accion'] ?? ''));
+
+    if ($accion === 'registrar' || esPayloadRegistroPresentacion($payload)) {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        $agente = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+        responderRegistroPresentacionesPublico($payload, [
+            'ip_cliente'     => $ip,
+            'agente_usuario' => $agente,
+        ]);
         exit;
     }
 
@@ -65,10 +88,11 @@ try {
     }
 
     echo json_encode([
-        'exito'   => true,
-        'mensaje' => 'Estado actualizado a ' . etiquetaEstadoPresentacion($estado) . '.',
-        'id'      => $id,
-        'estado'  => $estado,
+        'exito'           => true,
+        'mensaje'         => 'Estado actualizado a ' . etiquetaEstadoPresentacion($estado) . '.',
+        'id'              => $id,
+        'estado'          => $estado,
+        'estado_etiqueta' => etiquetaEstadoPresentacion($estado),
     ]);
 } catch (InvalidArgumentException $e) {
     http_response_code(400);

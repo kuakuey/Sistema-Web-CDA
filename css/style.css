@@ -402,6 +402,12 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
 .app-wrapper > .row {
   height: 100%;
   min-height: 0;
+  overflow: hidden;
+}
+
+.app-wrapper > .row > .app-sidebar--desktop {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .main-content {
@@ -420,12 +426,19 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   border-right: 1px solid var(--cda-border);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .sidebar-nav {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: 0.75rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .app-sidebar .nav-link {
@@ -436,6 +449,9 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   font-size: var(--cda-text-sm);
   font-weight: var(--cda-font-normal);
   transition: background-color 0.15s ease, color 0.15s ease;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .app-sidebar .nav-link:hover {
@@ -459,6 +475,8 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   border-top: 1px solid var(--cda-border);
   background-color: var(--cda-sidebar-bg);
   flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .sidebar-footer__user {
@@ -479,6 +497,8 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   font-weight: var(--cda-font-semibold);
   color: var(--cda-text);
   line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .sidebar-footer__logout {
@@ -489,6 +509,7 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
 .app-sidebar--desktop {
   height: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* Móvil: drawer deslizable (oculto en desktop) */
@@ -509,11 +530,6 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
 }
 
 .app-sidebar--mobile .sidebar-nav {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   flex-wrap: nowrap;
 }
 

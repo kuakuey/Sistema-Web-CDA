@@ -46,6 +46,12 @@
   --cda-text: #212529;
   --cda-muted: #6c757d;
 
+  /* Scrollbars */
+  --cda-scrollbar-size: 6px;
+  --cda-scrollbar-track: transparent;
+  --cda-scrollbar-thumb: rgba(33, 37, 41, 0.18);
+  --cda-scrollbar-thumb-hover: rgba(33, 37, 41, 0.32);
+
   /* Estados */
   --cda-success: #198754;
   --cda-danger: #dc3545;
@@ -111,6 +117,9 @@ html[data-theme="dark"] {
   --cda-border: #2f3640;
   --cda-text: #e9ecef;
   --cda-muted: #adb5bd;
+
+  --cda-scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --cda-scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
 
   --bs-body-bg: var(--cda-body-bg);
   --bs-body-color: var(--cda-text);

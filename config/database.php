@@ -201,12 +201,14 @@ function setupDatabase(): array
         $pdo->exec(
             'CREATE TABLE IF NOT EXISTS presentaciones_ninos (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                parentesco_representante_1 VARCHAR(30) NOT NULL DEFAULT "",
                 nombre_padre VARCHAR(100) NOT NULL,
-                nombre_madre VARCHAR(100) NOT NULL,
+                telefono_papa VARCHAR(30) NOT NULL,
+                parentesco_representante_2 VARCHAR(30) DEFAULT NULL,
+                nombre_madre VARCHAR(100) DEFAULT NULL,
+                telefono_mama VARCHAR(30) DEFAULT NULL,
                 nombre_presentado VARCHAR(100) NOT NULL,
                 fecha_nacimiento DATE NULL,
-                telefono_papa VARCHAR(30) NOT NULL,
-                telefono_mama VARCHAR(30) NOT NULL,
                 estado VARCHAR(20) NOT NULL DEFAULT "recibido",
                 fecha_presentacion DATE NULL,
                 estado_bloqueado TINYINT(1) NOT NULL DEFAULT 0,
@@ -446,6 +448,53 @@ function asegurarColumnasPresentacionesNinos(PDO $pdo): void
         $pdo->exec(
             "UPDATE presentaciones_ninos SET estado_bloqueado = 1 WHERE estado = 'presentado'"
         );
+    }
+
+    $parentesco1Existe = $pdo->query("SHOW COLUMNS FROM presentaciones_ninos LIKE 'parentesco_representante_1'")->fetch();
+    if (!$parentesco1Existe) {
+        $pdo->exec(
+            'ALTER TABLE presentaciones_ninos
+             ADD COLUMN parentesco_representante_1 VARCHAR(30) NOT NULL DEFAULT "" AFTER id'
+        );
+        $pdo->exec(
+            "UPDATE presentaciones_ninos
+             SET parentesco_representante_1 = 'padre'
+             WHERE parentesco_representante_1 = '' AND TRIM(COALESCE(nombre_padre, '')) <> ''"
+        );
+    }
+
+    $parentesco2Existe = $pdo->query("SHOW COLUMNS FROM presentaciones_ninos LIKE 'parentesco_representante_2'")->fetch();
+    if (!$parentesco2Existe) {
+        $pdo->exec(
+            'ALTER TABLE presentaciones_ninos
+             ADD COLUMN parentesco_representante_2 VARCHAR(30) DEFAULT NULL AFTER telefono_papa'
+        );
+        $pdo->exec(
+            "UPDATE presentaciones_ninos
+             SET parentesco_representante_2 = 'madre'
+             WHERE parentesco_representante_2 IS NULL AND TRIM(COALESCE(nombre_madre, '')) <> ''"
+        );
+    }
+
+    $columnasRepresentante2 = [
+        'nombre_madre'  => 'VARCHAR(100) DEFAULT NULL',
+        'telefono_mama' => 'VARCHAR(30) DEFAULT NULL',
+    ];
+
+    foreach ($columnasRepresentante2 as $columna => $definicion) {
+        $info = $pdo->query("SHOW COLUMNS FROM presentaciones_ninos LIKE " . $pdo->quote($columna))->fetch();
+        if (!$info) {
+            continue;
+        }
+
+        if (strtoupper((string) ($info['Null'] ?? '')) === 'NO') {
+            $pdo->exec("ALTER TABLE presentaciones_ninos MODIFY COLUMN {$columna} {$definicion}");
+            $pdo->exec(
+                "UPDATE presentaciones_ninos
+                 SET {$columna} = NULL
+                 WHERE TRIM(COALESCE({$columna}, '')) = ''"
+            );
+        }
     }
 }
 

@@ -87,6 +87,8 @@ function construirDetalleInscripcion(array $fila, array $etiquetasFormulario): a
  */
 function construirDetallePresentacion(array $fila, array $etiquetasEstados): array
 {
+    require_once __DIR__ . '/presentaciones.php';
+
     $filas = [
         ['etiqueta' => 'Nombre del niño/a', 'valor' => (string) ($fila['nombre_presentado'] ?? '—')],
         [
@@ -97,17 +99,28 @@ function construirDetallePresentacion(array $fila, array $etiquetasEstados): arr
             'etiqueta' => 'Edad',
             'valor'    => formatearEdadPresentacion($fila['fecha_nacimiento'] ?? null),
         ],
-        ['etiqueta' => 'Nombre del padre', 'valor' => (string) ($fila['nombre_padre'] ?? '—')],
-        ['etiqueta' => 'Nombre de la madre', 'valor' => (string) ($fila['nombre_madre'] ?? '—')],
-        filaDetalleHtml('Teléfonos', enlacesWhatsAppPresentacion($fila)),
         [
-            'etiqueta' => 'Estado',
-            'valor'    => $etiquetasEstados[$fila['estado'] ?? ''] ?? ($fila['estado'] ?? '—'),
+            'etiqueta' => 'Representante',
+            'valor'    => formatearNombreRepresentantePresentacion($fila, 1),
         ],
-        [
-            'etiqueta' => 'Fecha de presentación',
-            'valor'    => formatearFechaTabla($fila['fecha_presentacion'] ?? null),
-        ],
+        filaDetalleHtml('Teléfono representante', enlaceWhatsAppRepresentantePresentacion($fila, 1)),
+    ];
+
+    if (tieneSegundoRepresentantePresentacion($fila)) {
+        $filas[] = [
+            'etiqueta' => 'Segundo representante',
+            'valor'    => formatearNombreRepresentantePresentacion($fila, 2),
+        ];
+        $filas[] = filaDetalleHtml('Teléfono segundo representante', enlaceWhatsAppRepresentantePresentacion($fila, 2));
+    }
+
+    $filas[] = [
+        'etiqueta' => 'Estado',
+        'valor'    => $etiquetasEstados[$fila['estado'] ?? ''] ?? ($fila['estado'] ?? '—'),
+    ];
+    $filas[] = [
+        'etiqueta' => 'Fecha de presentación',
+        'valor'    => formatearFechaTabla($fila['fecha_presentacion'] ?? null),
     ];
 
     return array_merge($filas, filasMetaRegistro($fila));
@@ -266,15 +279,15 @@ function formatearFechaTabla(?string $fecha): string
 
 function formatearTelefonosPresentacion(array $fila): string
 {
-    $partes = [];
-    $papa = trim((string) ($fila['telefono_papa'] ?? ''));
-    $mama = trim((string) ($fila['telefono_mama'] ?? ''));
+    require_once __DIR__ . '/presentaciones.php';
 
-    if ($papa !== '') {
-        $partes[] = $papa;
-    }
-    if ($mama !== '') {
-        $partes[] = $mama;
+    $partes = [];
+
+    foreach ([1, 2] as $numero) {
+        $representante = representantePresentacionDesdeFila($fila, $numero);
+        if ($representante['telefono'] !== '') {
+            $partes[] = $representante['telefono'];
+        }
     }
 
     return $partes ? implode(' / ', $partes) : '—';
@@ -322,19 +335,38 @@ function enlaceWhatsApp(?string $telefono, ?string $etiqueta = null): string
         . ' <i class="bi bi-whatsapp" aria-hidden="true"></i></a>';
 }
 
+function enlaceWhatsAppRepresentantePresentacion(array $fila, int $numero): string
+{
+    require_once __DIR__ . '/presentaciones.php';
+
+    $representante = representantePresentacionDesdeFila($fila, $numero);
+    if ($representante['telefono'] === '') {
+        return '—';
+    }
+
+    $etiqueta = $representante['nombre'] !== ''
+        ? $representante['nombre']
+        : etiquetaParentescoRepresentante($representante['parentesco']);
+
+    return enlaceWhatsApp($representante['telefono'], $etiqueta);
+}
+
 function enlacesWhatsAppPresentacion(array $fila): string
 {
-    $partes = [];
-    $telefonoPapa = trim((string) ($fila['telefono_papa'] ?? ''));
-    $telefonoMama = trim((string) ($fila['telefono_mama'] ?? ''));
-    $nombrePadre = trim((string) ($fila['nombre_padre'] ?? ''));
-    $nombreMadre = trim((string) ($fila['nombre_madre'] ?? ''));
+    require_once __DIR__ . '/presentaciones.php';
 
-    if ($telefonoPapa !== '') {
-        $partes[] = enlaceWhatsApp($telefonoPapa, $nombrePadre !== '' ? $nombrePadre : 'Papá');
-    }
-    if ($telefonoMama !== '') {
-        $partes[] = enlaceWhatsApp($telefonoMama, $nombreMadre !== '' ? $nombreMadre : 'Mamá');
+    $partes = [];
+
+    foreach ([1, 2] as $numero) {
+        $representante = representantePresentacionDesdeFila($fila, $numero);
+        if ($representante['telefono'] === '') {
+            continue;
+        }
+
+        $etiqueta = $representante['nombre'] !== ''
+            ? $representante['nombre']
+            : etiquetaParentescoRepresentante($representante['parentesco']);
+        $partes[] = enlaceWhatsApp($representante['telefono'], $etiqueta);
     }
 
     return $partes ? implode('<br>', $partes) : '—';

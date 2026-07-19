@@ -34,9 +34,16 @@ function renderizarPaginaRegistros(string $seccion): void
 
     $mensaje = null;
     if (isset($_GET['ok'])) {
-        $mensaje = $pestaña === 'nuevo'
-            ? 'Registro guardado correctamente.'
-            : 'Operación realizada correctamente.';
+        if ($pestaña === 'nuevo' && $seccion === 'presentaciones') {
+            $cantidad = isset($_GET['cantidad']) ? max(1, (int) $_GET['cantidad']) : 1;
+            $mensaje = $cantidad > 1
+                ? $cantidad . ' presentaciones registradas correctamente.'
+                : 'Presentación registrada correctamente.';
+        } elseif ($pestaña === 'nuevo') {
+            $mensaje = 'Registro guardado correctamente.';
+        } else {
+            $mensaje = 'Operación realizada correctamente.';
+        }
     }
     if (isset($_GET['actualizado'])) {
         $mensaje = 'Registro actualizado correctamente.';

@@ -38,12 +38,14 @@ CREATE TABLE IF NOT EXISTS inscripciones (
 
 CREATE TABLE IF NOT EXISTS presentaciones_ninos (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    parentesco_representante_1 VARCHAR(30) NOT NULL DEFAULT '',
     nombre_padre VARCHAR(100) NOT NULL,
-    nombre_madre VARCHAR(100) NOT NULL,
+    telefono_papa VARCHAR(30) NOT NULL,
+    parentesco_representante_2 VARCHAR(30) DEFAULT NULL,
+    nombre_madre VARCHAR(100) DEFAULT NULL,
+    telefono_mama VARCHAR(30) DEFAULT NULL,
     nombre_presentado VARCHAR(100) NOT NULL,
     fecha_nacimiento DATE NULL,
-    telefono_papa VARCHAR(30) NOT NULL,
-    telefono_mama VARCHAR(30) NOT NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'recibido',
     fecha_presentacion DATE NULL,
     estado_bloqueado TINYINT(1) NOT NULL DEFAULT 0,

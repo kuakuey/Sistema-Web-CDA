@@ -351,45 +351,37 @@ if ($accion === 'crear_presentacion') {
         exit;
     }
 
+    require_once __DIR__ . '/includes/presentaciones.php';
+
     $redireccionBase = obtenerUrlSeccion('presentaciones');
-    $campos = [
-        'nombre_padre'      => trim((string) ($_POST['nombre_padre'] ?? '')),
-        'nombre_madre'      => trim((string) ($_POST['nombre_madre'] ?? '')),
-        'nombre_presentado' => trim((string) ($_POST['nombre_presentado'] ?? '')),
-        'telefono_papa'     => trim((string) ($_POST['telefono_papa'] ?? '')),
-        'telefono_mama'     => trim((string) ($_POST['telefono_mama'] ?? '')),
-    ];
 
-    foreach ($campos as $valor) {
-        if ($valor === '') {
-            header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode('Completa todos los campos obligatorios.'));
-            exit;
-        }
-    }
-
-    $fechaNacimiento = parsearFechaNacimientoPresentacion($_POST);
-    if ($fechaNacimiento === null) {
-        header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode('Ingresa una fecha de nacimiento válida (día, mes y año).'));
+    try {
+        $representantes = normalizarRepresentantesPresentacion($_POST);
+        $presentados = parsearPresentadosPresentacion($_POST);
+    } catch (InvalidArgumentException $e) {
+        header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode($e->getMessage()));
         exit;
     }
 
     try {
-        insertarPresentacionNino([
-            'nombre_padre'      => $campos['nombre_padre'],
-            'nombre_madre'      => $campos['nombre_madre'],
-            'nombre_presentado' => $campos['nombre_presentado'],
-            'fecha_nacimiento'  => $fechaNacimiento,
-            'telefono_papa'     => $campos['telefono_papa'],
-            'telefono_mama'     => $campos['telefono_mama'],
-            'ip_cliente'        => $_SERVER['REMOTE_ADDR'] ?? '',
-            'agente_usuario'    => 'Sistema Web — ' . ($usuarioActual['usuario'] ?? 'interno'),
+        $cantidad = insertarPresentacionesNinosGrupo($representantes, $presentados, [
+            'ip_cliente'     => $_SERVER['REMOTE_ADDR'] ?? '',
+            'agente_usuario' => 'Sistema Web — ' . ($usuarioActual['usuario'] ?? 'interno'),
         ]);
     } catch (PDOException $e) {
         header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode('No se pudo guardar el registro.'));
         exit;
+    } catch (Throwable $e) {
+        header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode('No se pudo guardar el registro.'));
+        exit;
     }
 
-    header('Location: ' . $redireccionBase . '?pestaña=nuevo&ok=1');
+    $query = '?pestaña=nuevo&ok=1';
+    if ($cantidad > 1) {
+        $query .= '&cantidad=' . $cantidad;
+    }
+
+    header('Location: ' . $redireccionBase . $query);
     exit;
 }
 
@@ -483,23 +475,25 @@ if (in_array($accion, $accionesActualizar, true)) {
                 break;
 
             case 'actualizar_presentacion':
+                require_once __DIR__ . '/includes/presentaciones.php';
+
                 $campos = [
-                    'nombre_padre'      => trim((string) ($_POST['nombre_padre'] ?? '')),
-                    'nombre_madre'      => trim((string) ($_POST['nombre_madre'] ?? '')),
                     'nombre_presentado' => trim((string) ($_POST['nombre_presentado'] ?? '')),
-                    'telefono_papa'     => trim((string) ($_POST['telefono_papa'] ?? '')),
-                    'telefono_mama'     => trim((string) ($_POST['telefono_mama'] ?? '')),
                     'estado'            => trim((string) ($_POST['estado'] ?? '')),
                 ];
 
-                foreach ($campos as $valor) {
-                    if ($valor === '') {
-                        throw new InvalidArgumentException('Completa todos los campos obligatorios.');
-                    }
+                if ($campos['nombre_presentado'] === '') {
+                    throw new InvalidArgumentException('Completa todos los campos obligatorios.');
                 }
 
                 if (!esEstadoPresentacionValido($campos['estado'])) {
                     throw new InvalidArgumentException('Estado no válido.');
+                }
+
+                try {
+                    $representantes = normalizarRepresentantesPresentacion($_POST);
+                } catch (InvalidArgumentException $e) {
+                    throw $e;
                 }
 
                 $fechaNacimiento = parsearFechaNacimientoPresentacion($_POST);
@@ -507,7 +501,9 @@ if (in_array($accion, $accionesActualizar, true)) {
                     throw new InvalidArgumentException('Ingresa una fecha de nacimiento válida.');
                 }
 
-                actualizarPresentacionNino($id, array_merge($campos, ['fecha_nacimiento' => $fechaNacimiento]));
+                actualizarPresentacionNino($id, array_merge($campos, $representantes, [
+                    'fecha_nacimiento' => $fechaNacimiento,
+                ]));
                 break;
 
             case 'actualizar_ofrenda':

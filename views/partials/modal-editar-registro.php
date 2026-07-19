@@ -84,6 +84,11 @@ $fila = $filaEditar;
           </div>
 
           <?php elseif ($tipoEditar === 'presentacion'): ?>
+          <?php
+          require_once __DIR__ . '/../../includes/presentaciones.php';
+          $representante1 = representantePresentacionDesdeFila($fila, 1);
+          $representante2 = representantePresentacionDesdeFila($fila, 2);
+          ?>
           <input type="hidden" name="accion" value="actualizar_presentacion">
           <div class="row g-3">
             <div class="col-md-6">
@@ -94,22 +99,17 @@ $fila = $filaEditar;
               <label class="form-label">Fecha de nacimiento <span class="text-danger">*</span></label>
               <input type="date" class="form-control" name="fecha_nacimiento" required value="<?= htmlspecialchars($fila['fecha_nacimiento'] ?? '') ?>">
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Nombre del padre <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" name="nombre_padre" required maxlength="100" value="<?= htmlspecialchars($fila['nombre_padre'] ?? '') ?>">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Nombre de la madre <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" name="nombre_madre" required maxlength="100" value="<?= htmlspecialchars($fila['nombre_madre'] ?? '') ?>">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Teléfono papá <span class="text-danger">*</span></label>
-              <input type="tel" class="form-control" name="telefono_papa" required maxlength="30" value="<?= htmlspecialchars($fila['telefono_papa'] ?? '') ?>">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Teléfono mamá <span class="text-danger">*</span></label>
-              <input type="tel" class="form-control" name="telefono_mama" required maxlength="30" value="<?= htmlspecialchars($fila['telefono_mama'] ?? '') ?>">
-            </div>
+            <?php
+            $numeroRepresentante = 1;
+            $esObligatorio = true;
+            $representante = $representante1;
+            include __DIR__ . '/campos-representante-presentacion.php';
+
+            $numeroRepresentante = 2;
+            $esObligatorio = false;
+            $representante = $representante2;
+            include __DIR__ . '/campos-representante-presentacion.php';
+            ?>
             <?php if (($fila['estado'] ?? '') === 'presentado'): ?>
             <div class="col-md-6">
               <label class="form-label">Estado</label>

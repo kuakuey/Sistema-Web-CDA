@@ -362,17 +362,20 @@ $incluirPresentaciones = $seccionExportacion === 'presentaciones';
       <tr>
         <th>Nombre niño/a</th>
         <th>Edad</th>
-        <th>Nombre papá</th>
-        <th>Nombre mamá</th>
+        <th>Representante 1</th>
+        <th>Representante 2</th>
       </tr>
     </thead>
     <tbody>
-      <?php foreach ($informe['presentaciones'] as $presentacion): ?>
+      <?php
+      require_once __DIR__ . '/../../includes/presentaciones.php';
+      foreach ($informe['presentaciones'] as $presentacion):
+      ?>
       <tr>
         <td><?= htmlspecialchars($presentacion['nombre_presentado'] ?? '—') ?></td>
         <td><?= htmlspecialchars($presentacion['edad_etiqueta'] ?? formatearEdadPresentacion($presentacion['fecha_nacimiento'] ?? null)) ?></td>
-        <td><?= htmlspecialchars($presentacion['nombre_padre'] ?? '—') ?></td>
-        <td><?= htmlspecialchars($presentacion['nombre_madre'] ?? '—') ?></td>
+        <td><?= htmlspecialchars(formatearNombreRepresentantePresentacion($presentacion, 1)) ?></td>
+        <td><?= htmlspecialchars(tieneSegundoRepresentantePresentacion($presentacion) ? formatearNombreRepresentantePresentacion($presentacion, 2) : '—') ?></td>
       </tr>
       <?php endforeach; ?>
     </tbody>

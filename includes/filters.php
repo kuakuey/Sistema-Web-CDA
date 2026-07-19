@@ -102,8 +102,8 @@ function construirSqlPresentaciones(array $filtros): array
 
     if ($filtros['buscar'] !== '') {
         $busqueda = '%' . $filtros['buscar'] . '%';
-        $condiciones[] = '(nombre_padre LIKE ? OR nombre_madre LIKE ? OR nombre_presentado LIKE ? OR telefono_papa LIKE ? OR telefono_mama LIKE ?)';
-        $parametros = array_merge($parametros, [$busqueda, $busqueda, $busqueda, $busqueda, $busqueda]);
+        $condiciones[] = '(nombre_padre LIKE ? OR nombre_madre LIKE ? OR nombre_presentado LIKE ? OR telefono_papa LIKE ? OR telefono_mama LIKE ? OR parentesco_representante_1 LIKE ? OR parentesco_representante_2 LIKE ?)';
+        $parametros = array_merge($parametros, [$busqueda, $busqueda, $busqueda, $busqueda, $busqueda, $busqueda, $busqueda]);
     }
 
     if ($filtros['fecha_desde'] !== '') {

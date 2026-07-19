@@ -48,25 +48,56 @@ function insertarPresentacionNino(array $datos): int
 
     $stmt = $pdo->prepare(
         'INSERT INTO presentaciones_ninos (
-            nombre_padre, nombre_madre, nombre_presentado, fecha_nacimiento,
-            telefono_papa, telefono_mama, estado,
+            parentesco_representante_1, nombre_padre, telefono_papa,
+            parentesco_representante_2, nombre_madre, telefono_mama,
+            nombre_presentado, fecha_nacimiento, estado,
             ip_cliente, agente_usuario, creado_en, actualizado_en
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
     );
 
     $stmt->execute([
+        $datos['parentesco_representante_1'] ?? '',
         $datos['nombre_padre'] ?? '',
-        $datos['nombre_madre'] ?? '',
+        $datos['telefono_papa'] ?? '',
+        $datos['parentesco_representante_2'] ?? null,
+        $datos['nombre_madre'] ?? null,
+        $datos['telefono_mama'] ?? null,
         $datos['nombre_presentado'] ?? '',
         $datos['fecha_nacimiento'] ?? null,
-        $datos['telefono_papa'] ?? '',
-        $datos['telefono_mama'] ?? '',
         'recibido',
         $datos['ip_cliente'] ?? '',
         $datos['agente_usuario'] ?? '',
     ]);
 
     return (int) $pdo->lastInsertId();
+}
+
+/**
+ * @param array<string, string|null> $representantes
+ * @param array<int, array{nombre_presentado: string, fecha_nacimiento: string}> $presentados
+ * @param array<string, mixed> $meta
+ */
+function insertarPresentacionesNinosGrupo(array $representantes, array $presentados, array $meta): int
+{
+    $pdo = getConnection();
+    $pdo->beginTransaction();
+
+    try {
+        $insertados = 0;
+
+        foreach ($presentados as $presentado) {
+            insertarPresentacionNino(array_merge($representantes, $presentado, $meta));
+            $insertados++;
+        }
+
+        $pdo->commit();
+
+        return $insertados;
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+
+        throw $e;
+    }
 }
 
 function obtenerMesesCalendario(): array
@@ -330,19 +361,23 @@ function actualizarPresentacionNino(int $id, array $datos): bool
 
     $stmt = $pdo->prepare(
         'UPDATE presentaciones_ninos SET
-            nombre_padre = ?, nombre_madre = ?, nombre_presentado = ?, fecha_nacimiento = ?,
-            telefono_papa = ?, telefono_mama = ?, estado = ?, fecha_presentacion = ?,
+            parentesco_representante_1 = ?, nombre_padre = ?, telefono_papa = ?,
+            parentesco_representante_2 = ?, nombre_madre = ?, telefono_mama = ?,
+            nombre_presentado = ?, fecha_nacimiento = ?,
+            estado = ?, fecha_presentacion = ?,
             estado_bloqueado = ?, actualizado_en = NOW()
          WHERE id = ?'
     );
 
     return $stmt->execute([
-        trim($datos['nombre_padre']),
-        trim($datos['nombre_madre']),
+        trim((string) $datos['parentesco_representante_1']),
+        trim((string) $datos['nombre_padre']),
+        trim((string) $datos['telefono_papa']),
+        $datos['parentesco_representante_2'] !== null ? trim((string) $datos['parentesco_representante_2']) : null,
+        $datos['nombre_madre'] !== null ? trim((string) $datos['nombre_madre']) : null,
+        $datos['telefono_mama'] !== null ? trim((string) $datos['telefono_mama']) : null,
         trim($datos['nombre_presentado']),
         $datos['fecha_nacimiento'],
-        trim($datos['telefono_papa']),
-        trim($datos['telefono_mama']),
         $estadoNuevo,
         $fechaPresentacion,
         $marcarBloqueado,
@@ -644,6 +679,7 @@ function listarPresentacionesNinosPorEstados(array $estados, int $limite = 300):
 function formatearPresentacionParaApi(array $fila): array
 {
     require_once __DIR__ . '/filters.php';
+    require_once __DIR__ . '/presentaciones.php';
 
     return [
         'id'                => (int) $fila['id'],
@@ -652,10 +688,16 @@ function formatearPresentacionParaApi(array $fila): array
         'fecha_nacimiento_etiqueta' => formatearFechaNacimiento($fila['fecha_nacimiento'] ?? null),
         'edad'              => calcularEdadDesdeFechaNacimiento($fila['fecha_nacimiento'] ?? null),
         'edad_etiqueta'     => formatearEdadPresentacion($fila['fecha_nacimiento'] ?? null),
+        'parentesco_representante_1' => $fila['parentesco_representante_1'] ?? null,
+        'parentesco_representante_2' => $fila['parentesco_representante_2'] ?? null,
         'nombre_padre'      => $fila['nombre_padre'],
         'nombre_madre'      => $fila['nombre_madre'],
         'telefono_papa'     => $fila['telefono_papa'],
         'telefono_mama'     => $fila['telefono_mama'],
+        'representante_1'   => formatearNombreRepresentantePresentacion($fila, 1),
+        'representante_2'   => tieneSegundoRepresentantePresentacion($fila)
+            ? formatearNombreRepresentantePresentacion($fila, 2)
+            : null,
         'estado'            => $fila['estado'],
         'estado_etiqueta'   => etiquetaEstadoPresentacion($fila['estado']),
         'creado_en'         => $fila['creado_en'],

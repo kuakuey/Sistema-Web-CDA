@@ -143,16 +143,17 @@ function enviarInformeExcel(array $informe, string $seccion = 'completo'): void
         echo '<h3>Presentación de niños</h3>';
         echo '<p>Registros: ' . (int) ($resumen['cantidad_presentaciones'] ?? 0) . '</p>';
         echo '<table border="1" cellpadding="4" cellspacing="0">';
-        echo '<tr><th>Nombre niño/a</th><th>Edad</th><th>Nombre papá</th><th>Nombre mamá</th></tr>';
+        echo '<tr><th>Nombre niño/a</th><th>Edad</th><th>Representante 1</th><th>Representante 2</th></tr>';
         if (empty($informe['presentaciones'])) {
             echo '<tr><td colspan="4">—</td></tr>';
         } else {
+            require_once __DIR__ . '/presentaciones.php';
             foreach ($informe['presentaciones'] as $presentacion) {
                 echo '<tr>';
                 echo '<td>' . htmlspecialchars($presentacion['nombre_presentado'] ?? '—') . '</td>';
                 echo '<td>' . htmlspecialchars($presentacion['edad_etiqueta'] ?? formatearEdadPresentacion($presentacion['fecha_nacimiento'] ?? null)) . '</td>';
-                echo '<td>' . htmlspecialchars($presentacion['nombre_padre'] ?? '—') . '</td>';
-                echo '<td>' . htmlspecialchars($presentacion['nombre_madre'] ?? '—') . '</td>';
+                echo '<td>' . htmlspecialchars(formatearNombreRepresentantePresentacion($presentacion, 1)) . '</td>';
+                echo '<td>' . htmlspecialchars(tieneSegundoRepresentantePresentacion($presentacion) ? formatearNombreRepresentantePresentacion($presentacion, 2) : '—') . '</td>';
                 echo '</tr>';
             }
         }

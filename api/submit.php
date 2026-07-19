@@ -110,40 +110,26 @@ try {
     }
 
     if ($tipoFormulario === 'presentacion_ninos') {
-        $campos = [
-            'nombre_padre',
-            'nombre_madre',
-            'nombre_presentado',
-            'telefono_papa',
-            'telefono_mama',
-        ];
+        require_once __DIR__ . '/../includes/presentaciones.php';
 
-        foreach ($campos as $campo) {
-            if (trim((string) ($payload[$campo] ?? '')) === '') {
-                throw new InvalidArgumentException('Completa todos los campos obligatorios.');
-            }
+        try {
+            $representantes = normalizarRepresentantesPresentacion($payload);
+            $presentados = parsearPresentadosPresentacion($payload);
+        } catch (InvalidArgumentException $e) {
+            throw $e;
         }
 
-        $fechaNacimiento = parsearFechaNacimientoPresentacion($payload);
-        if ($fechaNacimiento === null) {
-            throw new InvalidArgumentException('Ingresa una fecha de nacimiento válida (día, mes y año).');
-        }
-
-        $id = insertarPresentacionNino([
-            'nombre_padre'      => trim((string) $payload['nombre_padre']),
-            'nombre_madre'      => trim((string) $payload['nombre_madre']),
-            'nombre_presentado' => trim((string) $payload['nombre_presentado']),
-            'fecha_nacimiento'  => $fechaNacimiento,
-            'telefono_papa'     => trim((string) $payload['telefono_papa']),
-            'telefono_mama'     => trim((string) $payload['telefono_mama']),
-            'ip_cliente'        => $ip,
-            'agente_usuario'    => $agente,
+        $cantidad = insertarPresentacionesNinosGrupo($representantes, $presentados, [
+            'ip_cliente'     => $ip,
+            'agente_usuario' => $agente,
         ]);
 
         echo json_encode([
-            'exito'   => true,
-            'mensaje' => 'Inscripción de presentación enviada correctamente.',
-            'id'      => $id,
+            'exito'    => true,
+            'mensaje'  => $cantidad > 1
+                ? $cantidad . ' inscripciones de presentación enviadas correctamente.'
+                : 'Inscripción de presentación enviada correctamente.',
+            'cantidad' => $cantidad,
         ]);
         exit;
     }

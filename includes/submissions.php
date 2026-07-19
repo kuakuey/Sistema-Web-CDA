@@ -172,12 +172,50 @@ function calcularEdadDesdeFechaNacimiento(?string $fecha): ?int
     return (int) $nacimiento->diff($hoy)->y;
 }
 
+function calcularMesesDesdeFechaNacimiento(?string $fecha): ?int
+{
+    if ($fecha === null || $fecha === '') {
+        return null;
+    }
+
+    $nacimiento = DateTime::createFromFormat('Y-m-d', $fecha);
+
+    if (!$nacimiento) {
+        return null;
+    }
+
+    $hoy = new DateTime('today');
+
+    if ($nacimiento > $hoy) {
+        return null;
+    }
+
+    $meses = ((int) $hoy->format('Y') - (int) $nacimiento->format('Y')) * 12
+        + ((int) $hoy->format('m') - (int) $nacimiento->format('m'));
+
+    if ((int) $hoy->format('d') < (int) $nacimiento->format('d')) {
+        $meses--;
+    }
+
+    return max(0, $meses);
+}
+
 function formatearEdadPresentacion(?string $fecha): string
 {
     $edad = calcularEdadDesdeFechaNacimiento($fecha);
 
     if ($edad === null) {
         return '—';
+    }
+
+    if ($edad === 0) {
+        $meses = calcularMesesDesdeFechaNacimiento($fecha);
+
+        if ($meses === null) {
+            return '—';
+        }
+
+        return $meses . ' mes' . ($meses === 1 ? '' : 'es');
     }
 
     return $edad . ' año' . ($edad === 1 ? '' : 's');

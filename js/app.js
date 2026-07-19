@@ -37,6 +37,12 @@
       cerrarSidebar();
     });
   });
+
+  window.addEventListener('resize', function () {
+    if (window.matchMedia('(min-width: 992px)').matches) {
+      cerrarSidebar();
+    }
+  });
 })();
 
 (function () {

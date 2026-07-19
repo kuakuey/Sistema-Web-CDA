@@ -2,7 +2,7 @@
   <div class="container-fluid">
     <div class="d-flex align-items-center flex-grow-1 min-w-0">
       <button
-        class="btn sidebar-toggle me-1"
+        class="btn sidebar-toggle d-lg-none me-1"
         type="button"
         id="sidebarToggle"
         aria-label="Abrir menú"

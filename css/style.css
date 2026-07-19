@@ -405,6 +405,11 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   overflow: hidden;
 }
 
+.app-wrapper > .row > .app-sidebar--desktop {
+  min-width: 0;
+  overflow: hidden;
+}
+
 .main-content {
   min-width: 0;
   background-color: var(--cda-body-bg);
@@ -506,8 +511,15 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   width: 100%;
 }
 
-/* Drawer lateral (único menú en todos los breakpoints) */
-.app-sidebar--drawer {
+/* Desktop: sidebar fijo a la izquierda */
+.app-sidebar--desktop {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Móvil / tablet: drawer deslizable */
+.app-sidebar--mobile {
   position: fixed;
   top: 56px;
   left: 0;
@@ -523,7 +535,7 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   height: calc(100dvh - 56px);
 }
 
-.app-sidebar--drawer.is-open {
+.app-sidebar--mobile.is-open {
   transform: translateX(0);
 }
 
@@ -559,6 +571,23 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
 .sidebar-toggle:focus {
   color: var(--cda-navbar-text);
   opacity: 0.85;
+}
+
+@media (min-width: 992px) {
+  .app-sidebar--mobile,
+  .sidebar-overlay {
+    display: none !important;
+  }
+
+  .sidebar-toggle {
+    display: none !important;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .app-sidebar--desktop {
+    display: none !important;
+  }
 }
 
 /* Filtros colapsables (móvil) */

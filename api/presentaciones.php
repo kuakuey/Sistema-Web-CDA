@@ -77,14 +77,29 @@ try {
         throw new InvalidArgumentException('ID y estado son obligatorios.');
     }
 
-    $estadosPlugin = ['contactado', 'confirmado'];
+    $estadosPlugin = ['contactado', 'confirmado', 'entregar_diploma'];
 
     if (!in_array($estado, $estadosPlugin, true)) {
-        throw new InvalidArgumentException('Desde el portal solo puedes marcar Contactado o Confirmado.');
+        throw new InvalidArgumentException('Estado no permitido desde el portal.');
     }
 
-    if (!actualizarEstadoPresentacionNino($id, $estado)) {
+    $pdo = getConnection();
+    $stmtActual = $pdo->prepare('SELECT estado FROM presentaciones_ninos WHERE id = ?');
+    $stmtActual->execute([$id]);
+    $filaActual = $stmtActual->fetch();
+
+    if (!$filaActual) {
         throw new InvalidArgumentException('No se encontró el registro.');
+    }
+
+    $estadoActual = (string) ($filaActual['estado'] ?? '');
+
+    if ($estado === 'entregar_diploma' && !in_array($estadoActual, ['contactado', 'confirmado'], true)) {
+        throw new InvalidArgumentException('Solo puedes marcar Entregar Diploma desde Contactado o Confirmado.');
+    }
+
+    if (!actualizarEstadoPresentacionNino($id, $estado, $usuarioSesion['rol'])) {
+        throw new InvalidArgumentException('No se pudo actualizar el estado.');
     }
 
     echo json_encode([

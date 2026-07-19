@@ -265,16 +265,17 @@ function contarOfrendasFiltradas(array $filtros): int
 
 function obtenerEstadosPresentacion(): array
 {
-    return ['recibido', 'contactado', 'confirmado', 'presentado'];
+    return ['recibido', 'contactado', 'confirmado', 'entregar_diploma', 'presentado'];
 }
 
 function obtenerEtiquetasEstadosPresentacion(): array
 {
     return [
-        'recibido'    => 'Recibido',
-        'contactado'  => 'Contactado',
-        'confirmado'  => 'Confirmado',
-        'presentado'  => 'Presentado',
+        'recibido'         => 'Recibido',
+        'contactado'       => 'Contactado',
+        'confirmado'       => 'Confirmado',
+        'entregar_diploma' => 'Entregar Diploma',
+        'presentado'       => 'Presentado',
     ];
 }
 

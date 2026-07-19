@@ -16,12 +16,7 @@
 
   <div class="container-fluid app-wrapper">
     <div class="row g-0">
-      <?php
-      $sidebarVariant = 'desktop';
-      include __DIR__ . '/../partials/sidebar.php';
-      ?>
-
-      <main class="col-lg-10 main-content p-4">
+      <main class="col-12 main-content p-4">
         <?= $content ?>
       </main>
     </div>

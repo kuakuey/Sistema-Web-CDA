@@ -1,15 +1,12 @@
 <?php
 /**
- * Sidebar compartido. Definir $sidebarVariant = 'desktop' | 'mobile' antes de incluir.
+ * Sidebar drawer (menú lateral). Definir $sidebarVariant = 'mobile' antes de incluir.
  */
 
-$sidebarVariant = $sidebarVariant ?? 'desktop';
+$sidebarVariant = $sidebarVariant ?? 'mobile';
 $sidebarEsMobile = $sidebarVariant === 'mobile';
 $sidebarId = $sidebarEsMobile ? 'appSidebarMobile' : '';
-$sidebarClases = 'app-sidebar app-sidebar--' . $sidebarVariant;
-if (!$sidebarEsMobile) {
-    $sidebarClases .= ' col-lg-2';
-}
+$sidebarClases = 'app-sidebar app-sidebar--drawer';
 
 $rolSidebar = $usuario['rol'] ?? '';
 $itemsMenu = obtenerItemsMenuSidebar($rolSidebar);

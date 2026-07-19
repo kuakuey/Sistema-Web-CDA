@@ -405,11 +405,6 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   overflow: hidden;
 }
 
-.app-wrapper > .row > .app-sidebar--desktop {
-  min-width: 0;
-  overflow: hidden;
-}
-
 .main-content {
   min-width: 0;
   background-color: var(--cda-body-bg);
@@ -435,8 +430,12 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
   padding: 0.75rem;
   -webkit-overflow-scrolling: touch;
 }
@@ -449,6 +448,8 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   font-size: var(--cda-text-sm);
   font-weight: var(--cda-font-normal);
   transition: background-color 0.15s ease, color 0.15s ease;
+  width: 100%;
+  flex-shrink: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -505,15 +506,8 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   width: 100%;
 }
 
-/* Desktop: sidebar fijo a la izquierda en el layout */
-.app-sidebar--desktop {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* Móvil: drawer deslizable (oculto en desktop) */
-.app-sidebar--mobile {
+/* Drawer lateral (único menú en todos los breakpoints) */
+.app-sidebar--drawer {
   position: fixed;
   top: 56px;
   left: 0;
@@ -529,16 +523,7 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   height: calc(100dvh - 56px);
 }
 
-.app-sidebar--mobile .sidebar-nav {
-  flex-wrap: nowrap;
-}
-
-.app-sidebar--mobile .sidebar-nav .nav-link {
-  width: 100%;
-  flex-shrink: 0;
-}
-
-.app-sidebar--mobile.is-open {
+.app-sidebar--drawer.is-open {
   transform: translateX(0);
 }
 
@@ -574,23 +559,6 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
 .sidebar-toggle:focus {
   color: var(--cda-navbar-text);
   opacity: 0.85;
-}
-
-@media (min-width: 992px) {
-  .app-sidebar--mobile,
-  .sidebar-overlay {
-    display: none !important;
-  }
-
-  .sidebar-toggle {
-    display: none !important;
-  }
-}
-
-@media (max-width: 991.98px) {
-  .app-sidebar--desktop {
-    display: none !important;
-  }
 }
 
 /* Filtros colapsables (móvil) */

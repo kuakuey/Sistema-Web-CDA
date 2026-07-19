@@ -14,7 +14,7 @@
   include __DIR__ . '/../partials/sidebar.php';
   ?>
 
-  <div class="container-fluid app-wrapper">
+  <div class="container-fluid app-wrapper" style="padding-inline: 0 !important;">
     <div class="row g-0">
       <?php
       $sidebarVariant = 'desktop';

@@ -97,6 +97,7 @@ $incluirOfrendas = in_array($seccionExportacion, ['completo', 'ofrendas'], true)
 $incluirEventos = in_array($seccionExportacion, ['completo', 'eventos'], true);
 $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
 $incluirPresentaciones = $seccionExportacion === 'presentaciones';
+$incluirBautismos = $seccionExportacion === 'bautismos';
 ?>
 
   <h1><?= htmlspecialchars(tituloSeccionInforme($seccionExportacion)) ?></h1>
@@ -108,6 +109,9 @@ $incluirPresentaciones = $seccionExportacion === 'presentaciones';
     <?php endif; ?>
     <?php if ($incluirPresentaciones): ?>
     · Estados: <?= htmlspecialchars($informe['estados_presentacion_etiqueta'] ?? '—') ?>
+    <?php endif; ?>
+    <?php if ($incluirBautismos): ?>
+    · Estado: <?= htmlspecialchars($informe['estado_bautismo_etiqueta'] ?? '—') ?>
     <?php endif; ?>
     · Generado: <?= htmlspecialchars($informe['generado_en']) ?>
   </p>
@@ -210,6 +214,19 @@ $incluirPresentaciones = $seccionExportacion === 'presentaciones';
       <td>
         <span class="resumen-label">Estados incluidos</span>
         <span class="resumen-valor"><?= htmlspecialchars($informe['estados_presentacion_etiqueta'] ?? '—') ?></span>
+      </td>
+    </tr>
+  </table>
+  <?php elseif ($incluirBautismos): ?>
+  <table class="resumen">
+    <tr>
+      <td>
+        <span class="resumen-label">Registros</span>
+        <span class="resumen-valor"><?= (int) ($resumen['cantidad_bautismos'] ?? 0) ?></span>
+      </td>
+      <td>
+        <span class="resumen-label">Estado</span>
+        <span class="resumen-valor"><?= htmlspecialchars($informe['estado_bautismo_etiqueta'] ?? '—') ?></span>
       </td>
     </tr>
   </table>
@@ -376,6 +393,37 @@ $incluirPresentaciones = $seccionExportacion === 'presentaciones';
         <td><?= htmlspecialchars($presentacion['edad_etiqueta'] ?? formatearEdadPresentacion($presentacion['fecha_nacimiento'] ?? null)) ?></td>
         <td><?= htmlspecialchars(formatearNombreRepresentantePresentacion($presentacion, 1)) ?></td>
         <td><?= htmlspecialchars(tieneSegundoRepresentantePresentacion($presentacion) ? formatearNombreRepresentantePresentacion($presentacion, 2) : '—') ?></td>
+      </tr>
+      <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php endif; ?>
+  <?php endif; ?>
+
+  <?php if ($incluirBautismos): ?>
+  <h2>Personas bautizadas</h2>
+  <?php if (empty($informe['bautismos'])): ?>
+  <p class="vacio">No hay registros de bautismo con los filtros seleccionados.</p>
+  <?php else: ?>
+  <table class="datos">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Teléfono</th>
+        <th>Estado</th>
+        <th>Fecha de bautizo</th>
+        <th>Registrado el</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php foreach ($informe['bautismos'] as $bautismo): ?>
+      <?php $nombreBautismo = trim(($bautismo['nombre'] ?? '') . ' ' . ($bautismo['apellido'] ?? '')); ?>
+      <tr>
+        <td><?= htmlspecialchars($nombreBautismo !== '' ? $nombreBautismo : '—') ?></td>
+        <td><?= htmlspecialchars($bautismo['celular'] ?? '—') ?></td>
+        <td><?= htmlspecialchars(etiquetaEstadoBautismo((string) ($bautismo['estado_bautismo'] ?? 'ingresado'))) ?></td>
+        <td><?= htmlspecialchars(formatearFechaInforme($bautismo['fecha_bautismo'] ?? null)) ?></td>
+        <td><?= htmlspecialchars(formatearFechaHora($bautismo['creado_en'] ?? null)) ?></td>
       </tr>
       <?php endforeach; ?>
     </tbody>

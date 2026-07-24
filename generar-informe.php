@@ -33,6 +33,7 @@ $eventoId = isset($_GET['evento_id']) ? (int) $_GET['evento_id'] : 0;
 $estadosPresentacionInforme = isset($_GET['estados_presentacion']) && is_array($_GET['estados_presentacion'])
     ? $_GET['estados_presentacion']
     : obtenerEstadosPresentacion();
+$estadoBautismoInforme = isset($_GET['estado_bautismo']) ? trim((string) $_GET['estado_bautismo']) : 'todos';
 $generar = isset($_GET['generar']);
 
 $error = isset($_GET['error']) ? trim((string) $_GET['error']) : null;
@@ -60,6 +61,13 @@ try {
                 $fechaHasta,
                 $turno,
                 $estadosPresentacionInforme
+            );
+        } elseif ($seccion === 'bautismos') {
+            $informe = generarInformeBautismos(
+                $fechaDesde,
+                $fechaHasta,
+                $turno,
+                $estadoBautismoInforme
             );
         } else {
             $informe = generarInformeOfrendasYValores(
@@ -112,6 +120,8 @@ view('informes/generar', [
     'etiquetasSeccionInforme'=> obtenerEtiquetasSeccionInforme(),
     'etiquetasEstadosPresentacion' => obtenerEtiquetasEstadosPresentacion(),
     'estadosPresentacionInforme' => normalizarEstadosPresentacionInforme($estadosPresentacionInforme),
+    'etiquetasEstadoBautismoInforme' => obtenerEtiquetasEstadoBautismoInforme(),
+    'estadoBautismoInforme'  => normalizarEstadoBautismoInforme($estadoBautismoInforme),
     'error'                  => $error,
     'errorBd'                => $errorBd,
 ], 'app');

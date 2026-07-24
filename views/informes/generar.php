@@ -22,8 +22,8 @@
     </div>
     <div class="card-body">
       <p class="text-muted small mb-4">
-        El informe filtra por la fecha en que se registró cada ofrenda, evento o valor adicional en el sistema,
-        no por la fecha de ofrenda o del evento. Si dejas vacías las fechas, se incluirán todos los registros.
+        El informe filtra por la fecha en que se registró cada ofrenda, evento, valor adicional o persona en el sistema,
+        no por la fecha de ofrenda, del evento o del bautizo. Si dejas vacías las fechas, se incluirán todos los registros.
       </p>
 
       <form method="GET" action="generar-informe.php" class="row g-3" id="formInformeFiltros">
@@ -123,6 +123,18 @@
           <p class="form-text mb-0">Selecciona uno o más estados para incluir en el informe.</p>
         </div>
 
+        <div class="col-md-4 js-campo-bautismos-estado" style="<?= $seccion === 'bautismos' ? '' : 'display:none' ?>">
+          <label class="form-label" for="estado_bautismo">Estado</label>
+          <select class="form-select" id="estado_bautismo" name="estado_bautismo">
+            <?php foreach ($etiquetasEstadoBautismoInforme ?? [] as $claveEstado => $etiquetaEstado): ?>
+            <option value="<?= htmlspecialchars($claveEstado) ?>" <?= ($estadoBautismoInforme ?? 'todos') === $claveEstado ? 'selected' : '' ?>>
+              <?= htmlspecialchars($etiquetaEstado) ?>
+            </option>
+            <?php endforeach; ?>
+          </select>
+          <p class="form-text mb-0">Ingresados, bautizados o todos.</p>
+        </div>
+
         <div class="col-12">
           <div class="d-flex flex-wrap gap-2 pt-2">
             <button type="button" class="btn btn-primary js-descargar-informe" data-formato="pdf">
@@ -149,6 +161,7 @@
   var campoEvento = document.querySelector('.js-campo-evento');
   var campoSinEntregar = document.querySelector('.js-campo-sin-entregar');
   var campoPresentacionesEstados = document.querySelector('.js-campo-presentaciones-estados');
+  var campoBautismosEstado = document.querySelector('.js-campo-bautismos-estado');
   var checkboxSinEntregar = document.getElementById('mostrar_sin_entregar');
   var checkboxesEstadosPresentacion = document.querySelectorAll('.js-estado-presentacion-informe');
 
@@ -174,6 +187,10 @@
 
     if (campoPresentacionesEstados) {
       campoPresentacionesEstados.style.display = seccion === 'presentaciones' ? '' : 'none';
+    }
+
+    if (campoBautismosEstado) {
+      campoBautismosEstado.style.display = seccion === 'bautismos' ? '' : 'none';
     }
   }
 

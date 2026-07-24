@@ -35,6 +35,9 @@ function enviarInformeExcel(array $informe, string $seccion = 'completo'): void
     if ($seccion === 'presentaciones') {
         echo ' · Estados: ' . htmlspecialchars($informe['estados_presentacion_etiqueta'] ?? '—');
     }
+    if ($seccion === 'bautismos') {
+        echo ' · Estado: ' . htmlspecialchars($informe['estado_bautismo_etiqueta'] ?? '—');
+    }
     echo ' · Generado: ' . htmlspecialchars($informe['generado_en']) . '</p>';
 
     if (in_array($seccion, ['completo', 'ofrendas'], true)) {
@@ -154,6 +157,28 @@ function enviarInformeExcel(array $informe, string $seccion = 'completo'): void
                 echo '<td>' . htmlspecialchars($presentacion['edad_etiqueta'] ?? formatearEdadPresentacion($presentacion['fecha_nacimiento'] ?? null)) . '</td>';
                 echo '<td>' . htmlspecialchars(formatearNombreRepresentantePresentacion($presentacion, 1)) . '</td>';
                 echo '<td>' . htmlspecialchars(tieneSegundoRepresentantePresentacion($presentacion) ? formatearNombreRepresentantePresentacion($presentacion, 2) : '—') . '</td>';
+                echo '</tr>';
+            }
+        }
+        echo '</table>';
+    }
+
+    if ($seccion === 'bautismos') {
+        echo '<h3>Personas bautizadas</h3>';
+        echo '<p>Registros: ' . (int) ($resumen['cantidad_bautismos'] ?? 0) . '</p>';
+        echo '<table border="1" cellpadding="4" cellspacing="0">';
+        echo '<tr><th>Nombre</th><th>Teléfono</th><th>Estado</th><th>Fecha de bautizo</th><th>Registrado el</th></tr>';
+        if (empty($informe['bautismos'])) {
+            echo '<tr><td colspan="5">—</td></tr>';
+        } else {
+            foreach ($informe['bautismos'] as $bautismo) {
+                $nombreCompleto = trim(($bautismo['nombre'] ?? '') . ' ' . ($bautismo['apellido'] ?? ''));
+                echo '<tr>';
+                echo '<td>' . htmlspecialchars($nombreCompleto !== '' ? $nombreCompleto : '—') . '</td>';
+                echo '<td>' . htmlspecialchars($bautismo['celular'] ?? '—') . '</td>';
+                echo '<td>' . htmlspecialchars(etiquetaEstadoBautismo((string) ($bautismo['estado_bautismo'] ?? 'ingresado'))) . '</td>';
+                echo '<td>' . htmlspecialchars(formatearFechaInforme($bautismo['fecha_bautismo'] ?? null)) . '</td>';
+                echo '<td>' . htmlspecialchars(formatearFechaHora($bautismo['creado_en'] ?? null)) . '</td>';
                 echo '</tr>';
             }
         }

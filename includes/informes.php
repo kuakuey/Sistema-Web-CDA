@@ -80,6 +80,7 @@ function obtenerEtiquetasSeccionInforme(): array
         'valores'        => 'Valores adicionales',
         'eventos'        => 'Eventos',
         'presentaciones' => 'Presentación de niños',
+        'bautismos'      => 'Personas bautizadas',
     ];
 }
 
@@ -122,7 +123,7 @@ function normalizarSeccionInforme(string $seccion): string
 {
     $seccion = trim(mb_strtolower($seccion));
 
-    if (in_array($seccion, ['completo', 'ofrendas', 'eventos', 'valores', 'presentaciones'], true)) {
+    if (in_array($seccion, ['completo', 'ofrendas', 'eventos', 'valores', 'presentaciones', 'bautismos'], true)) {
         return $seccion;
     }
 
@@ -174,6 +175,8 @@ function tituloSeccionInforme(string $seccion): string
             return 'Informe de valores adicionales';
         case 'presentaciones':
             return 'Informe de presentación de niños';
+        case 'bautismos':
+            return 'Informe de personas bautizadas';
         default:
             return 'Informe financiero CDA';
     }
@@ -318,6 +321,33 @@ function etiquetasEstadosPresentacionInforme(array $estados): string
     return implode(', ', $partes);
 }
 
+function normalizarEstadoBautismoInforme(string $estado): string
+{
+    $estado = trim(mb_strtolower($estado));
+
+    if ($estado === 'todos' || esEstadoBautismoValido($estado)) {
+        return $estado;
+    }
+
+    return 'todos';
+}
+
+function obtenerEtiquetasEstadoBautismoInforme(): array
+{
+    return [
+        'todos'     => 'Todos',
+        'ingresado' => 'Ingresados',
+        'bautizado' => 'Bautizados',
+    ];
+}
+
+function etiquetaEstadoBautismoInforme(string $estado): string
+{
+    $etiquetas = obtenerEtiquetasEstadoBautismoInforme();
+
+    return $etiquetas[normalizarEstadoBautismoInforme($estado)] ?? 'Todos';
+}
+
 /**
  * @param array<int, string> $estados
  * @return array<int, array<string, mixed>>
@@ -391,6 +421,75 @@ function generarInformePresentaciones(
             'cantidad_presentaciones' => count($presentaciones),
         ],
         'presentaciones'                 => $presentaciones,
+    ];
+}
+
+/**
+ * @return array<int, array<string, mixed>>
+ */
+function obtenerBautismosPorRangoRegistro(
+    ?string $fechaDesde,
+    ?string $fechaHasta,
+    string $turno = 'todos',
+    string $estadoBautismo = 'todos'
+): array {
+    $estadoBautismo = normalizarEstadoBautismoInforme($estadoBautismo);
+    $pdo = getConnection();
+    [$condicionFecha, $parametrosFecha] = construirCondicionFechaRegistro($fechaDesde, $fechaHasta);
+    [$condicionHora, $parametrosHora] = construirCondicionHoraTurno($turno);
+
+    $condiciones = [
+        'tipo_formulario = ?',
+        $condicionFecha,
+        $condicionHora,
+    ];
+    $parametros = array_merge(['bautismo'], $parametrosFecha, $parametrosHora);
+
+    if ($estadoBautismo !== 'todos') {
+        $condiciones[] = 'estado_bautismo = ?';
+        $parametros[] = $estadoBautismo;
+    }
+
+    $sql = 'SELECT * FROM inscripciones
+         WHERE ' . implode(' AND ', $condiciones) .
+        ' ORDER BY creado_en DESC, id DESC';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($parametros);
+
+    return $stmt->fetchAll();
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function generarInformeBautismos(
+    string $fechaDesde,
+    string $fechaHasta,
+    string $turno = 'todos',
+    string $estadoBautismo = 'todos'
+): array {
+    $rango = resolverRangoFechasInforme($fechaDesde, $fechaHasta);
+    $turno = normalizarTurnoInforme($turno);
+    $estadoBautismo = normalizarEstadoBautismoInforme($estadoBautismo);
+    $bautismos = obtenerBautismosPorRangoRegistro($rango['desde'], $rango['hasta'], $turno, $estadoBautismo);
+
+    return [
+        'fecha_desde'                   => $rango['desde'] ?? 'todo',
+        'fecha_hasta'                   => $rango['hasta'] ?? 'todo',
+        'fecha_desde_etiqueta'          => $rango['fecha_desde_etiqueta'],
+        'fecha_hasta_etiqueta'          => $rango['fecha_hasta_etiqueta'],
+        'periodo_etiqueta'              => $rango['periodo_etiqueta'],
+        'sin_filtro_fecha'              => $rango['sin_filtro_fecha'],
+        'generado_en'                   => date('d/m/Y H:i'),
+        'turno'                         => $turno,
+        'turno_etiqueta'                => etiquetaTurnoInforme($turno),
+        'estado_bautismo'               => $estadoBautismo,
+        'estado_bautismo_etiqueta'      => etiquetaEstadoBautismoInforme($estadoBautismo),
+        'seccion_exportacion'           => 'bautismos',
+        'resumen'                       => [
+            'cantidad_bautismos' => count($bautismos),
+        ],
+        'bautismos'                     => $bautismos,
     ];
 }
 

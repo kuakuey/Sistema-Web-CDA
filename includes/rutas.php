@@ -55,6 +55,10 @@ function construirUrlRegistros(string $archivo, array $filtros, int $pagina = 1,
     $parametros = ['pestaña' => $pestaña];
 
     foreach ($filtros as $clave => $valor) {
+        if ($clave === 'estado_excluir') {
+            continue;
+        }
+
         if ($valor !== '' && $valor !== 'todos') {
             $parametros[$clave] = $valor;
         }

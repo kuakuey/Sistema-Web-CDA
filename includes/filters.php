@@ -11,6 +11,7 @@ function parsearFiltrosRegistros(array $entrada): array
         'fecha_hasta' => trim((string) ($entrada['fecha_hasta'] ?? '')),
         'zona'        => trim((string) ($entrada['zona'] ?? '')),
         'estado'      => trim((string) ($entrada['estado'] ?? '')),
+        'estado_excluir' => '',
         'contactado'  => trim((string) ($entrada['contactado'] ?? 'todos')),
         'monto_min'   => trim((string) ($entrada['monto_min'] ?? '')),
         'monto_max'   => trim((string) ($entrada['monto_max'] ?? '')),
@@ -20,11 +21,50 @@ function parsearFiltrosRegistros(array $entrada): array
     ];
 }
 
+function seccionUsaFlujoPestanas(string $seccion): bool
+{
+    return in_array($seccion, ['bautismo', 'conexion', 'presentaciones'], true);
+}
+
+/**
+ * Fuerza filtros según pestaña: Nuevos (pendientes) vs Registros (estado final).
+ *
+ * @param array<string, mixed> $filtros
+ * @return array<string, mixed>
+ */
+function aplicarFiltrosFlujoPestana(string $seccion, string $pestaña, array $filtros): array
+{
+    if (!seccionUsaFlujoPestanas($seccion) || !in_array($pestaña, ['nuevos', 'registros'], true)) {
+        return $filtros;
+    }
+
+    $filtros['estado_excluir'] = '';
+
+    if ($seccion === 'bautismo') {
+        $filtros['estado'] = $pestaña === 'nuevos' ? 'ingresado' : 'bautizado';
+    } elseif ($seccion === 'conexion') {
+        $filtros['contactado'] = $pestaña === 'nuevos' ? '0' : '1';
+    } elseif ($seccion === 'presentaciones') {
+        if ($pestaña === 'registros') {
+            $filtros['estado'] = 'presentado';
+        } elseif ($filtros['estado'] === '' || $filtros['estado'] === 'presentado') {
+            $filtros['estado'] = '';
+            $filtros['estado_excluir'] = 'presentado';
+        }
+    }
+
+    return $filtros;
+}
+
 function construirConsultaFiltros(array $filtros): string
 {
     $parametros = [];
 
     foreach ($filtros as $clave => $valor) {
+        if ($clave === 'estado_excluir') {
+            continue;
+        }
+
         if ($valor !== '' && $valor !== 'todos') {
             $parametros[$clave] = $valor;
         }
@@ -119,6 +159,9 @@ function construirSqlPresentaciones(array $filtros): array
     if ($filtros['estado'] !== '') {
         $condiciones[] = 'estado = ?';
         $parametros[] = $filtros['estado'];
+    } elseif (($filtros['estado_excluir'] ?? '') !== '') {
+        $condiciones[] = 'estado <> ?';
+        $parametros[] = $filtros['estado_excluir'];
     }
 
     $sql = 'SELECT * FROM presentaciones_ninos WHERE ' . implode(' AND ', $condiciones)

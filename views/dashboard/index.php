@@ -4,6 +4,16 @@
     <p class="text-muted small mb-0">
       <?php if ($seccion === 'generales'): ?>
       Registros ingresados hoy, <?= htmlspecialchars(formatearFechaTabla(date('Y-m-d'))) ?>
+      <?php elseif (!empty($usaFlujoPestanas)): ?>
+      <?php if ($pestaña === 'nuevos'): ?>
+      Pendientes de completar su proceso
+      <?php elseif ($pestaña === 'registros'): ?>
+      Registros que ya cambiaron de estado
+      <?php elseif (!empty($puedeRegistrar)): ?>
+      Ingresa un nuevo registro al ministerio
+      <?php else: ?>
+      Consulta de registros
+      <?php endif; ?>
       <?php elseif (!empty($puedeRegistrar)): ?>
       Consulta e ingresa registros del ministerio
       <?php else: ?>
@@ -11,7 +21,9 @@
       <?php endif; ?>
     </p>
   </div>
+  <?php if ($pestaña !== 'nuevo'): ?>
   <span class="badge bg-primary fs-6"><?= (int) $totalRegistros ?> resultado(s)</span>
+  <?php endif; ?>
 </div>
 
 <?php if (!empty($mensaje)): ?>
@@ -35,7 +47,19 @@
 <?php else: ?>
 
 <?php if ($seccion !== 'generales'): ?>
+<?php $usaFlujoPestanas = !empty($usaFlujoPestanas); ?>
 <ul class="nav nav-tabs mb-4" role="tablist">
+  <?php if ($usaFlujoPestanas): ?>
+  <li class="nav-item" role="presentation">
+    <a
+      class="nav-link <?= $pestaña === 'nuevos' ? 'active' : '' ?>"
+      href="<?= htmlspecialchars($archivoPagina) ?>?pestaña=nuevos"
+      role="tab"
+    >
+      <i class="bi bi-inbox me-1"></i>Nuevos registros
+    </a>
+  </li>
+  <?php endif; ?>
   <li class="nav-item" role="presentation">
     <a
       class="nav-link <?= $pestaña === 'registros' ? 'active' : '' ?>"
@@ -98,7 +122,7 @@
   <div class="collapse" id="filtersPanel">
     <div class="card-body">
     <form method="GET" action="<?= htmlspecialchars($archivoPagina) ?>" class="row g-3 align-items-end">
-      <input type="hidden" name="pestaña" value="registros">
+      <input type="hidden" name="pestaña" value="<?= htmlspecialchars($pestaña === 'nuevos' ? 'nuevos' : 'registros') ?>">
 
       <div class="col-md-4">
         <label class="form-label small" for="buscar">Buscar</label>
@@ -136,7 +160,7 @@
       </div>
       <?php endif; ?>
 
-      <?php if ($tipoRegistro === 'inscripciones' && $seccion === 'conexion'): ?>
+      <?php if ($tipoRegistro === 'inscripciones' && $seccion === 'conexion' && empty($usaFlujoPestanas)): ?>
       <div class="col-md-2">
         <label class="form-label small" for="contactado">Contactado</label>
         <select class="form-select form-select-sm" id="contactado" name="contactado">
@@ -147,12 +171,12 @@
       </div>
       <?php endif; ?>
 
-      <?php if ($tipoRegistro === 'presentaciones'): ?>
+      <?php if ($tipoRegistro === 'presentaciones' && (empty($usaFlujoPestanas) || $pestaña === 'nuevos')): ?>
       <div class="col-md-2">
         <label class="form-label small" for="estado">Estado</label>
         <select class="form-select form-select-sm" id="estado" name="estado">
           <option value="">Todos</option>
-          <?php foreach ($estadosPresentacion as $estado): ?>
+          <?php foreach (($estadosPresentacionFiltro ?? $estadosPresentacion) as $estado): ?>
           <option value="<?= htmlspecialchars($estado) ?>" <?= $filtros['estado'] === $estado ? 'selected' : '' ?>>
             <?= htmlspecialchars($etiquetasEstadosPresentacion[$estado] ?? $estado) ?>
           </option>
@@ -161,7 +185,7 @@
       </div>
       <?php endif; ?>
 
-      <?php if ($tipoRegistro === 'inscripciones' && $seccion === 'bautismo'): ?>
+      <?php if ($tipoRegistro === 'inscripciones' && $seccion === 'bautismo' && empty($usaFlujoPestanas)): ?>
       <div class="col-md-2">
         <label class="form-label small" for="estado">Estado</label>
         <select class="form-select form-select-sm" id="estado" name="estado">
@@ -179,7 +203,7 @@
         <button type="submit" class="btn btn-primary btn-sm">
           <i class="bi bi-funnel me-1"></i>Filtrar
         </button>
-        <a href="<?= htmlspecialchars($archivoPagina) ?>?pestaña=registros" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+        <a href="<?= htmlspecialchars($archivoPagina) ?>?pestaña=<?= urlencode($pestaña === 'nuevos' ? 'nuevos' : 'registros') ?>" class="btn btn-outline-secondary btn-sm">Limpiar</a>
       </div>
     </form>
     </div>
@@ -191,7 +215,13 @@
   <div class="card-header bg-white py-3">
     <h3 class="h6 mb-0">
       <i class="bi bi-list-ul me-2"></i>
-      <?= $seccion === 'generales' ? 'Registros de hoy' : 'Registros' ?>
+      <?php if ($seccion === 'generales'): ?>
+      Registros de hoy
+      <?php elseif (!empty($usaFlujoPestanas) && $pestaña === 'nuevos'): ?>
+      Nuevos registros
+      <?php else: ?>
+      Registros
+      <?php endif; ?>
     </h3>
   </div>
   <div class="card-body p-0">
@@ -290,7 +320,11 @@
         </tbody>
       </table>
     </div>
-    <?php include __DIR__ . '/../partials/paginacion-registros.php'; ?>
+    <?php
+    $pestañaPaginacion = $pestaña;
+    $filtros = $filtrosNavegacion ?? $filtros;
+    include __DIR__ . '/../partials/paginacion-registros.php';
+    ?>
     <?php foreach ($modalesDetalle as $modal):
         $modalId = $modal['id'];
         $tituloModal = $modal['titulo'];
@@ -364,7 +398,11 @@
         </tbody>
       </table>
     </div>
-    <?php include __DIR__ . '/../partials/paginacion-registros.php'; ?>
+    <?php
+    $pestañaPaginacion = $pestaña;
+    $filtros = $filtrosNavegacion ?? $filtros;
+    include __DIR__ . '/../partials/paginacion-registros.php';
+    ?>
     <?php foreach ($modalesDetalle as $modal):
         $modalId = $modal['id'];
         $tituloModal = $modal['titulo'];

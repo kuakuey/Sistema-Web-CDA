@@ -22,14 +22,17 @@ function renderizarPaginaRegistros(string $seccion): void
     $etiquetasSecciones = obtenerEtiquetasSecciones();
     $archivoPagina = obtenerUrlSeccion($seccion);
 
-    $pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : 'registros';
-    if (!in_array($pestaña, ['registros', 'nuevo'], true)) {
-        $pestaña = 'registros';
+    $usaFlujoPestanas = seccionUsaFlujoPestanas($seccion);
+    $pestañaPorDefecto = $usaFlujoPestanas ? 'nuevos' : 'registros';
+    $pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : $pestañaPorDefecto;
+    $pestañasPermitidas = $usaFlujoPestanas ? ['nuevos', 'registros', 'nuevo'] : ['registros', 'nuevo'];
+    if (!in_array($pestaña, $pestañasPermitidas, true)) {
+        $pestaña = $pestañaPorDefecto;
     }
 
     $puedeRegistrar = $seccion === 'generales' ? false : puedeRegistrarEnSeccion($rol, $seccion);
     if ($pestaña === 'nuevo' && !$puedeRegistrar) {
-        $pestaña = 'registros';
+        $pestaña = $pestañaPorDefecto;
     }
 
     $mensaje = null;
@@ -59,6 +62,8 @@ function renderizarPaginaRegistros(string $seccion): void
         $filtros['zona'] = '';
         $filtros['contactado'] = 'todos';
         $pestaña = 'registros';
+    } else {
+        $filtros = aplicarFiltrosFlujoPestana($seccion, $pestaña, $filtros);
     }
     $tiposPermitidos = obtenerTiposInscripcionPermitidos($rol);
     $pagina = parsearPaginaRegistros($_GET);
@@ -125,10 +130,29 @@ function renderizarPaginaRegistros(string $seccion): void
     $etiquetasFormulario = obtenerEtiquetasTiposFormulario();
     $etiquetasRoles = obtenerEtiquetasRoles();
     $consultaFiltros = construirConsultaFiltros($filtros);
-    $urlPaginaConFiltros = construirUrlRegistros($archivoPagina, $filtros, $pagina);
+    $filtrosNavegacion = $filtros;
+    if ($usaFlujoPestanas && in_array($pestaña, ['nuevos', 'registros'], true)) {
+        if ($seccion === 'bautismo') {
+            $filtrosNavegacion['estado'] = '';
+        } elseif ($seccion === 'conexion') {
+            $filtrosNavegacion['contactado'] = 'todos';
+        } elseif ($seccion === 'presentaciones' && $pestaña === 'registros') {
+            $filtrosNavegacion['estado'] = '';
+        }
+    }
+    $urlPaginaConFiltros = construirUrlRegistros($archivoPagina, $filtrosNavegacion, $pagina, $pestaña);
     $zonas = obtenerZonasConexion();
     $estadosPresentacion = obtenerEstadosPresentacion();
     $etiquetasEstadosPresentacion = obtenerEtiquetasEstadosPresentacion();
+    $estadosPresentacionFiltro = $estadosPresentacion;
+    if ($usaFlujoPestanas && $seccion === 'presentaciones' && $pestaña === 'nuevos') {
+        $estadosPresentacionFiltro = [];
+        foreach ($estadosPresentacion as $estadoPresentacion) {
+            if ($estadoPresentacion !== 'presentado') {
+                $estadosPresentacionFiltro[] = $estadoPresentacion;
+            }
+        }
+    }
 
     view('dashboard/index', [
         'tituloPagina'                 => $etiquetasSecciones[$seccion] ?? 'Registros',
@@ -144,6 +168,7 @@ function renderizarPaginaRegistros(string $seccion): void
         'totalRegistros'               => $totalRegistros,
         'tipoRegistro'                 => $tipoRegistro,
         'filtros'                      => $filtros,
+        'filtrosNavegacion'            => $filtrosNavegacion,
         'consultaFiltros'              => $consultaFiltros,
         'etiquetasFormulario'          => $etiquetasFormulario,
         'etiquetasRoles'               => $etiquetasRoles,
@@ -159,10 +184,12 @@ function renderizarPaginaRegistros(string $seccion): void
         'puedeGestionarEstadoBautismo'   => puedeGestionarEstadoBautismo($rol),
         'puedeGestionarUsuarios'       => puedeGestionarUsuarios($rol),
         'pestaña'                      => $pestaña,
+        'usaFlujoPestanas'             => $usaFlujoPestanas,
         'mensaje'                      => $mensaje,
         'error'                        => $error,
         'zonas'                        => $zonas,
         'estadosPresentacion'          => $estadosPresentacion,
+        'estadosPresentacionFiltro'    => $estadosPresentacionFiltro,
         'etiquetasEstadosPresentacion' => $etiquetasEstadosPresentacion,
         'estadosBautismo'              => obtenerEstadosBautismo(),
         'etiquetasEstadosBautismo'     => obtenerEtiquetasEstadosBautismo(),

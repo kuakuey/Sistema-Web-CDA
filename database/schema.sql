@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS actividad_log (
     seccion VARCHAR(50) NULL,
     entidad VARCHAR(50) NULL,
     entidad_id INT NULL,
-    detalle VARCHAR(500) NULL,
+    detalle TEXT NULL,
     datos_extra TEXT NULL,
     ip_cliente VARCHAR(45) NULL,
     agente_usuario VARCHAR(255) NULL,

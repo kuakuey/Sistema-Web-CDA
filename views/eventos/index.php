@@ -259,24 +259,27 @@
         </select>
       </div>
 
+      <div class="col-md-6">
+        <label class="form-label" for="nombre">Nombre completo <span class="text-danger">*</span></label>
+        <input type="text" class="form-control js-paso-despues-tipo" id="nombre" name="nombre" required maxlength="100" disabled>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="telefono">Teléfono <span class="text-danger">*</span></label>
+        <input type="tel" class="form-control js-paso-despues-tipo" id="telefono" name="telefono" required maxlength="30" disabled>
+      </div>
+
       <div class="col-md-6 js-campo-valor-evento">
         <label class="form-label" for="valor">Valor <span class="text-danger">*</span></label>
         <input type="number" class="form-control js-valor-evento js-paso-despues-tipo" id="valor" name="valor" min="0" step="0.01" placeholder="0.00" disabled>
       </div>
 
-      <div class="col-md-6 js-bloque-forma-pago-evento">
-        <label class="form-label d-block">Forma de pago <span class="text-danger">*</span></label>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-efectivo" value="efectivo" checked disabled>
-          <label class="form-check-label" for="pago-efectivo">Efectivo</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-transferencia" value="transferencia" disabled>
-          <label class="form-check-label" for="pago-transferencia">Transferencia</label>
-        </div>
+      <div class="col-md-6 js-campo-numeracion-evento">
+        <label class="form-label" for="numeracion">Numeración</label>
+        <input type="text" class="form-control" id="numeracion" name="numeracion" maxlength="30" placeholder="Seleccione evento primero…" disabled>
       </div>
 
-      <div class="col-md-6 js-bloque-estado-pago-evento">
+      <div class="col-md-4 js-bloque-estado-pago-evento">
         <label class="form-label d-block">Estado <span class="text-danger">*</span></label>
         <div class="form-check form-check-inline">
           <input class="form-check-input js-estado-pago-evento" type="radio" name="estado_pago" id="estado-por-cancelar" value="por_cancelar" checked disabled>
@@ -288,29 +291,26 @@
         </div>
       </div>
 
-      <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" disabled>
-      <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
-      <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" disabled>
-
-      <div class="col-md-6 js-campo-numeracion-evento">
-        <label class="form-label" for="numeracion">Numeración</label>
-        <input type="text" class="form-control" id="numeracion" name="numeracion" maxlength="30" placeholder="Seleccione evento primero…" disabled>
+      <div class="col-md-4 js-bloque-forma-pago-evento">
+        <label class="form-label d-block">Forma de pago <span class="text-danger">*</span></label>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-efectivo" value="efectivo" checked disabled>
+          <label class="form-check-label" for="pago-efectivo">Efectivo</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-transferencia" value="transferencia" disabled>
+          <label class="form-check-label" for="pago-transferencia">Transferencia</label>
+        </div>
       </div>
 
-      <div class="col-md-6">
-        <label class="form-label" for="nombre">Nombre <span class="text-danger">*</span></label>
-        <input type="text" class="form-control js-paso-despues-tipo" id="nombre" name="nombre" required maxlength="100" disabled>
-      </div>
-
-      <div class="col-md-6">
-        <label class="form-label" for="telefono">Teléfono <span class="text-danger">*</span></label>
-        <input type="tel" class="form-control js-paso-despues-tipo" id="telefono" name="telefono" required maxlength="30" disabled>
-      </div>
-
-      <div class="col-md-6">
+      <div class="col-md-4">
         <label class="form-label" for="fecha">Fecha <span class="text-danger">*</span></label>
         <input type="date" class="form-control js-paso-despues-tipo" id="fecha" name="fecha" required value="<?= htmlspecialchars(date('Y-m-d')) ?>" disabled>
       </div>
+
+      <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" disabled>
+      <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
+      <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" disabled>
 
       <div class="col-12">
         <label class="form-label" for="observacion">Observación</label>

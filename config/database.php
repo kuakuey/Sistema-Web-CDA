@@ -633,7 +633,7 @@ function migrarTablaActividadLog(PDO $pdo): void
             seccion VARCHAR(50) NULL,
             entidad VARCHAR(50) NULL,
             entidad_id INT NULL,
-            detalle VARCHAR(500) NULL,
+            detalle TEXT NULL,
             datos_extra TEXT NULL,
             ip_cliente VARCHAR(45) NULL,
             agente_usuario VARCHAR(255) NULL,
@@ -664,8 +664,8 @@ function migrarTablaActividadLog(PDO $pdo): void
     }
 
     $detalleCol = $pdo->query("SHOW COLUMNS FROM actividad_log LIKE 'detalle'")->fetch();
-    if ($detalleCol && isset($detalleCol['Type']) && stripos((string) $detalleCol['Type'], 'varchar(255)') !== false) {
-        $pdo->exec('ALTER TABLE actividad_log MODIFY COLUMN detalle VARCHAR(500) NULL');
+    if ($detalleCol && isset($detalleCol['Type']) && stripos((string) $detalleCol['Type'], 'varchar') !== false) {
+        $pdo->exec('ALTER TABLE actividad_log MODIFY COLUMN detalle TEXT NULL');
     }
 }
 

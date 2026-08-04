@@ -13,7 +13,7 @@ $modalesDetalle = [];
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div>
     <h2 class="h4 mb-1">Log de actividad</h2>
-    <p class="text-muted small mb-0">Registro detallado de acciones del sistema (solo superadmin)</p>
+    <p class="text-muted small mb-0">Registro de acciones del sistema (solo superadmin)</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
     <span class="badge bg-primary fs-6"><?= (int) $totalRegistros ?> registro(s)</span>
@@ -94,7 +94,7 @@ $modalesDetalle = [];
             id="buscar"
             name="buscar"
             value="<?= htmlspecialchars($filtros['buscar']) ?>"
-            placeholder="Usuario, detalle, IP…"
+            placeholder="Usuario, detalle…"
           >
         </div>
 
@@ -152,19 +152,17 @@ $modalesDetalle = [];
       <table class="table table-hover table-dashboard mb-0 align-middle">
         <thead class="table-light">
           <tr>
-            <th>Fecha</th>
-            <th>Usuario</th>
-            <th>Acción</th>
-            <th>Sección</th>
-            <th>Resumen</th>
-            <th>IP</th>
-            <th class="text-end">Detalle</th>
+            <th style="width: 10rem;">Fecha y hora</th>
+            <th style="width: 10rem;">Usuario</th>
+            <th style="width: 12rem;">Acción</th>
+            <th style="width: 9rem;">Sección</th>
+            <th>Detalle</th>
           </tr>
         </thead>
         <tbody>
           <?php if (empty($registros)): ?>
           <tr>
-            <td colspan="7" class="text-center text-muted py-5">
+            <td colspan="5" class="text-center text-muted py-5">
               <i class="bi bi-inbox display-6 d-block mb-2"></i>
               No hay actividad con los filtros seleccionados.
             </td>
@@ -172,24 +170,18 @@ $modalesDetalle = [];
           <?php else: ?>
           <?php foreach ($registros as $fila):
             $modalId = 'detalle-actividad-' . (int) $fila['id'];
+            $textoDetalle = obtenerTextoDetalleActividad($fila);
             $modalesDetalle[] = [
                 'id'     => $modalId,
-                'titulo' => 'Detalle de actividad #' . (int) $fila['id'],
+                'titulo' => 'Detalle de actividad',
                 'filas'  => construirDetalleActividadLog($fila, $etiquetasSeccionesLog),
                 'extra'  => '',
             ];
-            $resumen = trim((string) ($fila['detalle'] ?? ''));
-            if (mb_strlen($resumen) > 70) {
-                $resumen = mb_substr($resumen, 0, 70) . '…';
-            }
           ?>
           <tr>
             <td class="text-nowrap small"><?= htmlspecialchars(formatearFechaHora($fila['creado_en'] ?? null)) ?></td>
             <td>
-              <div><?= htmlspecialchars(trim((string) ($fila['usuario_nombre'] ?? '')) !== '' ? $fila['usuario_nombre'] : '—') ?></div>
-              <?php if (trim((string) ($fila['usuario_login'] ?? '')) !== ''): ?>
-              <div class="small text-muted"><?= htmlspecialchars($fila['usuario_login']) ?></div>
-              <?php endif; ?>
+              <?= htmlspecialchars(trim((string) ($fila['usuario_nombre'] ?? '')) !== '' ? $fila['usuario_nombre'] : (trim((string) ($fila['usuario_login'] ?? '')) !== '' ? $fila['usuario_login'] : '—')) ?>
             </td>
             <td>
               <span class="badge bg-secondary-subtle text-secondary-emphasis">
@@ -202,18 +194,21 @@ $modalesDetalle = [];
               echo htmlspecialchars($etiquetasSeccionesLog[$claveSeccion] ?? ($claveSeccion !== '' ? $claveSeccion : '—'));
               ?>
             </td>
-            <td class="small"><?= htmlspecialchars($resumen !== '' ? $resumen : '—') ?></td>
-            <td class="small text-muted"><?= htmlspecialchars(trim((string) ($fila['ip_cliente'] ?? '')) !== '' ? $fila['ip_cliente'] : '—') ?></td>
-            <td class="text-end">
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-secondary"
-                data-bs-toggle="modal"
-                data-bs-target="#<?= htmlspecialchars($modalId) ?>"
-                title="Ver detalle"
-              >
-                <i class="bi bi-eye"></i>
-              </button>
+            <td class="small">
+              <div class="d-flex align-items-start gap-2">
+                <div class="flex-grow-1" style="white-space: pre-wrap; max-height: 7.5rem; overflow: auto;">
+                  <?= htmlspecialchars($textoDetalle) ?>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                  data-bs-toggle="modal"
+                  data-bs-target="#<?= htmlspecialchars($modalId) ?>"
+                  title="Ver detalle completo"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
             </td>
           </tr>
           <?php endforeach; ?>

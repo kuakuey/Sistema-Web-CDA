@@ -278,7 +278,7 @@ function registrarActividad(
             $seccion !== '' ? mb_substr($seccion, 0, 50) : null,
             $entidad !== '' ? mb_substr($entidad, 0, 50) : null,
             $entidadId !== null && $entidadId > 0 ? $entidadId : null,
-            $detalle !== '' ? mb_substr($detalle, 0, 500) : null,
+            $detalle !== '' ? $detalle : null,
             $datosExtraJson,
             obtenerIpClienteActividad(),
             obtenerAgenteUsuarioActividad(),
@@ -288,7 +288,10 @@ function registrarActividad(
     }
 }
 
-function registrarActividadPorAccion(string $accion, int $entidadId = 0, string $detalle = ''): void
+/**
+ * @param array<string, mixed>|null $datosExtra
+ */
+function registrarActividadPorAccion(string $accion, int $entidadId = 0, string $detalle = '', ?array $datosExtra = null): void
 {
     if ($accion === '') {
         return;
@@ -344,12 +347,15 @@ function registrarActividadPorAccion(string $accion, int $entidadId = 0, string 
         }
     }
 
-    registrarActividad($accion, '', '', $entidadId > 0 ? $entidadId : null, $detalle);
+    registrarActividad($accion, '', '', $entidadId > 0 ? $entidadId : null, $detalle, null, $datosExtra);
 }
 
-function salirConActividad(string $url, string $accion, int $entidadId = 0, string $detalle = ''): void
+/**
+ * @param array<string, mixed>|null $datosExtra
+ */
+function salirConActividad(string $url, string $accion, int $entidadId = 0, string $detalle = '', ?array $datosExtra = null): void
 {
-    registrarActividadPorAccion($accion, $entidadId, $detalle);
+    registrarActividadPorAccion($accion, $entidadId, $detalle, $datosExtra);
     header('Location: ' . $url);
     exit;
 }
@@ -487,49 +493,315 @@ function limpiarActividadLog(array $filtros = [], bool $soloFiltrados = false): 
 }
 
 /**
+ * @return array<string, mixed>|null
+ */
+function obtenerFilaSimplePorId(string $tabla, int $id): ?array
+{
+    static $tablasPermitidas = [
+        'inscripciones',
+        'presentaciones_ninos',
+        'ofrendas',
+        'valores_adicionales',
+        'consejerias',
+        'transporte_aniversario',
+        'usuarios',
+        'territorios',
+        'lideres',
+        'casas_vida',
+        'tipos_valor_adicional',
+    ];
+
+    if ($id <= 0 || !in_array($tabla, $tablasPermitidas, true)) {
+        return null;
+    }
+
+    $pdo = getConnection();
+    $stmt = $pdo->prepare("SELECT * FROM {$tabla} WHERE id = ? LIMIT 1");
+    $stmt->execute([$id]);
+    $fila = $stmt->fetch();
+
+    return $fila ?: null;
+}
+
+/**
+ * Obtiene el registro completo antes de eliminarlo para el log.
+ *
+ * @return array<string, mixed>|null
+ */
+function obtenerSnapshotEliminacion(string $accion, int $id): ?array
+{
+    if ($id <= 0) {
+        return null;
+    }
+
+    switch ($accion) {
+        case 'eliminar_evento':
+            require_once __DIR__ . '/eventos.php';
+            return obtenerEvento($id);
+
+        case 'eliminar_registro_evento':
+            require_once __DIR__ . '/eventos.php';
+            return obtenerRegistroEventoPorId($id);
+
+        case 'eliminar_inscripcion':
+            return obtenerFilaSimplePorId('inscripciones', $id);
+
+        case 'eliminar_presentacion':
+            return obtenerFilaSimplePorId('presentaciones_ninos', $id);
+
+        case 'eliminar_ofrenda':
+            return obtenerFilaSimplePorId('ofrendas', $id);
+
+        case 'eliminar_valor_adicional':
+            return obtenerFilaSimplePorId('valores_adicionales', $id);
+
+        case 'eliminar_consejeria':
+            return obtenerFilaSimplePorId('consejerias', $id);
+
+        case 'eliminar_transporte_aniversario':
+            return obtenerFilaSimplePorId('transporte_aniversario', $id);
+
+        case 'eliminar_usuario':
+            $usuario = obtenerFilaSimplePorId('usuarios', $id);
+            if ($usuario) {
+                unset($usuario['clave'], $usuario['password']);
+            }
+            return $usuario;
+
+        case 'eliminar_territorio':
+            return obtenerFilaSimplePorId('territorios', $id);
+
+        case 'eliminar_lider':
+            return obtenerFilaSimplePorId('lideres', $id);
+
+        case 'eliminar_casa':
+            require_once __DIR__ . '/estructura.php';
+            return obtenerCasaVida($id);
+
+        case 'eliminar_tipo_valor':
+            return obtenerFilaSimplePorId('tipos_valor_adicional', $id);
+
+        default:
+            return null;
+    }
+}
+
+/**
+ * @param array<string, mixed> $registro
+ * @return array<string, string>
+ */
+function construirCamposDetalleEliminacion(string $accion, array $registro): array
+{
+    require_once __DIR__ . '/submissions.php';
+
+    $campos = [];
+    $valorTexto = static function ($valor): string {
+        $texto = trim((string) $valor);
+        return $texto !== '' ? $texto : '—';
+    };
+
+    if ($accion === 'eliminar_evento') {
+        require_once __DIR__ . '/eventos.php';
+        $campos['ID'] = '#' . (int) ($registro['id'] ?? 0);
+        $campos['Nombre'] = $valorTexto($registro['nombre'] ?? '');
+        $campos['Fecha'] = formatearFechaTabla($registro['fecha'] ?? null);
+        $campos['Valor'] = formatearMonto((float) ($registro['valor'] ?? 0));
+        $campos['Tipo'] = etiquetaTipoEventoCatalogo($registro);
+        $campos['Estado'] = etiquetaEstadoEvento((int) ($registro['habilitado'] ?? 0));
+        $campos['Numeración'] = !empty($registro['requiere_numeracion']) ? 'Requerida' : 'No requerida';
+
+        $tipos = $registro['tipos_entrada'] ?? [];
+        if (is_array($tipos) && $tipos !== []) {
+            $partesTipos = [];
+            foreach ($tipos as $tipo) {
+                if (!is_array($tipo)) {
+                    continue;
+                }
+                $nombreTipo = trim((string) ($tipo['nombre'] ?? ''));
+                $valorTipo = (float) ($tipo['valor'] ?? 0);
+                $partesTipos[] = ($nombreTipo !== '' ? $nombreTipo : 'Tipo')
+                    . ' (' . ($valorTipo <= 0 ? 'Gratuito' : formatearMonto($valorTipo)) . ')';
+            }
+            if ($partesTipos !== []) {
+                $campos['Tipos de entrada'] = implode(' · ', $partesTipos);
+            }
+        }
+
+        return $campos;
+    }
+
+    if ($accion === 'eliminar_registro_evento') {
+        require_once __DIR__ . '/eventos.php';
+        $campos['ID'] = '#' . (int) ($registro['id'] ?? 0);
+        $campos['Evento'] = $valorTexto($registro['evento_nombre'] ?? '');
+        $campos['Tipo de entrada'] = $valorTexto($registro['tipo_entrada'] ?? '');
+        $campos['Nombre completo'] = $valorTexto($registro['nombre'] ?? '');
+        $campos['Teléfono'] = $valorTexto($registro['telefono'] ?? '');
+        $campos['Fecha'] = formatearFechaTabla($registro['fecha'] ?? null);
+        $campos['Valor'] = formatearMonto((float) ($registro['valor'] ?? 0));
+        $campos['Forma de pago'] = etiquetaFormaPagoEvento($registro['forma_pago'] ?? null);
+        $campos['Estado'] = etiquetaEstadoPagoEvento($registro['estado_pago'] ?? null);
+        $numeracion = trim((string) ($registro['numeracion'] ?? ''));
+        if ($numeracion !== '' || !empty($registro['requiere_numeracion'])) {
+            $campos['Numeración'] = $numeracion !== '' ? $numeracion : '—';
+        }
+        $observacion = trim((string) ($registro['observacion'] ?? ''));
+        if ($observacion !== '') {
+            $campos['Observación'] = $observacion;
+        }
+
+        return $campos;
+    }
+
+    $mapaEtiquetas = [
+        'id'                   => 'ID',
+        'nombre'               => 'Nombre',
+        'apellido'             => 'Apellido',
+        'nombre_completo'      => 'Nombre completo',
+        'usuario'              => 'Usuario',
+        'rol'                  => 'Rol',
+        'telefono'             => 'Teléfono',
+        'celular'              => 'Celular',
+        'email'                => 'Email',
+        'fecha'                => 'Fecha',
+        'fecha_ofrenda'        => 'Fecha ofrenda',
+        'fecha_presentacion'   => 'Fecha presentación',
+        'monto'                => 'Monto',
+        'valor'                => 'Valor',
+        'tipo'                 => 'Tipo',
+        'etiqueta'             => 'Etiqueta',
+        'clave'                => 'Clave',
+        'casa_vida'            => 'Casa de vida',
+        'lider'                => 'Líder',
+        'territorio_id'        => 'Territorio ID',
+        'lider_id'             => 'Líder ID',
+        'direccion'            => 'Dirección',
+        'zona'                 => 'Zona',
+        'cedula'               => 'Cédula',
+        'observacion'          => 'Observación',
+        'notas'                => 'Notas',
+        'tipo_consejeria'      => 'Tipo consejería',
+        'cita_fecha'           => 'Cita fecha',
+        'cita_hora'            => 'Cita hora',
+        'estado'               => 'Estado',
+        'forma_pago'           => 'Forma de pago',
+        'estado_pago'          => 'Estado pago',
+        'tipo_entrada'         => 'Tipo de entrada',
+        'numeracion'           => 'Numeración',
+        'evento_id'            => 'Evento ID',
+    ];
+
+    foreach ($mapaEtiquetas as $clave => $etiqueta) {
+        if (!array_key_exists($clave, $registro)) {
+            continue;
+        }
+        $valor = $registro[$clave];
+        if ($valor === null || $valor === '') {
+            continue;
+        }
+        if (in_array($clave, ['monto', 'valor'], true)) {
+            $campos[$etiqueta] = formatearMonto((float) $valor);
+            continue;
+        }
+        if ($clave === 'id' || str_ends_with($clave, '_id')) {
+            $campos[$etiqueta] = '#' . (int) $valor;
+            continue;
+        }
+        $campos[$etiqueta] = $valorTexto($valor);
+    }
+
+    return $campos;
+}
+
+/**
+ * @param array<string, mixed> $registro
+ */
+function formatearDetalleEliminacion(string $accion, array $registro): string
+{
+    $campos = construirCamposDetalleEliminacion($accion, $registro);
+    if ($campos === []) {
+        return etiquetaAccionActividad($accion) . ' #' . (int) ($registro['id'] ?? 0);
+    }
+
+    $lineas = [];
+    foreach ($campos as $etiqueta => $valor) {
+        $lineas[] = $etiqueta . ': ' . $valor;
+    }
+
+    return implode("\n", $lineas);
+}
+
+/**
+ * @param array<string, mixed>|null $registroEliminado
+ * @return array<string, mixed>
+ */
+function armarDatosExtraEliminacion(string $accion, ?array $registroEliminado): array
+{
+    $datosExtra = capturarContextoActividad($accion);
+    if ($registroEliminado) {
+        $datosExtra['registro_eliminado'] = construirCamposDetalleEliminacion($accion, $registroEliminado);
+    }
+
+    return $datosExtra;
+}
+
+/**
+ * Texto legible para la columna Detalle del log.
+ *
+ * @param array<string, mixed> $fila
+ */
+function obtenerTextoDetalleActividad(array $fila): string
+{
+    $detalle = trim((string) ($fila['detalle'] ?? ''));
+    if ($detalle !== '') {
+        return $detalle;
+    }
+
+    $datosExtra = trim((string) ($fila['datos_extra'] ?? ''));
+    if ($datosExtra === '') {
+        return '—';
+    }
+
+    $decoded = json_decode($datosExtra, true);
+    if (!is_array($decoded)) {
+        return $datosExtra;
+    }
+
+    if (!empty($decoded['registro_eliminado']) && is_array($decoded['registro_eliminado'])) {
+        $lineas = [];
+        foreach ($decoded['registro_eliminado'] as $etiqueta => $valor) {
+            $lineas[] = $etiqueta . ': ' . $valor;
+        }
+        return $lineas !== [] ? implode("\n", $lineas) : '—';
+    }
+
+    return formatearDatosExtraActividad($decoded);
+}
+
+/**
  * @param array<string, mixed> $fila
  * @return array<int, array{etiqueta: string, valor: string, html?: bool}>
  */
 function construirDetalleActividadLog(array $fila, array $etiquetasSeccionesLog = []): array
 {
-    require_once __DIR__ . '/roles.php';
     require_once __DIR__ . '/submissions.php';
 
     if ($etiquetasSeccionesLog === []) {
         $etiquetasSeccionesLog = obtenerEtiquetasSeccionesActividad();
     }
 
-    $etiquetasRoles = obtenerEtiquetasRoles();
     $seccion = (string) ($fila['seccion'] ?? '');
-    $rol = (string) ($fila['rol_usuario'] ?? '');
-    $datosExtra = trim((string) ($fila['datos_extra'] ?? ''));
-    $datosFormateados = '—';
-
-    if ($datosExtra !== '') {
-        $decoded = json_decode($datosExtra, true);
-        if (is_array($decoded)) {
-            $datosFormateados = formatearDatosExtraActividad($decoded);
-        } else {
-            $datosFormateados = $datosExtra;
-        }
+    $usuario = trim((string) ($fila['usuario_nombre'] ?? ''));
+    if ($usuario === '') {
+        $usuario = trim((string) ($fila['usuario_login'] ?? ''));
     }
 
     return [
-        ['etiqueta' => 'ID', 'valor' => '#' . (int) ($fila['id'] ?? 0)],
         ['etiqueta' => 'Fecha y hora', 'valor' => formatearFechaHora($fila['creado_en'] ?? null)],
-        ['etiqueta' => 'Usuario', 'valor' => trim((string) ($fila['usuario_nombre'] ?? '')) !== '' ? (string) $fila['usuario_nombre'] : '—'],
-        ['etiqueta' => 'Login', 'valor' => trim((string) ($fila['usuario_login'] ?? '')) !== '' ? (string) $fila['usuario_login'] : '—'],
-        ['etiqueta' => 'Rol', 'valor' => $etiquetasRoles[$rol] ?? ($rol !== '' ? $rol : '—')],
-        ['etiqueta' => 'ID usuario', 'valor' => !empty($fila['usuario_id']) ? (string) (int) $fila['usuario_id'] : '—'],
+        ['etiqueta' => 'Usuario', 'valor' => $usuario !== '' ? $usuario : '—'],
         ['etiqueta' => 'Acción', 'valor' => etiquetaAccionActividad((string) ($fila['accion'] ?? ''))],
-        ['etiqueta' => 'Clave acción', 'valor' => (string) ($fila['accion'] ?? '—')],
         ['etiqueta' => 'Sección', 'valor' => $etiquetasSeccionesLog[$seccion] ?? ($seccion !== '' ? $seccion : '—')],
-        ['etiqueta' => 'Entidad', 'valor' => trim((string) ($fila['entidad'] ?? '')) !== '' ? (string) $fila['entidad'] : '—'],
-        ['etiqueta' => 'ID entidad', 'valor' => !empty($fila['entidad_id']) ? (string) (int) $fila['entidad_id'] : '—'],
-        ['etiqueta' => 'Resumen', 'valor' => trim((string) ($fila['detalle'] ?? '')) !== '' ? (string) $fila['detalle'] : '—'],
-        ['etiqueta' => 'IP', 'valor' => trim((string) ($fila['ip_cliente'] ?? '')) !== '' ? (string) $fila['ip_cliente'] : '—'],
-        ['etiqueta' => 'Navegador / dispositivo', 'valor' => trim((string) ($fila['agente_usuario'] ?? '')) !== '' ? (string) $fila['agente_usuario'] : '—'],
-        ['etiqueta' => 'Datos de la operación', 'valor' => $datosFormateados],
+        ['etiqueta' => 'Detalle', 'valor' => obtenerTextoDetalleActividad($fila)],
     ];
 }
 
@@ -540,6 +812,9 @@ function formatearDatosExtraActividad(array $datos, int $nivel = 0): string
 {
     $lineas = [];
     foreach ($datos as $clave => $valor) {
+        if (in_array((string) $clave, ['metodo', 'ruta', 'accion_interna', 'datos'], true) && $nivel === 0) {
+            continue;
+        }
         $prefijo = str_repeat('  ', $nivel) . $clave . ': ';
         if (is_array($valor)) {
             $lineas[] = rtrim($prefijo);

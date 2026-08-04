@@ -642,6 +642,8 @@ if (in_array($accion, $accionesEliminar, true)) {
         exit;
     }
 
+    $registroEliminado = obtenerSnapshotEliminacion($accion, $id);
+
     switch ($accion) {
         case 'eliminar_inscripcion':
             eliminarInscripcion($id);
@@ -664,7 +666,7 @@ if (in_array($accion, $accionesEliminar, true)) {
                 header('Location: ' . $urlInicio);
                 exit;
             }
-            if (!obtenerRegistroEventoPorId($id)) {
+            if (!$registroEliminado) {
                 header('Location: ' . ($redireccion ?: 'eventos.php'));
                 exit;
             }
@@ -706,7 +708,12 @@ if (in_array($accion, $accionesEliminar, true)) {
             break;
     }
 
-    salirConActividad($redireccion, $accion, $id);
+    $detalleEliminacion = $registroEliminado
+        ? formatearDetalleEliminacion($accion, $registroEliminado)
+        : '';
+    $datosExtraEliminacion = armarDatosExtraEliminacion($accion, $registroEliminado);
+
+    salirConActividad($redireccion, $accion, $id, $detalleEliminacion, $datosExtraEliminacion);
 }
 
 if ($accion === 'actualizar_estado_presentacion') {

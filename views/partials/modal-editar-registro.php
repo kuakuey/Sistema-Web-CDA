@@ -1,6 +1,6 @@
 <?php
 /**
- * Modal de edición (solo superadmin).
+ * Modal de edición (superadmin y administrador).
  *
  * Variables: $modalEditarId, $tipoEditar, $filaEditar, $redireccionEditar
  * Contexto según tipo: $zonas, $estadosPresentacion, $casas, $tiposValor, $eventos, $tiposConsejeria

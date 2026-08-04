@@ -193,7 +193,7 @@ function renderizarPaginaRegistros(string $seccion): void
         'etiquetasEstadosPresentacion' => $etiquetasEstadosPresentacion,
         'estadosBautismo'              => obtenerEstadosBautismo(),
         'etiquetasEstadosBautismo'     => obtenerEtiquetasEstadosBautismo(),
-        'esSuperadmin'                 => $rol === ROL_SUPERADMIN,
+        'esSuperadmin'                 => esRolConControlTotal($rol),
         'paginaActual'                 => $pagina,
         'totalPaginas'                 => $totalPaginas,
         'offsetRegistros'              => $offsetRegistros,

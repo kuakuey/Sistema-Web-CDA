@@ -119,9 +119,14 @@ function puedeRegistrarEnSeccion(string $rol, string $seccion): bool
     return false;
 }
 
+function esRolConControlTotal(string $rol): bool
+{
+    return in_array($rol, [ROL_SUPERADMIN, ROL_ADMIN], true);
+}
+
 function puedeEditarValoresAdicionales(string $rol): bool
 {
-    return $rol === ROL_SUPERADMIN;
+    return esRolConControlTotal($rol);
 }
 
 function puedeRegistrarValoresAdicionales(string $rol): bool
@@ -161,12 +166,12 @@ function puedeGestionarUsuarios(string $rol): bool
 
 function puedeEliminarRegistros(string $rol): bool
 {
-    return $rol === ROL_SUPERADMIN;
+    return esRolConControlTotal($rol);
 }
 
 function puedeEditarRegistros(string $rol): bool
 {
-    return $rol === ROL_SUPERADMIN;
+    return esRolConControlTotal($rol);
 }
 
 function puedeVerTipoFormulario(string $rol, string $tipo): bool

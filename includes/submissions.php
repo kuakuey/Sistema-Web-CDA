@@ -539,16 +539,18 @@ function actualizarEstadoPresentacionNino(int $id, string $estado, string $rol):
         throw new InvalidArgumentException('Registro de presentación no encontrado.');
     }
 
-    $esSuperadmin = $rol === ROL_SUPERADMIN;
+    require_once __DIR__ . '/roles.php';
+
+    $puedeControlTotal = esRolConControlTotal($rol);
     $bloqueado = !empty($actual['estado_bloqueado']);
     $estadoActual = (string) ($actual['estado'] ?? '');
 
-    if (!$esSuperadmin && $bloqueado) {
+    if (!$puedeControlTotal && $bloqueado) {
         throw new InvalidArgumentException('El estado ya fue marcado como Presentado y no puede modificarse.');
     }
 
-    if ($estado !== 'presentado' && $estadoActual === 'presentado' && !$esSuperadmin) {
-        throw new InvalidArgumentException('Solo un superadministrador puede cambiar el estado desde Presentado.');
+    if ($estado !== 'presentado' && $estadoActual === 'presentado' && !$puedeControlTotal) {
+        throw new InvalidArgumentException('Solo un administrador o superadministrador puede cambiar el estado desde Presentado.');
     }
 
     $fechaPresentacion = resolverFechaPresentacionNino(
@@ -556,7 +558,7 @@ function actualizarEstadoPresentacionNino(int $id, string $estado, string $rol):
         $estadoActual,
         $actual['fecha_presentacion'] ?? null
     );
-    $marcarBloqueado = ($estado === 'presentado') ? 1 : ($esSuperadmin ? 0 : (int) $bloqueado);
+    $marcarBloqueado = ($estado === 'presentado') ? 1 : ($puedeControlTotal ? 0 : (int) $bloqueado);
 
     $stmt = $pdo->prepare(
         'UPDATE presentaciones_ninos SET
@@ -569,8 +571,10 @@ function actualizarEstadoPresentacionNino(int $id, string $estado, string $rol):
 
 function restablecerEstadoPresentacionNino(int $id, string $rol): bool
 {
-    if ($rol !== ROL_SUPERADMIN) {
-        throw new InvalidArgumentException('Solo un superadministrador puede restablecer el estado de presentación.');
+    require_once __DIR__ . '/roles.php';
+
+    if (!esRolConControlTotal($rol)) {
+        throw new InvalidArgumentException('Solo un administrador o superadministrador puede restablecer el estado de presentación.');
     }
 
     $pdo = getConnection();
@@ -618,16 +622,16 @@ function actualizarEstadoBautismoInscripcion(
         throw new InvalidArgumentException('Registro de bautismo no encontrado.');
     }
 
-    $esSuperadmin = $rol === ROL_SUPERADMIN;
+    $puedeControlTotal = esRolConControlTotal($rol);
     $bloqueado = !empty($fila['estado_bautismo_bloqueado']);
     $estadoActual = (string) ($fila['estado_bautismo'] ?? 'ingresado');
 
-    if (!$esSuperadmin && $bloqueado) {
+    if (!$puedeControlTotal && $bloqueado) {
         throw new InvalidArgumentException('El estado de bautismo ya fue actualizado y no puede modificarse de nuevo.');
     }
 
-    if ($estado === 'ingresado' && $estadoActual === 'bautizado' && !$esSuperadmin) {
-        throw new InvalidArgumentException('Solo un superadministrador puede volver el estado a Ingresado.');
+    if ($estado === 'ingresado' && $estadoActual === 'bautizado' && !$puedeControlTotal) {
+        throw new InvalidArgumentException('Solo un administrador o superadministrador puede volver el estado a Ingresado.');
     }
 
     if ($estado === 'bautizado') {
@@ -656,9 +660,9 @@ function actualizarEstadoBautismoInscripcion(
 
     $marcarBloqueado = 1;
 
-    if ($estado === 'ingresado' && $esSuperadmin) {
+    if ($estado === 'ingresado' && $puedeControlTotal) {
         $marcarBloqueado = 0;
-    } elseif ($esSuperadmin) {
+    } elseif ($puedeControlTotal) {
         $marcarBloqueado = (int) $bloqueado;
     }
 
@@ -681,8 +685,10 @@ function actualizarEstadoBautismoInscripcion(
 
 function restablecerEstadoBautismoInscripcion(int $id, string $rol): bool
 {
-    if ($rol !== ROL_SUPERADMIN) {
-        throw new InvalidArgumentException('Solo un superadministrador puede restablecer el estado de bautismo.');
+    require_once __DIR__ . '/roles.php';
+
+    if (!esRolConControlTotal($rol)) {
+        throw new InvalidArgumentException('Solo un administrador o superadministrador puede restablecer el estado de bautismo.');
     }
 
     return actualizarEstadoBautismoInscripcion($id, 'ingresado', null, $rol);

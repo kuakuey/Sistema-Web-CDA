@@ -779,7 +779,7 @@ if ($accion === 'actualizar_estado_bautismo') {
 }
 
 if ($accion === 'restablecer_estado_bautismo') {
-    if (obtenerUsuarioActual()['rol'] !== ROL_SUPERADMIN) {
+    if (!esRolConControlTotal(obtenerUsuarioActual()['rol'])) {
         header('Location: ' . $urlInicio);
         exit;
     }
@@ -804,7 +804,7 @@ if ($accion === 'restablecer_estado_bautismo') {
 }
 
 if ($accion === 'restablecer_estado_presentacion') {
-    if (obtenerUsuarioActual()['rol'] !== ROL_SUPERADMIN) {
+    if (!esRolConControlTotal(obtenerUsuarioActual()['rol'])) {
         header('Location: ' . $urlInicio);
         exit;
     }

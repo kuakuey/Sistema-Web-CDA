@@ -26,8 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'crear
     );
 
     if ($resultado['exito']) {
-        header('Location: usuarios.php?pestaña=registrar&ok=1');
-        exit;
+        require_once 'includes/actividad_log.php';
+        $detalleUsuario = 'Crear usuario · ' . trim((string) ($_POST['usuario'] ?? ''));
+        salirConActividad('usuarios.php?pestaña=registrar&ok=1', 'crear_usuario', 0, $detalleUsuario);
     }
 
     header('Location: usuarios.php?pestaña=registrar&error=' . urlencode($resultado['mensaje']));

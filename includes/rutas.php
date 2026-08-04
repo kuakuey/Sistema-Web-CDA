@@ -52,7 +52,11 @@ function construirUrlConFiltros(string $archivo, array $filtros): string
 
 function construirUrlRegistros(string $archivo, array $filtros, int $pagina = 1, string $pestaña = 'registros'): string
 {
-    $parametros = ['pestaña' => $pestaña];
+    $parametros = [];
+
+    if ($pestaña !== '') {
+        $parametros['pestaña'] = $pestaña;
+    }
 
     foreach ($filtros as $clave => $valor) {
         if ($clave === 'estado_excluir') {

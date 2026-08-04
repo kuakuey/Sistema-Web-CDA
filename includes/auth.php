@@ -61,11 +61,41 @@ function iniciarSesion(string $usuario, string $clave): bool
     $_SESSION['nombre'] = $registro['nombre'];
     $_SESSION['rol'] = normalizarRolUsuario($registro['rol'] ?? ROL_ADMIN);
 
+    require_once __DIR__ . '/actividad_log.php';
+    registrarActividad(
+        'login',
+        'auth',
+        'sesion',
+        (int) $registro['id'],
+        'Inicio de sesión',
+        [
+            'id'      => (int) $registro['id'],
+            'usuario' => $registro['usuario'],
+            'nombre'  => $registro['nombre'],
+        ]
+    );
+
     return true;
 }
 
 function cerrarSesion(): void
 {
+    if (!empty($_SESSION['id_usuario'])) {
+        require_once __DIR__ . '/actividad_log.php';
+        registrarActividad(
+            'logout',
+            'auth',
+            'sesion',
+            (int) $_SESSION['id_usuario'],
+            'Cierre de sesión',
+            [
+                'id'      => (int) $_SESSION['id_usuario'],
+                'usuario' => $_SESSION['usuario'] ?? '',
+                'nombre'  => $_SESSION['nombre'] ?? '',
+            ]
+        );
+    }
+
     $_SESSION = [];
 
     if (ini_get('session.use_cookies')) {

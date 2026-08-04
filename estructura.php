@@ -25,6 +25,7 @@ $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? '';
+    require_once 'includes/actividad_log.php';
 
     try {
         switch ($accion) {
@@ -33,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new InvalidArgumentException('El nombre del territorio es obligatorio.');
                 }
                 crearTerritorio($_POST['nombre']);
+                registrarActividadPorAccion('crear_territorio', 0, 'Crear territorio · ' . trim((string) $_POST['nombre']));
                 $mensaje = 'Territorio creado correctamente.';
                 $pestaña = 'territorios';
                 break;
@@ -43,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new InvalidArgumentException('Datos de territorio inválidos.');
                 }
                 actualizarTerritorio($id, $_POST['nombre']);
+                registrarActividadPorAccion('actualizar_territorio', $id);
                 $mensaje = 'Territorio actualizado.';
                 $pestaña = 'territorios';
                 break;
@@ -52,6 +55,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new InvalidArgumentException('Nombre y apellido del líder son obligatorios.');
                 }
                 crearLider($_POST);
+                registrarActividadPorAccion(
+                    'crear_lider',
+                    0,
+                    'Crear líder · ' . trim((string) $_POST['nombre']) . ' ' . trim((string) $_POST['apellido'])
+                );
                 $mensaje = 'Líder creado correctamente.';
                 $pestaña = 'lideres';
                 break;
@@ -62,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new InvalidArgumentException('Líder no válido.');
                 }
                 actualizarLider($id, $_POST);
+                registrarActividadPorAccion('actualizar_lider', $id);
                 $mensaje = 'Líder actualizado.';
                 $pestaña = 'lideres';
                 break;
@@ -71,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new InvalidArgumentException('Nombre y dirección de la casa son obligatorios.');
                 }
                 crearCasaVida($_POST);
+                registrarActividadPorAccion('crear_casa', 0, 'Crear casa de vida · ' . trim((string) $_POST['nombre']));
                 $mensaje = 'Casa de vida creada correctamente.';
                 $pestaña = 'casas';
                 break;
@@ -81,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new InvalidArgumentException('Casa de vida no válida.');
                 }
                 actualizarCasaVida($id, $_POST);
+                registrarActividadPorAccion('actualizar_casa', $id);
                 $mensaje = 'Casa de vida actualizada.';
                 $pestaña = 'casas';
                 break;

@@ -206,3 +206,20 @@ CREATE TABLE IF NOT EXISTS transporte_aniversario (
     INDEX idx_posee_movilizacion (posee_movilizacion),
     INDEX idx_creado_en (creado_en)
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS actividad_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL,
+    usuario_nombre VARCHAR(100) NULL,
+    accion VARCHAR(80) NOT NULL,
+    seccion VARCHAR(50) NULL,
+    entidad VARCHAR(50) NULL,
+    entidad_id INT NULL,
+    detalle VARCHAR(255) NULL,
+    ip_cliente VARCHAR(45) NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_usuario_id (usuario_id),
+    INDEX idx_accion (accion),
+    INDEX idx_seccion (seccion),
+    INDEX idx_creado_en (creado_en)
+) ENGINE=InnoDB;

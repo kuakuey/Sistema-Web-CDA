@@ -261,6 +261,7 @@ function obtenerEtiquetasSecciones(): array
         'generar_informe'     => 'Generar informe',
         'estructura'          => 'Estructura CDV',
         'usuarios'            => 'Usuarios',
+        'actividad'           => 'Log de actividad',
     ];
 }
 
@@ -281,6 +282,7 @@ function obtenerIconosSecciones(): array
         'generar_informe'     => 'bi-file-earmark-bar-graph',
         'estructura'          => 'bi-diagram-3',
         'usuarios'            => 'bi-person-gear',
+        'actividad'           => 'bi-journal-text',
     ];
 }
 
@@ -306,6 +308,7 @@ function obtenerOrdenMenuSidebar(): array
         'generar_informe',
         'estructura',
         'usuarios',
+        'actividad',
     ];
 }
 
@@ -319,6 +322,10 @@ function puedeVerItemMenuSidebar(string $rol, string $clave): bool
 
     if ($clave === 'usuarios') {
         return puedeGestionarUsuarios($rol);
+    }
+
+    if ($clave === 'actividad') {
+        return $rol === ROL_SUPERADMIN;
     }
 
     return tienePermisoSeccion($rol, $clave);
@@ -353,6 +360,7 @@ function obtenerUrlMenuSidebar(string $clave): string
         'generar_informe'     => 'generar-informe.php',
         'estructura'          => 'estructura.php',
         'usuarios'            => 'usuarios.php',
+        'actividad'           => 'actividad.php',
     ]);
 
     return $mapa[$clave] ?? 'registros-generales.php';

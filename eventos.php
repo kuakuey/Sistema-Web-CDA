@@ -8,6 +8,7 @@ require_once 'includes/paginacion.php';
 require_once 'includes/eventos.php';
 require_once 'includes/valores_adicionales.php';
 require_once 'includes/detalle_registro.php';
+require_once 'includes/actividad_log.php';
 
 requerirSesion();
 
@@ -81,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new InvalidArgumentException('No tienes permiso para agregar eventos.');
                 }
 
-                crearEvento([
+                $eventoId = crearEvento([
                     'nombre'               => $_POST['nombre'] ?? '',
                     'fecha'                => $_POST['fecha'] ?? '',
                     'tipo_cobro'           => $_POST['tipo_cobro'] ?? 'pago',
@@ -89,15 +90,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'habilitado'           => isset($_POST['habilitado']) ? 1 : 0,
                     'requiere_numeracion'  => isset($_POST['requiere_numeracion']) ? 1 : 0,
                 ]);
-                header('Location: eventos.php?pestaña=agregar&ok=1');
-                exit;
+                salirConActividad('eventos.php?pestaña=agregar&ok=1', 'crear_evento', $eventoId);
 
             case 'actualizar_evento_catalogo':
                 if (!puedeAgregarEventos($rol)) {
                     throw new InvalidArgumentException('No tienes permiso para editar eventos.');
                 }
 
-                actualizarEventoCatalogo((int) ($_POST['id'] ?? 0), [
+                $eventoId = (int) ($_POST['id'] ?? 0);
+                actualizarEventoCatalogo($eventoId, [
                     'nombre'               => $_POST['nombre'] ?? '',
                     'fecha'                => $_POST['fecha'] ?? '',
                     'tipo_cobro'           => $_POST['tipo_cobro'] ?? 'pago',
@@ -105,8 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'habilitado'           => isset($_POST['habilitado']) ? 1 : 0,
                     'requiere_numeracion'  => isset($_POST['requiere_numeracion']) ? 1 : 0,
                 ]);
-                header('Location: eventos.php?pestaña=catalogo&ok=1');
-                exit;
+                salirConActividad('eventos.php?pestaña=catalogo&ok=1', 'actualizar_evento_catalogo', $eventoId);
         }
     } catch (InvalidArgumentException $e) {
         $error = $e->getMessage();

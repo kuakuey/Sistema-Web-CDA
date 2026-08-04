@@ -18,6 +18,7 @@ require_once 'includes/valores_adicionales.php';
 require_once 'includes/eventos.php';
 require_once 'includes/consejerias.php';
 require_once 'includes/transporte_aniversario.php';
+require_once 'includes/actividad_log.php';
 
 $accion = $_POST['accion'] ?? '';
 $id = (int) ($_POST['id'] ?? 0);
@@ -72,8 +73,7 @@ if ($accion === 'crear_valor_adicional') {
         exit;
     }
 
-    header('Location: ' . $redireccionBase . '?pestaña=nuevo&ok=1');
-    exit;
+    salirConActividad($redireccionBase . '?pestaña=nuevo&ok=1', 'crear_valor_adicional');
 }
 
 if ($accion === 'registrar_evento') {
@@ -111,8 +111,7 @@ if ($accion === 'registrar_evento') {
         exit;
     }
 
-    header('Location: ' . $redireccionBase . $sep . 'ok=1');
-    exit;
+    salirConActividad($redireccionBase . $sep . 'ok=1', 'registrar_evento', (int) ($validados['evento_id'] ?? 0));
 }
 
 if ($accion === 'guardar_permisos_rol') {
@@ -140,8 +139,7 @@ if ($accion === 'guardar_permisos_rol') {
     }
 
     $sep = strpos($redireccionPermisos, '?') !== false ? '&' : '?';
-    header('Location: ' . $redireccionPermisos . $sep . 'ok=1');
-    exit;
+    salirConActividad($redireccionPermisos . $sep . 'ok=1', 'guardar_permisos_rol');
 }
 
 if ($accion === 'cambiar_clave_usuario') {
@@ -166,8 +164,7 @@ if ($accion === 'cambiar_clave_usuario') {
         exit;
     }
 
-    header('Location: ' . $redireccionClave . $sep . 'ok=1&clave=1');
-    exit;
+    salirConActividad($redireccionClave . $sep . 'ok=1&clave=1', 'cambiar_clave_usuario', (int) ($_POST['id'] ?? 0));
 }
 
 if ($accion === 'crear_consejeria') {
@@ -211,8 +208,7 @@ if ($accion === 'crear_consejeria') {
         exit;
     }
 
-    header('Location: ' . $redireccionBase . '?pestaña=nuevo&ok=1');
-    exit;
+    salirConActividad($redireccionBase . '?pestaña=nuevo&ok=1', 'crear_consejeria');
 }
 
 if ($accion === 'crear_transporte_aniversario') {
@@ -238,8 +234,7 @@ if ($accion === 'crear_transporte_aniversario') {
         exit;
     }
 
-    header('Location: ' . $redireccionBase . '?pestaña=nuevo&ok=1');
-    exit;
+    salirConActividad($redireccionBase . '?pestaña=nuevo&ok=1', 'crear_transporte_aniversario');
 }
 
 if ($accion === 'asignar_cita_consejeria') {
@@ -268,8 +263,7 @@ if ($accion === 'asignar_cita_consejeria') {
     }
 
     $separador = strpos($redireccionBase, '?') !== false ? '&' : '?';
-    header('Location: ' . $redireccionBase . $separador . 'ok=1&asignacion=1');
-    exit;
+    salirConActividad($redireccionBase . $separador . 'ok=1&asignacion=1', 'asignar_cita_consejeria', $id);
 }
 
 if ($accion === 'crear_inscripcion') {
@@ -341,8 +335,7 @@ if ($accion === 'crear_inscripcion') {
         exit;
     }
 
-    header('Location: ' . $redireccionBase . '?pestaña=nuevo&ok=1');
-    exit;
+    salirConActividad($redireccionBase . '?pestaña=nuevo&ok=1', 'crear_inscripcion');
 }
 
 if ($accion === 'crear_presentacion') {
@@ -384,8 +377,11 @@ if ($accion === 'crear_presentacion') {
         $query .= '&cantidad=' . $cantidad;
     }
 
-    header('Location: ' . $redireccionBase . $query);
-    exit;
+    $primerId = isset($ids[0]) ? (int) $ids[0] : 0;
+    $detallePresentacion = $cantidad > 1
+        ? ('Crear presentación · ' . $cantidad . ' registros')
+        : '';
+    salirConActividad($redireccionBase . $query, 'crear_presentacion', $primerId, $detallePresentacion);
 }
 
 if ($accion === 'crear_ofrenda') {
@@ -427,8 +423,7 @@ if ($accion === 'crear_ofrenda') {
         exit;
     }
 
-    header('Location: ' . $redireccionBase . '?pestaña=nuevo&ok=1');
-    exit;
+    salirConActividad($redireccionBase . '?pestaña=nuevo&ok=1', 'crear_ofrenda', $casaId);
 }
 
 $accionesActualizar = [
@@ -609,8 +604,7 @@ if (in_array($accion, $accionesActualizar, true)) {
         exit;
     }
 
-    header('Location: ' . $redireccion . $sepRedireccion . 'actualizado=1');
-    exit;
+    salirConActividad($redireccion . $sepRedireccion . 'actualizado=1', $accion, $id);
 }
 
 if ($id <= 0 && $accion !== '' && !in_array($accion, [
@@ -699,8 +693,7 @@ if (in_array($accion, $accionesEliminar, true)) {
             break;
     }
 
-    header('Location: ' . $redireccion);
-    exit;
+    salirConActividad($redireccion, $accion, $id);
 }
 
 if ($accion === 'actualizar_estado_presentacion') {
@@ -718,6 +711,7 @@ if ($accion === 'actualizar_estado_presentacion') {
 
     try {
         actualizarEstadoPresentacionNino($id, $estado, obtenerUsuarioActual()['rol']);
+        salirConActividad($redireccion, 'actualizar_estado_presentacion', $id);
     } catch (InvalidArgumentException $e) {
         // Sin mensaje flash; redirige igual
     }
@@ -741,6 +735,7 @@ if ($accion === 'actualizar_estado_conexion') {
 
     try {
         actualizarEstadoConexionInscripcion($id, $contactado ? 1 : 0);
+        salirConActividad($redireccion, 'actualizar_estado_conexion', $id);
     } catch (PDOException $e) {
         // Redirige igual
     }
@@ -764,6 +759,8 @@ if ($accion === 'actualizar_estado_bautismo') {
     $fechaBautismo = trim((string) ($_POST['fecha_bautismo'] ?? ''));
     $rol = obtenerUsuarioActual()['rol'];
 
+    $sepRedireccion = strpos($redireccion, '?') !== false ? '&' : '?';
+
     try {
         actualizarEstadoBautismoInscripcion($id, $estado, $fechaBautismo !== '' ? $fechaBautismo : null, $rol);
     } catch (InvalidArgumentException $e) {
@@ -774,8 +771,7 @@ if ($accion === 'actualizar_estado_bautismo') {
         exit;
     }
 
-    header('Location: ' . $redireccion . $sepRedireccion . 'actualizado=1');
-    exit;
+    salirConActividad($redireccion . $sepRedireccion . 'actualizado=1', 'actualizar_estado_bautismo', $id);
 }
 
 if ($accion === 'restablecer_estado_bautismo') {
@@ -789,6 +785,8 @@ if ($accion === 'restablecer_estado_bautismo') {
         exit;
     }
 
+    $sepRedireccion = strpos($redireccion, '?') !== false ? '&' : '?';
+
     try {
         restablecerEstadoBautismoInscripcion($id, obtenerUsuarioActual()['rol']);
     } catch (InvalidArgumentException $e) {
@@ -799,8 +797,7 @@ if ($accion === 'restablecer_estado_bautismo') {
         exit;
     }
 
-    header('Location: ' . $redireccion . $sepRedireccion . 'actualizado=1');
-    exit;
+    salirConActividad($redireccion . $sepRedireccion . 'actualizado=1', 'restablecer_estado_bautismo', $id);
 }
 
 if ($accion === 'restablecer_estado_presentacion') {
@@ -814,6 +811,8 @@ if ($accion === 'restablecer_estado_presentacion') {
         exit;
     }
 
+    $sepRedireccion = strpos($redireccion, '?') !== false ? '&' : '?';
+
     try {
         restablecerEstadoPresentacionNino($id, obtenerUsuarioActual()['rol']);
     } catch (InvalidArgumentException $e) {
@@ -824,8 +823,7 @@ if ($accion === 'restablecer_estado_presentacion') {
         exit;
     }
 
-    header('Location: ' . $redireccion . $sepRedireccion . 'actualizado=1');
-    exit;
+    salirConActividad($redireccion . $sepRedireccion . 'actualizado=1', 'restablecer_estado_presentacion', $id);
 }
 
 header('Location: ' . $urlInicio);

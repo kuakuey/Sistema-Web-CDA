@@ -8,6 +8,7 @@ require_once 'includes/informe_pdf.php';
 require_once 'includes/informe_excel.php';
 require_once 'includes/eventos.php';
 require_once 'includes/filters.php';
+require_once 'includes/actividad_log.php';
 
 requerirSesion();
 
@@ -80,6 +81,14 @@ try {
             );
         }
         $informe['seccion_exportacion'] = $seccion;
+
+        registrarActividad(
+            'generar_informe',
+            'generar_informe',
+            'informe',
+            $eventoId > 0 ? $eventoId : null,
+            'Generar informe · ' . $seccion . ' · ' . normalizarFormatoInforme($formato)
+        );
 
         if (normalizarFormatoInforme($formato) === 'excel') {
             enviarInformeExcel($informe, $seccion);

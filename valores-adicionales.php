@@ -7,6 +7,7 @@ require_once 'includes/filters.php';
 require_once 'includes/paginacion.php';
 require_once 'includes/valores_adicionales.php';
 require_once 'includes/detalle_registro.php';
+require_once 'includes/actividad_log.php';
 
 requerirSesion();
 
@@ -76,8 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $puedeGestionarTipos) {
                     throw new InvalidArgumentException('La etiqueta del tipo es obligatoria.');
                 }
                 crearTipoValorAdicional($_POST['etiqueta']);
-                header('Location: valores-adicionales.php?pestaña=tipos&ok=1');
-                exit;
+                salirConActividad(
+                    'valores-adicionales.php?pestaña=tipos&ok=1',
+                    'crear_tipo_valor',
+                    0,
+                    'Crear tipo de valor · ' . trim((string) $_POST['etiqueta'])
+                );
 
             case 'actualizar_tipo_valor':
                 $id = (int) ($_POST['id'] ?? 0);
@@ -85,8 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $puedeGestionarTipos) {
                     throw new InvalidArgumentException('Datos de tipo inválidos.');
                 }
                 actualizarTipoValorAdicional($id, $_POST['etiqueta']);
-                header('Location: valores-adicionales.php?pestaña=tipos&ok=1');
-                exit;
+                salirConActividad('valores-adicionales.php?pestaña=tipos&ok=1', 'actualizar_tipo_valor', $id);
         }
     } catch (InvalidArgumentException $e) {
         $error = $e->getMessage();

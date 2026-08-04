@@ -185,7 +185,7 @@
             </td>
             <td class="text-end">
               <?php
-              $eliminarAccion = 'eliminar_valor_adicional';
+              $eliminarAccion = 'eliminar_registro_evento';
               $eliminarId = (int) $fila['id'];
               $eliminarRedireccion = $redireccionRegistros;
               $modalEditarId = !empty($puedeEditar) ? 'editar-' . $modalId : '';
@@ -223,7 +223,7 @@
       No hay eventos habilitados. Un superadmin debe agregar y habilitar eventos primero.
     </div>
     <?php else: ?>
-    <form method="POST" action="acciones.php" class="row g-3 js-form-registro" id="formRegistroEvento" data-mensaje-exito="Participante registrado correctamente.">
+    <form method="POST" action="acciones.php" class="row g-3 js-form-registro js-form-registro-evento" id="formRegistroEvento" data-mensaje-exito="Participante registrado correctamente.">
       <input type="hidden" name="accion" value="registrar_evento">
       <input type="hidden" name="redireccion" value="eventos.php?pestaña=registrar">
 
@@ -259,29 +259,9 @@
         </select>
       </div>
 
-      <div class="col-md-6 js-campo-numeracion-evento invisible" id="campoNumeracionEvento" aria-hidden="true">
-        <label class="form-label" for="numeracion">Numeración <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" id="numeracion" name="numeracion" maxlength="30">
-      </div>
-
-      <div class="col-md-6">
-        <label class="form-label" for="nombre">Nombre <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" id="nombre" name="nombre" required maxlength="100">
-      </div>
-
-      <div class="col-md-6">
-        <label class="form-label" for="telefono">Teléfono <span class="text-danger">*</span></label>
-        <input type="tel" class="form-control" id="telefono" name="telefono" required maxlength="30">
-      </div>
-
-      <div class="col-md-6">
-        <label class="form-label" for="fecha">Fecha <span class="text-danger">*</span></label>
-        <input type="date" class="form-control" id="fecha" name="fecha" required value="<?= htmlspecialchars(date('Y-m-d')) ?>">
-      </div>
-
       <div class="col-md-6 js-campo-valor-evento">
         <label class="form-label" for="valor">Valor <span class="text-danger">*</span></label>
-        <input type="number" class="form-control js-valor-evento" id="valor" name="valor" min="0" step="0.01" placeholder="Se completa según el tipo" disabled>
+        <input type="number" class="form-control js-valor-evento js-paso-despues-tipo" id="valor" name="valor" min="0" step="0.01" placeholder="0.00" disabled>
       </div>
 
       <div class="col-md-6 js-bloque-forma-pago-evento">
@@ -296,28 +276,49 @@
         </div>
       </div>
 
-      <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" disabled>
-      <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
-
-      <div class="col-md-6">
+      <div class="col-md-6 js-bloque-estado-pago-evento">
         <label class="form-label d-block">Estado <span class="text-danger">*</span></label>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="estado_pago" id="estado-por-cancelar" value="por_cancelar" checked>
+          <input class="form-check-input js-estado-pago-evento" type="radio" name="estado_pago" id="estado-por-cancelar" value="por_cancelar" checked disabled>
           <label class="form-check-label" for="estado-por-cancelar">Por cancelar</label>
         </div>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="estado_pago" id="estado-pagado" value="pagado">
+          <input class="form-check-input js-estado-pago-evento" type="radio" name="estado_pago" id="estado-pagado" value="pagado" disabled>
           <label class="form-check-label" for="estado-pagado">Pagado</label>
         </div>
       </div>
 
-      <div class="col-12">
-        <label class="form-label" for="observacion">Observación</label>
-        <textarea class="form-control" id="observacion" name="observacion" rows="2" maxlength="500"></textarea>
+      <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" disabled>
+      <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
+      <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" disabled>
+
+      <div class="col-md-6 js-campo-numeracion-evento">
+        <label class="form-label" for="numeracion">Numeración</label>
+        <input type="text" class="form-control" id="numeracion" name="numeracion" maxlength="30" placeholder="Seleccione evento primero…" disabled>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="nombre">Nombre <span class="text-danger">*</span></label>
+        <input type="text" class="form-control js-paso-despues-tipo" id="nombre" name="nombre" required maxlength="100" disabled>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="telefono">Teléfono <span class="text-danger">*</span></label>
+        <input type="tel" class="form-control js-paso-despues-tipo" id="telefono" name="telefono" required maxlength="30" disabled>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="fecha">Fecha <span class="text-danger">*</span></label>
+        <input type="date" class="form-control js-paso-despues-tipo" id="fecha" name="fecha" required value="<?= htmlspecialchars(date('Y-m-d')) ?>" disabled>
       </div>
 
       <div class="col-12">
-        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Registrar</button>
+        <label class="form-label" for="observacion">Observación</label>
+        <textarea class="form-control js-paso-despues-tipo" id="observacion" name="observacion" rows="2" maxlength="500" disabled></textarea>
+      </div>
+
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary js-submit-registro-evento" disabled><i class="bi bi-check-lg me-1"></i>Registrar</button>
       </div>
     </form>
     <?php endif; ?>

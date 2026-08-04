@@ -46,6 +46,7 @@ function mapaMetadatosActividad(): array
         'eliminar_presentacion'            => ['seccion' => 'presentaciones', 'entidad' => 'presentacion', 'etiqueta' => 'Eliminar presentación'],
         'eliminar_ofrenda'                 => ['seccion' => 'ofrendas', 'entidad' => 'ofrenda', 'etiqueta' => 'Eliminar ofrenda'],
         'eliminar_valor_adicional'         => ['seccion' => 'valores_adicionales', 'entidad' => 'valor_adicional', 'etiqueta' => 'Eliminar valor adicional'],
+        'eliminar_registro_evento'         => ['seccion' => 'eventos', 'entidad' => 'registro_evento', 'etiqueta' => 'Eliminar registro de evento'],
         'eliminar_consejeria'              => ['seccion' => 'consejeria', 'entidad' => 'consejeria', 'etiqueta' => 'Eliminar consejería'],
         'eliminar_transporte_aniversario'  => ['seccion' => 'transporte_aniversario', 'entidad' => 'transporte', 'etiqueta' => 'Eliminar transporte aniversario'],
         'eliminar_usuario'                 => ['seccion' => 'usuarios', 'entidad' => 'usuario', 'etiqueta' => 'Eliminar usuario'],

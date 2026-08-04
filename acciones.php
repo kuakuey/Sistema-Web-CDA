@@ -625,6 +625,7 @@ $accionesEliminar = [
     'eliminar_presentacion',
     'eliminar_ofrenda',
     'eliminar_valor_adicional',
+    'eliminar_registro_evento',
     'eliminar_consejeria',
     'eliminar_transporte_aniversario',
     'eliminar_usuario',
@@ -654,6 +655,17 @@ if (in_array($accion, $accionesEliminar, true)) {
         case 'eliminar_valor_adicional':
             if (!puedeEditarValoresAdicionales(obtenerUsuarioActual()['rol'])) {
                 header('Location: ' . $urlInicio);
+                exit;
+            }
+            eliminarValorAdicional($id);
+            break;
+        case 'eliminar_registro_evento':
+            if (!puedeGestionarEventos(obtenerUsuarioActual()['rol'])) {
+                header('Location: ' . $urlInicio);
+                exit;
+            }
+            if (!obtenerRegistroEventoPorId($id)) {
+                header('Location: ' . ($redireccion ?: 'eventos.php'));
                 exit;
             }
             eliminarValorAdicional($id);

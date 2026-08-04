@@ -56,14 +56,19 @@
     return opcion ? parseFloat(opcion.getAttribute('data-valor') || '0') : 0;
   }
 
-  function alternarCampoReservado(elemento, visible) {
+  function leerValorNumerico(input, fallback) {
+    if (!input || input.value === '') {
+      return fallback;
+    }
+    var n = parseFloat(input.value);
+    return isNaN(n) ? fallback : n;
+  }
+
+  function setVisible(elemento, visible) {
     if (!elemento) {
       return;
     }
-
-    elemento.style.display = '';
-    elemento.classList.toggle('invisible', !visible);
-    elemento.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    elemento.style.display = visible ? '' : 'none';
   }
 
   function actualizarSelectTiposEntrada(contenedor) {
@@ -76,19 +81,11 @@
       return;
     }
 
+    // Siempre visible; solo se habilita con evento.
+    setVisible(campoTipo, true);
+
     var sinEvento = tipos === null;
     var tieneTipos = !sinEvento && tipos.length > 0;
-    var siempreVisible = !campoTipo.classList.contains('invisible') && !campoTipo.hasAttribute('aria-hidden');
-
-    if (siempreVisible) {
-      campoTipo.style.display = '';
-      campoTipo.classList.remove('invisible');
-      campoTipo.setAttribute('aria-hidden', 'false');
-    } else if (campoTipo.classList.contains('invisible') || campoTipo.hasAttribute('aria-hidden')) {
-      alternarCampoReservado(campoTipo, tieneTipos);
-    } else {
-      campoTipo.style.display = tieneTipos ? '' : 'none';
-    }
 
     if (sinEvento) {
       tipoSelect.innerHTML = '<option value="">Seleccione evento primero…</option>';
@@ -116,12 +113,45 @@
     tipoSelect.disabled = !tieneTipos;
   }
 
-  function leerValorNumerico(input, fallback) {
-    if (!input || input.value === '') {
-      return fallback;
+  function actualizarNumeracion(contenedor) {
+    var eventoSelect = contenedor.querySelector('select[name="evento_id"]');
+    var campoNumeracion = contenedor.querySelector('.js-campo-numeracion-evento');
+    var inputNumeracion = contenedor.querySelector('input[name="numeracion"]');
+
+    if (!campoNumeracion || !inputNumeracion) {
+      return;
     }
-    var n = parseFloat(input.value);
-    return isNaN(n) ? fallback : n;
+
+    // Siempre visible; se habilita solo si el evento lo requiere.
+    setVisible(campoNumeracion, true);
+
+    var hayEvento = !!(eventoSelect && eventoSelect.value);
+    var requiere = false;
+
+    if (hayEvento) {
+      var opcion = eventoSelect.options[eventoSelect.selectedIndex];
+      requiere = !!(opcion && opcion.getAttribute('data-requiere-numeracion') === '1');
+    }
+
+    inputNumeracion.disabled = !requiere;
+    inputNumeracion.required = requiere;
+    inputNumeracion.placeholder = !hayEvento
+      ? 'Seleccione evento primero…'
+      : (requiere ? 'Obligatoria para este evento' : 'No aplica para este evento');
+
+    if (!requiere) {
+      inputNumeracion.value = '';
+    }
+
+    var label = campoNumeracion.querySelector('.form-label');
+    if (label) {
+      var marca = label.querySelector('.text-danger');
+      if (requiere && !marca) {
+        label.insertAdjacentHTML('beforeend', ' <span class="text-danger">*</span>');
+      } else if (!requiere && marca) {
+        marca.remove();
+      }
+    }
   }
 
   function actualizarBloquePagoEvento(contenedor, opciones) {
@@ -135,13 +165,16 @@
     var tipoListo = !sinEvento && !sinTipo;
     var campoValor = contenedor.querySelector('.js-campo-valor-evento');
     var bloqueFormaPago = contenedor.querySelector('.js-bloque-forma-pago-evento');
+    var bloqueEstado = contenedor.querySelector('.js-bloque-estado-pago-evento');
     var bloquePagoLegacy = contenedor.querySelector('.js-bloque-pago-evento');
     var hiddenFormaPago = contenedor.querySelector('.js-forma-pago-gratuito');
     var hiddenValor = contenedor.querySelector('.js-valor-gratuito');
+    var hiddenEstado = contenedor.querySelector('.js-estado-pago-gratuito');
     var valorInput = contenedor.querySelector('.js-valor-evento');
     var metodosPago = contenedor.querySelectorAll('.js-metodo-pago-evento');
-    var valorSiempreVisible = !!(campoValor && !campoValor.classList.contains('invisible') && !campoValor.hasAttribute('aria-hidden'));
-    var formaPagoSiempreVisible = !!(bloqueFormaPago && bloqueFormaPago.classList.contains('col-md-6'));
+    var estadosPago = contenedor.querySelectorAll('.js-estado-pago-evento');
+    var pasosDespuesTipo = contenedor.querySelectorAll('.js-paso-despues-tipo');
+    var botonSubmit = contenedor.querySelector('.js-submit-registro-evento');
 
     if (valorInput && sugerirValor && tipoListo && valorCatalogo !== null) {
       valorInput.value = valorCatalogo;
@@ -153,48 +186,52 @@
       ? leerValorNumerico(valorInput, valorCatalogo != null ? valorCatalogo : 0)
       : null;
     var esGratuito = tipoListo && valorActual !== null && valorActual <= 0;
-    var mostrarPago = tipoListo && valorActual !== null && valorActual > 0;
+    var esDePago = tipoListo && valorActual !== null && valorActual > 0;
 
-    // En el formulario de registro los campos quedan visibles; solo se habilitan cuando aplica.
-    if (campoValor) {
-      if (valorSiempreVisible) {
-        campoValor.style.display = '';
-        campoValor.classList.remove('invisible');
-        campoValor.setAttribute('aria-hidden', 'false');
-      } else {
-        alternarCampoReservado(campoValor, tipoListo);
+    // Valor y datos del participante: visibles siempre; habilitados tras elegir tipo.
+    setVisible(campoValor, true);
+    pasosDespuesTipo.forEach(function (campo) {
+      campo.disabled = !tipoListo;
+      if (campo.classList.contains('js-valor-evento')) {
+        campo.required = tipoListo;
+        campo.min = '0';
+        campo.placeholder = '0.00';
       }
-    }
+    });
 
-    if (bloqueFormaPago) {
-      bloqueFormaPago.style.display = formaPagoSiempreVisible || mostrarPago || tipoListo ? '' : 'none';
-    }
-
+    // Forma de pago y estado: visibles solo si no es gratuito.
+    setVisible(bloqueFormaPago, !esGratuito);
+    setVisible(bloqueEstado, !esGratuito);
     if (bloquePagoLegacy) {
-      bloquePagoLegacy.style.display = tipoListo ? '' : 'none';
+      setVisible(bloquePagoLegacy, !esGratuito);
     }
 
     if (hiddenFormaPago) {
       hiddenFormaPago.disabled = !esGratuito;
     }
 
-    if (hiddenValor) {
-      // Si el input visible está habilitado, no forzar el hidden de valor 0.
-      hiddenValor.disabled = !(esGratuito && (!valorInput || valorInput.disabled));
+    if (hiddenEstado) {
+      hiddenEstado.disabled = !esGratuito;
     }
 
-    if (valorInput) {
-      valorInput.disabled = !tipoListo;
-      valorInput.readOnly = false;
-      valorInput.required = tipoListo;
-      valorInput.min = '0';
-      valorInput.placeholder = '0.00';
+    if (hiddenValor) {
+      // El valor visible se envía cuando está habilitado.
+      hiddenValor.disabled = true;
     }
 
     metodosPago.forEach(function (radio) {
-      radio.disabled = !mostrarPago;
-      radio.required = mostrarPago;
+      radio.disabled = !esDePago;
+      radio.required = esDePago;
     });
+
+    estadosPago.forEach(function (radio) {
+      radio.disabled = !esDePago;
+      radio.required = esDePago;
+    });
+
+    if (botonSubmit) {
+      botonSubmit.disabled = !tipoListo;
+    }
   }
 
   function actualizarBotonesQuitarTipos(contenedor) {
@@ -216,7 +253,6 @@
       var hiddenValor = fila.querySelector('.js-valor-tipo-entrada-gratuito');
 
       if (campoValor) {
-        // Siempre visible: en gratuito se fuerza 0, en pago permite 0 o más.
         campoValor.style.display = '';
       }
 
@@ -263,36 +299,10 @@
     actualizarBloqueValorCatalogo(contenedor);
   }
 
-  function actualizarNumeracion(contenedor) {
-    var eventoSelect = contenedor.querySelector('select[name="evento_id"]');
-    var campoNumeracion = contenedor.querySelector('.js-campo-numeracion-evento');
-    var inputNumeracion = contenedor.querySelector('input[name="numeracion"]');
-
-    if (!campoNumeracion) {
-      return;
-    }
-
-    var requiere = false;
-
-    if (eventoSelect && eventoSelect.value) {
-      var opcion = eventoSelect.options[eventoSelect.selectedIndex];
-      requiere = opcion && opcion.getAttribute('data-requiere-numeracion') === '1';
-    } else if (inputNumeracion && inputNumeracion.value.trim() !== '') {
-      requiere = true;
-    }
-
-    if (campoNumeracion.classList.contains('invisible') || campoNumeracion.hasAttribute('aria-hidden')) {
-      alternarCampoReservado(campoNumeracion, requiere);
-    } else {
-      campoNumeracion.style.display = requiere ? '' : 'none';
-    }
-
-    if (inputNumeracion) {
-      inputNumeracion.required = requiere;
-      if (!requiere) {
-        inputNumeracion.value = '';
-      }
-    }
+  function refrescarFormularioRegistro(contenedor, opciones) {
+    actualizarSelectTiposEntrada(contenedor);
+    actualizarNumeracion(contenedor);
+    actualizarBloquePagoEvento(contenedor, opciones || {});
   }
 
   function inicializarContenedorRegistro(contenedor) {
@@ -301,9 +311,7 @@
 
     if (eventoSelect) {
       eventoSelect.addEventListener('change', function () {
-        actualizarSelectTiposEntrada(contenedor);
-        actualizarNumeracion(contenedor);
-        actualizarBloquePagoEvento(contenedor, { sugerirValor: true });
+        refrescarFormularioRegistro(contenedor, { sugerirValor: true });
       });
     }
 
@@ -321,11 +329,8 @@
       });
     }
 
-    actualizarSelectTiposEntrada(contenedor);
-    actualizarNumeracion(contenedor);
-    // En edición no pisa el valor guardado; en alta sugiere según el tipo.
     var sugerirAlInicio = !valorInput || valorInput.value === '';
-    actualizarBloquePagoEvento(contenedor, { sugerirValor: sugerirAlInicio });
+    refrescarFormularioRegistro(contenedor, { sugerirValor: sugerirAlInicio });
   }
 
   function inicializarContenedorCatalogo(contenedor) {
@@ -364,7 +369,15 @@
   }
 
   document.querySelectorAll('#formRegistroEvento, .modal-editar-registro form').forEach(function (form) {
-    if (form.querySelector('select[name="evento_id"]') && (form.querySelector('.js-campo-valor-evento') || form.querySelector('.js-bloque-forma-pago-evento') || form.querySelector('.js-bloque-pago-evento') || form.querySelector('.js-campo-tipo-entrada-evento'))) {
+    if (
+      form.querySelector('select[name="evento_id"]')
+      && (
+        form.querySelector('.js-campo-valor-evento')
+        || form.querySelector('.js-bloque-forma-pago-evento')
+        || form.querySelector('.js-bloque-pago-evento')
+        || form.querySelector('.js-campo-tipo-entrada-evento')
+      )
+    ) {
       inicializarContenedorRegistro(form);
     }
   });

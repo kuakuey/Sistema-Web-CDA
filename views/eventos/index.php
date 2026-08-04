@@ -281,7 +281,7 @@
 
       <div class="col-md-6 js-campo-valor-evento">
         <label class="form-label" for="valor">Valor <span class="text-danger">*</span></label>
-        <input type="number" class="form-control js-valor-evento" id="valor" name="valor" min="0.01" step="0.01" placeholder="Se completa según el tipo" disabled>
+        <input type="number" class="form-control js-valor-evento" id="valor" name="valor" min="0" step="0.01" placeholder="Se completa según el tipo" disabled>
       </div>
 
       <div class="col-md-6 js-bloque-forma-pago-evento">
@@ -367,7 +367,7 @@
             </div>
             <div class="col-md-4 js-campo-valor-tipo-entrada">
               <label class="form-label">Valor <span class="text-danger">*</span></label>
-              <input type="number" class="form-control js-valor-tipo-entrada" name="tipo_entrada[valor][]" min="0.01" step="0.01" required>
+              <input type="number" class="form-control js-valor-tipo-entrada" name="tipo_entrada[valor][]" min="0" step="0.01" value="0" required>
             </div>
             <input type="hidden" class="js-valor-tipo-entrada-gratuito" name="tipo_entrada[valor][]" value="0" disabled>
             <div class="col-md-2">
@@ -535,9 +535,9 @@
                     type="number"
                     class="form-control js-valor-tipo-entrada"
                     name="tipo_entrada[valor][]"
-                    min="0.01"
+                    min="0"
                     step="0.01"
-                    value="<?= htmlspecialchars((string) ((float) ($tipoEntrada['valor'] ?? 0) > 0 ? $tipoEntrada['valor'] : '')) ?>"
+                    value="<?= htmlspecialchars((string) ((float) ($tipoEntrada['valor'] ?? 0))) ?>"
                     <?= $esGratuitoCatalogo ? 'disabled' : 'required' ?>
                   >
                 </div>

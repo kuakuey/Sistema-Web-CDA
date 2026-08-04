@@ -116,15 +116,23 @@
     tipoSelect.disabled = !tieneTipos;
   }
 
+  function leerValorNumerico(input, fallback) {
+    if (!input || input.value === '') {
+      return fallback;
+    }
+    var n = parseFloat(input.value);
+    return isNaN(n) ? fallback : n;
+  }
+
   function actualizarBloquePagoEvento(contenedor, opciones) {
     opciones = opciones || {};
     var sugerirValor = !!opciones.sugerirValor;
-    var valorEvento = obtenerValorEventoSeleccionado(contenedor);
+    var valorCatalogo = obtenerValorEventoSeleccionado(contenedor);
     var tipos = obtenerTiposEntradaEvento(contenedor);
     var sinEvento = tipos === null;
     var tipoSelect = contenedor.querySelector('.js-tipo-entrada-evento');
     var sinTipo = !sinEvento && tipos.length > 0 && (!tipoSelect || !tipoSelect.value);
-    var esGratuito = !sinEvento && !sinTipo && valorEvento !== null && valorEvento <= 0;
+    var tipoListo = !sinEvento && !sinTipo;
     var campoValor = contenedor.querySelector('.js-campo-valor-evento');
     var bloqueFormaPago = contenedor.querySelector('.js-bloque-forma-pago-evento');
     var bloquePagoLegacy = contenedor.querySelector('.js-bloque-pago-evento');
@@ -132,9 +140,20 @@
     var hiddenValor = contenedor.querySelector('.js-valor-gratuito');
     var valorInput = contenedor.querySelector('.js-valor-evento');
     var metodosPago = contenedor.querySelectorAll('.js-metodo-pago-evento');
-    var mostrarPago = !esGratuito && !sinEvento && !sinTipo && valorEvento !== null && valorEvento > 0;
     var valorSiempreVisible = !!(campoValor && !campoValor.classList.contains('invisible') && !campoValor.hasAttribute('aria-hidden'));
     var formaPagoSiempreVisible = !!(bloqueFormaPago && bloqueFormaPago.classList.contains('col-md-6'));
+
+    if (valorInput && sugerirValor && tipoListo && valorCatalogo !== null) {
+      valorInput.value = valorCatalogo;
+    } else if (valorInput && sugerirValor && (sinEvento || sinTipo)) {
+      valorInput.value = '';
+    }
+
+    var valorActual = tipoListo
+      ? leerValorNumerico(valorInput, valorCatalogo != null ? valorCatalogo : 0)
+      : null;
+    var esGratuito = tipoListo && valorActual !== null && valorActual <= 0;
+    var mostrarPago = tipoListo && valorActual !== null && valorActual > 0;
 
     // En el formulario de registro los campos quedan visibles; solo se habilitan cuando aplica.
     if (campoValor) {
@@ -143,16 +162,16 @@
         campoValor.classList.remove('invisible');
         campoValor.setAttribute('aria-hidden', 'false');
       } else {
-        alternarCampoReservado(campoValor, mostrarPago || esGratuito);
+        alternarCampoReservado(campoValor, tipoListo);
       }
     }
 
     if (bloqueFormaPago) {
-      bloqueFormaPago.style.display = formaPagoSiempreVisible || mostrarPago ? '' : 'none';
+      bloqueFormaPago.style.display = formaPagoSiempreVisible || mostrarPago || tipoListo ? '' : 'none';
     }
 
     if (bloquePagoLegacy) {
-      bloquePagoLegacy.style.display = mostrarPago || esGratuito ? '' : 'none';
+      bloquePagoLegacy.style.display = tipoListo ? '' : 'none';
     }
 
     if (hiddenFormaPago) {
@@ -160,22 +179,16 @@
     }
 
     if (hiddenValor) {
-      hiddenValor.disabled = !esGratuito;
+      // Si el input visible está habilitado, no forzar el hidden de valor 0.
+      hiddenValor.disabled = !(esGratuito && (!valorInput || valorInput.disabled));
     }
 
     if (valorInput) {
-      valorInput.disabled = !mostrarPago;
+      valorInput.disabled = !tipoListo;
       valorInput.readOnly = false;
-      valorInput.required = mostrarPago;
-      valorInput.placeholder = esGratuito ? 'Gratuito' : 'Se completa según el tipo';
-
-      if (mostrarPago && valorEvento > 0 && sugerirValor) {
-        valorInput.value = valorEvento;
-      } else if ((esGratuito || sinEvento || sinTipo) && sugerirValor) {
-        valorInput.value = '';
-      } else if (esGratuito) {
-        valorInput.value = '';
-      }
+      valorInput.required = tipoListo;
+      valorInput.min = '0';
+      valorInput.placeholder = '0.00';
     }
 
     metodosPago.forEach(function (radio) {
@@ -203,14 +216,19 @@
       var hiddenValor = fila.querySelector('.js-valor-tipo-entrada-gratuito');
 
       if (campoValor) {
-        campoValor.style.display = esGratuito ? 'none' : '';
+        // Siempre visible: en gratuito se fuerza 0, en pago permite 0 o más.
+        campoValor.style.display = '';
       }
 
       if (valorInput) {
+        valorInput.min = '0';
         valorInput.disabled = esGratuito;
         valorInput.required = !esGratuito;
         if (esGratuito) {
+          valorInput.value = '0';
           valorInput.removeAttribute('required');
+        } else if (valorInput.value === '') {
+          valorInput.value = '0';
         }
       }
 
@@ -233,6 +251,9 @@
     nueva.querySelectorAll('input').forEach(function (input) {
       if (input.classList.contains('js-valor-tipo-entrada-gratuito')) {
         input.value = '0';
+      } else if (input.classList.contains('js-valor-tipo-entrada')) {
+        input.value = '0';
+        input.min = '0';
       } else {
         input.value = '';
       }
@@ -292,11 +313,18 @@
       });
     }
 
+    var valorInput = contenedor.querySelector('.js-valor-evento');
+    if (valorInput && !valorInput.dataset.boundValorEvento) {
+      valorInput.dataset.boundValorEvento = '1';
+      valorInput.addEventListener('input', function () {
+        actualizarBloquePagoEvento(contenedor, { sugerirValor: false });
+      });
+    }
+
     actualizarSelectTiposEntrada(contenedor);
     actualizarNumeracion(contenedor);
-    // En edición no pisa el valor guardado; en alta sugiere si el campo está vacío.
-    var valorInput = contenedor.querySelector('.js-valor-evento');
-    var sugerirAlInicio = !valorInput || !valorInput.value || parseFloat(valorInput.value) <= 0;
+    // En edición no pisa el valor guardado; en alta sugiere según el tipo.
+    var sugerirAlInicio = !valorInput || valorInput.value === '';
     actualizarBloquePagoEvento(contenedor, { sugerirValor: sugerirAlInicio });
   }
 

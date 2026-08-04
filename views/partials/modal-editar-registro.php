@@ -290,7 +290,7 @@ $fila = $filaEditar;
                     class="form-control js-valor-evento"
                     name="valor"
                     step="0.01"
-                    min="0.01"
+                    min="0"
                     value="<?= htmlspecialchars((string) ($fila['valor'] ?? '0')) ?>"
                   >
                 </div>

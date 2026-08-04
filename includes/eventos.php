@@ -209,12 +209,6 @@ function normalizarTiposEntradaCatalogo($tiposEntrada, string $tipoCobro): array
             $valor = 0.0;
         }
 
-        if (!$esGratuito && $valor <= 0) {
-            throw new InvalidArgumentException(
-                'Cada tipo de entrada de pago debe tener un valor mayor a cero.'
-            );
-        }
-
         $normalizados[] = [
             'nombre' => $nombre,
             'valor'  => $valor,
@@ -409,13 +403,11 @@ function normalizarDatosEventoCatalogo(array $datos): array
 
     $tiposEntrada = $datos['tipos_entrada'] ?? null;
 
-    // Compatibilidad: si no vienen tipos, arma uno desde valor suelto.
+    // Compatibilidad: si no vienen tipos, arma uno desde valor suelto (permite 0).
     if ($tiposEntrada === null || $tiposEntrada === []) {
         $valorLegacy = isset($datos['valor']) ? (float) $datos['valor'] : 0.0;
-        if ($tipoCobro === 'gratuito') {
+        if ($tipoCobro === 'gratuito' || $valorLegacy < 0) {
             $valorLegacy = 0.0;
-        } elseif ($valorLegacy <= 0) {
-            throw new InvalidArgumentException('Agrega al menos un tipo de entrada con valor.');
         }
         $tiposEntrada = [['nombre' => 'General', 'valor' => $valorLegacy]];
     }
@@ -481,13 +473,14 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
         $tipoEntradaNombre = (string) $tipoEntrada['nombre'];
         $valorTipoCatalogo = (float) $tipoEntrada['valor'];
 
-        // Si el tipo es gratuito en catálogo, el registro queda en 0.
-        // Si es de pago, se respeta el valor enviado (permite promociones).
-        if ($valorTipoCatalogo <= 0) {
-            $valor = 0;
-        } elseif (!isset($entrada['valor']) || $entrada['valor'] === '' || $entrada['valor'] === null) {
+        // Se respeta el valor enviado (permite 0 / promociones); si no viene, usa el del catálogo.
+        if (!isset($entrada['valor']) || $entrada['valor'] === '' || $entrada['valor'] === null) {
             $valor = $valorTipoCatalogo;
         }
+    }
+
+    if ($valor < 0) {
+        throw new InvalidArgumentException('El valor no puede ser negativo.');
     }
 
     $eventoEsGratuito = $valor <= 0;
@@ -521,12 +514,6 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
 
     if ((int) ($evento['requiere_numeracion'] ?? 0) === 1 && $numeracion === '') {
         throw new InvalidArgumentException('La numeración es obligatoria para este evento.');
-    }
-
-    if ($eventoEsGratuito) {
-        $valor = 0;
-    } elseif ($valor <= 0) {
-        throw new InvalidArgumentException('Ingresa un valor mayor a cero.');
     }
 
     return [

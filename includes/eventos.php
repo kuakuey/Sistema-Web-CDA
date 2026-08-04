@@ -325,6 +325,42 @@ function obtenerFormasPagoEvento(): array
     ];
 }
 
+/**
+ * @return array<string, string>
+ */
+function obtenerEstadosPagoEvento(): array
+{
+    return [
+        'por_cancelar' => 'Por cancelar',
+        'pagado'       => 'Pagado',
+    ];
+}
+
+function normalizarEstadoPagoEvento(string $estado): string
+{
+    $estado = trim(mb_strtolower($estado));
+
+    return array_key_exists($estado, obtenerEstadosPagoEvento()) ? $estado : '';
+}
+
+function etiquetaEstadoPagoEvento(?string $estado): string
+{
+    if ($estado === null || $estado === '') {
+        return '—';
+    }
+
+    $estados = obtenerEstadosPagoEvento();
+
+    return $estados[normalizarEstadoPagoEvento($estado)] ?? $estado;
+}
+
+function claseBadgeEstadoPagoEvento(?string $estado): string
+{
+    return normalizarEstadoPagoEvento((string) $estado) === 'pagado'
+        ? 'bg-success'
+        : 'bg-warning text-dark';
+}
+
 function normalizarFormaPagoEvento(string $formaPago): string
 {
     $formaPago = trim(mb_strtolower($formaPago));
@@ -416,6 +452,7 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
     $numeracion = trim((string) ($entrada['numeracion'] ?? ''));
     $formaPago = normalizarFormaPagoEvento((string) ($entrada['forma_pago'] ?? ''));
     $tipoEntradaId = isset($entrada['tipo_entrada_id']) ? (int) $entrada['tipo_entrada_id'] : 0;
+    $estadoPago = normalizarEstadoPagoEvento((string) ($entrada['estado_pago'] ?? ''));
 
     if ($evento === null) {
         $evento = $eventoId > 0 ? obtenerEventoHabilitado($eventoId) : null;
@@ -442,19 +479,35 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
         }
 
         $tipoEntradaNombre = (string) $tipoEntrada['nombre'];
-        $valor = (float) $tipoEntrada['valor'];
+        $valorTipoCatalogo = (float) $tipoEntrada['valor'];
+
+        // Si el tipo es gratuito en catálogo, el registro queda en 0.
+        // Si es de pago, se respeta el valor enviado (permite promociones).
+        if ($valorTipoCatalogo <= 0) {
+            $valor = 0;
+        } elseif (!isset($entrada['valor']) || $entrada['valor'] === '' || $entrada['valor'] === null) {
+            $valor = $valorTipoCatalogo;
+        }
     }
 
-    $eventoEsGratuito = $valor <= 0 && (float) ($evento['valor'] ?? 0) <= 0;
-    if ($tipoEntrada !== null) {
-        $eventoEsGratuito = (float) $tipoEntrada['valor'] <= 0;
-    }
+    $eventoEsGratuito = $valor <= 0;
 
     if ($eventoEsGratuito) {
         $formaPago = 'gratuito';
         $valor = 0;
+        if ($estadoPago === '') {
+            $estadoPago = 'pagado';
+        }
     } elseif (!in_array($formaPago, ['efectivo', 'transferencia'], true)) {
         throw new InvalidArgumentException('Selecciona Efectivo o Transferencia.');
+    }
+
+    if ($estadoPago === '') {
+        $estadoPago = 'por_cancelar';
+    }
+
+    if (!array_key_exists($estadoPago, obtenerEstadosPagoEvento())) {
+        throw new InvalidArgumentException('Selecciona un estado válido: Por cancelar o Pagado.');
     }
 
     if ($nombre === '' || $fecha === '' || $telefono === '') {
@@ -487,7 +540,31 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
         'forma_pago'       => $formaPago,
         'tipo_entrada_id'  => $tipoEntrada !== null ? (int) $tipoEntrada['id'] : null,
         'tipo_entrada'     => $tipoEntradaNombre,
+        'estado_pago'      => $estadoPago,
     ];
+}
+
+function actualizarEstadoPagoRegistroEvento(int $id, string $estadoPago): bool
+{
+    $estadoPago = normalizarEstadoPagoEvento($estadoPago);
+
+    if ($id <= 0 || $estadoPago === '') {
+        throw new InvalidArgumentException('Estado de pago no válido.');
+    }
+
+    $registro = obtenerRegistroEventoPorId($id);
+
+    if (!$registro) {
+        throw new InvalidArgumentException('Registro de evento no encontrado.');
+    }
+
+    $pdo = getConnection();
+    asegurarColumnasValoresAdicionales($pdo);
+    $stmt = $pdo->prepare(
+        'UPDATE valores_adicionales SET estado_pago = ? WHERE id = ? AND tipo = ?'
+    );
+
+    return $stmt->execute([$estadoPago, $id, TIPO_VALOR_EVENTOS_INTERNO]) && $stmt->rowCount() > 0;
 }
 
 function obtenerRegistroEventoPorId(int $id): ?array

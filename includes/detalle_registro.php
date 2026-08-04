@@ -157,6 +157,7 @@ function construirDetalleRegistroEvento(array $fila): array
         ['etiqueta' => 'Fecha', 'valor' => formatearFechaTabla($fila['fecha'] ?? null)],
         filaDetalleHtml('Teléfono', enlaceWhatsApp($fila['telefono'] ?? null)),
         ['etiqueta' => 'Forma de pago', 'valor' => etiquetaFormaPagoEvento($fila['forma_pago'] ?? null)],
+        ['etiqueta' => 'Estado', 'valor' => etiquetaEstadoPagoEvento($fila['estado_pago'] ?? null)],
         ['etiqueta' => 'Valor', 'valor' => formatearMonto((float) ($fila['valor'] ?? 0))],
     ];
 

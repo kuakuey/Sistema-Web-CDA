@@ -156,6 +156,7 @@
         <th>Nombre</th>
         <th>Tipo entrada</th>
         <th>Numeración</th>
+        <th>Estado</th>
         <th>Fecha</th>
         <th>Teléfono</th>
         <th>Observación</th>
@@ -167,6 +168,7 @@
         <td><?= htmlspecialchars($registro['nombre']) ?></td>
         <td><?= htmlspecialchars(trim((string) ($registro['tipo_entrada'] ?? '')) !== '' ? $registro['tipo_entrada'] : '—') ?></td>
         <td><?= htmlspecialchars($registro['numeracion'] ?? '—') ?></td>
+        <td><?= htmlspecialchars(etiquetaEstadoPagoEvento($registro['estado_pago'] ?? null)) ?></td>
         <td><?= htmlspecialchars(formatearFechaInforme($registro['fecha'])) ?></td>
         <td><?= htmlspecialchars($registro['telefono']) ?></td>
         <td><?= !empty($registro['observacion']) ? htmlspecialchars($registro['observacion']) : '—' ?></td>

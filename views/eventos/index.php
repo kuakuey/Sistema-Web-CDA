@@ -120,13 +120,14 @@
             <th>Tipo entrada</th>
             <th>Valor</th>
             <th>Forma de pago</th>
+            <th>Estado</th>
             <th class="text-end">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <?php if (empty($registros)): ?>
           <tr>
-            <td colspan="7" class="text-center text-muted py-5">
+            <td colspan="8" class="text-center text-muted py-5">
               <i class="bi bi-inbox display-6 d-block mb-2"></i>
               No hay registros de eventos.
             </td>
@@ -134,6 +135,7 @@
           <?php else: ?>
           <?php foreach ($registros as $fila):
             $modalId = 'detalle-evento-' . (int) $fila['id'];
+            $estadoPagoFila = normalizarEstadoPagoEvento((string) ($fila['estado_pago'] ?? 'por_cancelar')) ?: 'por_cancelar';
             $modalesDetalle[] = [
                 'id'     => $modalId,
                 'titulo' => 'Registro de evento #' . (int) $fila['id'],
@@ -156,6 +158,31 @@
             <td><?= htmlspecialchars(trim((string) ($fila['tipo_entrada'] ?? '')) !== '' ? $fila['tipo_entrada'] : '—') ?></td>
             <td><strong><?= htmlspecialchars(formatearMonto((float) $fila['valor'])) ?></strong></td>
             <td><?= htmlspecialchars(etiquetaFormaPagoEvento($fila['forma_pago'] ?? null)) ?></td>
+            <td>
+              <?php if (!empty($puedeEditar)): ?>
+              <form method="POST" action="acciones.php" class="m-0">
+                <input type="hidden" name="accion" value="actualizar_estado_pago_evento">
+                <input type="hidden" name="id" value="<?= (int) $fila['id'] ?>">
+                <input type="hidden" name="redireccion" value="<?= htmlspecialchars($redireccionRegistros) ?>">
+                <select
+                  class="form-select form-select-sm"
+                  name="estado_pago"
+                  onchange="this.form.submit()"
+                  aria-label="Estado de pago"
+                >
+                  <?php foreach (obtenerEstadosPagoEvento() as $claveEstado => $etiquetaEstado): ?>
+                  <option value="<?= htmlspecialchars($claveEstado) ?>" <?= $estadoPagoFila === $claveEstado ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($etiquetaEstado) ?>
+                  </option>
+                  <?php endforeach; ?>
+                </select>
+              </form>
+              <?php else: ?>
+              <span class="badge <?= htmlspecialchars(claseBadgeEstadoPagoEvento($estadoPagoFila)) ?>">
+                <?= htmlspecialchars(etiquetaEstadoPagoEvento($estadoPagoFila)) ?>
+              </span>
+              <?php endif; ?>
+            </td>
             <td class="text-end">
               <?php
               $eliminarAccion = 'eliminar_valor_adicional';
@@ -254,7 +281,7 @@
 
       <div class="col-md-6 js-campo-valor-evento invisible" aria-hidden="true">
         <label class="form-label" for="valor">Valor <span class="text-danger">*</span></label>
-        <input type="number" class="form-control js-valor-evento" id="valor" name="valor" min="0.01" step="0.01" readonly>
+        <input type="number" class="form-control js-valor-evento" id="valor" name="valor" min="0.01" step="0.01" placeholder="Se completa según el tipo">
       </div>
 
       <div class="col-12 js-bloque-forma-pago-evento" style="display:none">
@@ -271,6 +298,18 @@
 
       <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" disabled>
       <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
+
+      <div class="col-md-6">
+        <label class="form-label d-block">Estado <span class="text-danger">*</span></label>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="estado_pago" id="estado-por-cancelar" value="por_cancelar" checked>
+          <label class="form-check-label" for="estado-por-cancelar">Por cancelar</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="estado_pago" id="estado-pagado" value="pagado">
+          <label class="form-check-label" for="estado-pagado">Pagado</label>
+        </div>
+      </div>
 
       <div class="col-12">
         <label class="form-label" for="observacion">Observación</label>

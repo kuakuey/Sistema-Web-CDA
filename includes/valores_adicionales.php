@@ -263,9 +263,9 @@ function insertarValorAdicional(array $datos): int
     $stmt = $pdo->prepare(
         'INSERT INTO valores_adicionales (
             tipo, nombre, fecha, telefono, valor, observacion, evento_id,
-            numeracion, forma_pago, tipo_entrada_id, tipo_entrada,
+            numeracion, forma_pago, tipo_entrada_id, tipo_entrada, estado_pago,
             registrado_por_id, registrado_por_nombre, creado_en
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
     );
 
     $stmt->execute([
@@ -280,6 +280,7 @@ function insertarValorAdicional(array $datos): int
         $datos['forma_pago'] ?? null,
         isset($datos['tipo_entrada_id']) && (int) $datos['tipo_entrada_id'] > 0 ? (int) $datos['tipo_entrada_id'] : null,
         $datos['tipo_entrada'] ?? null,
+        $datos['estado_pago'] ?? null,
         $datos['registrado_por_id'],
         $datos['registrado_por_nombre'],
     ]);
@@ -306,7 +307,7 @@ function actualizarValorAdicional(int $id, array $datos): bool
     $stmt = $pdo->prepare(
         'UPDATE valores_adicionales SET
             tipo = ?, nombre = ?, fecha = ?, telefono = ?, valor = ?, observacion = ?, evento_id = ?,
-            numeracion = ?, forma_pago = ?, tipo_entrada_id = ?, tipo_entrada = ?
+            numeracion = ?, forma_pago = ?, tipo_entrada_id = ?, tipo_entrada = ?, estado_pago = ?
          WHERE id = ?'
     );
 
@@ -322,6 +323,7 @@ function actualizarValorAdicional(int $id, array $datos): bool
         $datos['forma_pago'] ?? null,
         isset($datos['tipo_entrada_id']) && (int) $datos['tipo_entrada_id'] > 0 ? (int) $datos['tipo_entrada_id'] : null,
         $datos['tipo_entrada'] ?? null,
+        $datos['estado_pago'] ?? null,
         $id,
     ]);
 }
@@ -356,6 +358,7 @@ function actualizarRegistroEvento(int $id, array $datos): bool
         'forma_pago'       => $validados['forma_pago'],
         'tipo_entrada_id'  => $validados['tipo_entrada_id'],
         'tipo_entrada'     => $validados['tipo_entrada'],
+        'estado_pago'      => $validados['estado_pago'],
     ]);
 }
 

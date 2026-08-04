@@ -100,6 +100,7 @@ if ($accion === 'registrar_evento') {
             'forma_pago'            => $validados['forma_pago'],
             'tipo_entrada_id'       => $validados['tipo_entrada_id'],
             'tipo_entrada'          => $validados['tipo_entrada'],
+            'estado_pago'           => $validados['estado_pago'],
             'registrado_por_id'     => (int) $usuario['id'],
             'registrado_por_nombre' => $usuario['nombre'] ?? $usuario['usuario'],
         ]);
@@ -742,6 +743,31 @@ if ($accion === 'actualizar_estado_conexion') {
 
     header('Location: ' . $redireccion);
     exit;
+}
+
+if ($accion === 'actualizar_estado_pago_evento') {
+    if (!puedeEditarRegistros(obtenerUsuarioActual()['rol']) && !puedeRegistrarEventos(obtenerUsuarioActual()['rol'])) {
+        header('Location: ' . $urlInicio);
+        exit;
+    }
+
+    if ($id <= 0) {
+        header('Location: ' . $redireccion);
+        exit;
+    }
+
+    $sepRedireccion = strpos($redireccion, '?') !== false ? '&' : '?';
+
+    try {
+        actualizarEstadoPagoRegistroEvento($id, (string) ($_POST['estado_pago'] ?? ''));
+        salirConActividad($redireccion . $sepRedireccion . 'actualizado=1', 'actualizar_estado_pago_evento', $id);
+    } catch (InvalidArgumentException $e) {
+        header('Location: ' . $redireccion . $sepRedireccion . 'error=' . urlencode($e->getMessage()));
+        exit;
+    } catch (PDOException $e) {
+        header('Location: ' . $redireccion . $sepRedireccion . 'error=' . urlencode('No se pudo actualizar el estado.'));
+        exit;
+    }
 }
 
 if ($accion === 'actualizar_estado_bautismo') {

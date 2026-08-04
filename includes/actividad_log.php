@@ -57,6 +57,7 @@ function mapaMetadatosActividad(): array
         'actualizar_estado_presentacion'   => ['seccion' => 'presentaciones', 'entidad' => 'presentacion', 'etiqueta' => 'Cambiar estado de presentación'],
         'actualizar_estado_conexion'       => ['seccion' => 'conexion', 'entidad' => 'inscripcion', 'etiqueta' => 'Cambiar estado de conexión'],
         'actualizar_estado_bautismo'       => ['seccion' => 'bautismo', 'entidad' => 'inscripcion', 'etiqueta' => 'Cambiar estado de bautismo'],
+        'actualizar_estado_pago_evento'    => ['seccion' => 'eventos', 'entidad' => 'registro_evento', 'etiqueta' => 'Cambiar estado de pago de evento'],
         'restablecer_estado_bautismo'      => ['seccion' => 'bautismo', 'entidad' => 'inscripcion', 'etiqueta' => 'Restablecer estado de bautismo'],
         'restablecer_estado_presentacion'  => ['seccion' => 'presentaciones', 'entidad' => 'presentacion', 'etiqueta' => 'Restablecer estado de presentación'],
         'crear_evento'                     => ['seccion' => 'eventos', 'entidad' => 'evento', 'etiqueta' => 'Crear evento'],
@@ -196,6 +197,11 @@ function registrarActividadPorAccion(string $accion, int $entidadId = 0, string 
         }
     } elseif ($accion === 'actualizar_estado_conexion') {
         $extra = !empty($_POST['contactado']) ? 'Contactado' : 'No contactado';
+    } elseif ($accion === 'actualizar_estado_pago_evento') {
+        $estadoPago = trim((string) ($_POST['estado_pago'] ?? ''));
+        if ($estadoPago !== '') {
+            $extra = 'Estado: ' . $estadoPago;
+        }
     }
 
     if ($detalle === '') {

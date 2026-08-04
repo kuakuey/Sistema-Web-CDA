@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS valores_adicionales (
     forma_pago VARCHAR(20) DEFAULT NULL,
     tipo_entrada_id INT DEFAULT NULL,
     tipo_entrada VARCHAR(100) DEFAULT NULL,
+    estado_pago VARCHAR(20) DEFAULT 'por_cancelar',
     registrado_por_id INT DEFAULT NULL,
     registrado_por_nombre VARCHAR(100) DEFAULT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

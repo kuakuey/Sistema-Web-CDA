@@ -399,6 +399,7 @@ function asegurarColumnasValoresAdicionales(PDO $pdo): void
         'forma_pago'       => 'ADD COLUMN forma_pago VARCHAR(20) NULL AFTER numeracion',
         'tipo_entrada_id'  => 'ADD COLUMN tipo_entrada_id INT NULL AFTER forma_pago',
         'tipo_entrada'     => 'ADD COLUMN tipo_entrada VARCHAR(100) NULL AFTER tipo_entrada_id',
+        'estado_pago'      => "ADD COLUMN estado_pago VARCHAR(20) NULL DEFAULT 'por_cancelar' AFTER tipo_entrada",
     ];
 
     foreach ($columnas as $nombre => $sqlAlter) {
@@ -407,6 +408,16 @@ function asegurarColumnasValoresAdicionales(PDO $pdo): void
         if (!$existe) {
             $pdo->exec("ALTER TABLE valores_adicionales $sqlAlter");
         }
+    }
+
+    // Registros de eventos previos quedan como pagados para no marcar pendientes de golpe.
+    if (tablaExiste($pdo, 'valores_adicionales')) {
+        $pdo->exec(
+            "UPDATE valores_adicionales
+             SET estado_pago = 'pagado'
+             WHERE tipo = 'eventos'
+               AND (estado_pago IS NULL OR estado_pago = '')"
+        );
     }
 }
 

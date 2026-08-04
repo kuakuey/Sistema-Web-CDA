@@ -291,7 +291,6 @@ $fila = $filaEditar;
                     name="valor"
                     step="0.01"
                     min="0.01"
-                    readonly
                     value="<?= htmlspecialchars((string) ($fila['valor'] ?? '0')) ?>"
                   >
                 </div>
@@ -325,6 +324,34 @@ $fila = $filaEditar;
             </div>
             <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
             <input type="hidden" name="valor" class="js-valor-gratuito" value="0" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
+            <div class="col-md-6">
+              <label class="form-label d-block">Estado <span class="text-danger">*</span></label>
+              <?php
+              $estadoPagoActual = normalizarEstadoPagoEvento((string) ($fila['estado_pago'] ?? 'por_cancelar')) ?: 'por_cancelar';
+              ?>
+              <div class="form-check form-check-inline">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="estado_pago"
+                  id="<?= htmlspecialchars($modalEditarId . '-estado-por-cancelar') ?>"
+                  value="por_cancelar"
+                  <?= $estadoPagoActual === 'por_cancelar' ? 'checked' : '' ?>
+                >
+                <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-estado-por-cancelar') ?>">Por cancelar</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="estado_pago"
+                  id="<?= htmlspecialchars($modalEditarId . '-estado-pagado') ?>"
+                  value="pagado"
+                  <?= $estadoPagoActual === 'pagado' ? 'checked' : '' ?>
+                >
+                <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-estado-pagado') ?>">Pagado</label>
+              </div>
+            </div>
             <div class="col-12">
               <label class="form-label">Observación</label>
               <textarea class="form-control" name="observacion" rows="2" maxlength="500"><?= htmlspecialchars($fila['observacion'] ?? '') ?></textarea>

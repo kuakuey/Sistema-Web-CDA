@@ -108,7 +108,9 @@
     tipoSelect.disabled = !tieneTipos;
   }
 
-  function actualizarBloquePagoEvento(contenedor) {
+  function actualizarBloquePagoEvento(contenedor, opciones) {
+    opciones = opciones || {};
+    var sugerirValor = !!opciones.sugerirValor;
     var valorEvento = obtenerValorEventoSeleccionado(contenedor);
     var tipos = obtenerTiposEntradaEvento(contenedor);
     var sinEvento = tipos === null;
@@ -146,9 +148,10 @@
 
     if (valorInput) {
       valorInput.disabled = esGratuito || sinEvento || sinTipo;
+      valorInput.readOnly = false;
       valorInput.required = mostrarPago;
 
-      if (mostrarPago && valorEvento > 0) {
+      if (mostrarPago && valorEvento > 0 && sugerirValor) {
         valorInput.value = valorEvento;
       } else if (esGratuito) {
         valorInput.value = '';
@@ -259,19 +262,22 @@
       eventoSelect.addEventListener('change', function () {
         actualizarSelectTiposEntrada(contenedor);
         actualizarNumeracion(contenedor);
-        actualizarBloquePagoEvento(contenedor);
+        actualizarBloquePagoEvento(contenedor, { sugerirValor: true });
       });
     }
 
     if (tipoSelect) {
       tipoSelect.addEventListener('change', function () {
-        actualizarBloquePagoEvento(contenedor);
+        actualizarBloquePagoEvento(contenedor, { sugerirValor: true });
       });
     }
 
     actualizarSelectTiposEntrada(contenedor);
     actualizarNumeracion(contenedor);
-    actualizarBloquePagoEvento(contenedor);
+    // En edición no pisa el valor guardado; en alta sugiere si el campo está vacío.
+    var valorInput = contenedor.querySelector('.js-valor-evento');
+    var sugerirAlInicio = !valorInput || !valorInput.value || parseFloat(valorInput.value) <= 0;
+    actualizarBloquePagoEvento(contenedor, { sugerirValor: sugerirAlInicio });
   }
 
   function inicializarContenedorCatalogo(contenedor) {

@@ -78,16 +78,24 @@
 
     var sinEvento = tipos === null;
     var tieneTipos = !sinEvento && tipos.length > 0;
+    var siempreVisible = !campoTipo.classList.contains('invisible') && !campoTipo.hasAttribute('aria-hidden');
 
-    if (campoTipo.classList.contains('invisible') || campoTipo.hasAttribute('aria-hidden')) {
+    if (siempreVisible) {
+      campoTipo.style.display = '';
+      campoTipo.classList.remove('invisible');
+      campoTipo.setAttribute('aria-hidden', 'false');
+    } else if (campoTipo.classList.contains('invisible') || campoTipo.hasAttribute('aria-hidden')) {
       alternarCampoReservado(campoTipo, tieneTipos);
     } else {
       campoTipo.style.display = tieneTipos ? '' : 'none';
     }
 
-    tipoSelect.innerHTML = '<option value="">Seleccione tipo…</option>';
-
-    if (tieneTipos) {
+    if (sinEvento) {
+      tipoSelect.innerHTML = '<option value="">Seleccione evento primero…</option>';
+    } else if (!tieneTipos) {
+      tipoSelect.innerHTML = '<option value="">Sin tipos de entrada</option>';
+    } else {
+      tipoSelect.innerHTML = '<option value="">Seleccione tipo…</option>';
       tipos.forEach(function (tipo) {
         var option = document.createElement('option');
         option.value = String(tipo.id || '');
@@ -125,17 +133,26 @@
     var valorInput = contenedor.querySelector('.js-valor-evento');
     var metodosPago = contenedor.querySelectorAll('.js-metodo-pago-evento');
     var mostrarPago = !esGratuito && !sinEvento && !sinTipo && valorEvento !== null && valorEvento > 0;
+    var valorSiempreVisible = !!(campoValor && !campoValor.classList.contains('invisible') && !campoValor.hasAttribute('aria-hidden'));
+    var formaPagoSiempreVisible = !!(bloqueFormaPago && bloqueFormaPago.classList.contains('col-md-6'));
 
+    // En el formulario de registro los campos quedan visibles; solo se habilitan cuando aplica.
     if (campoValor) {
-      alternarCampoReservado(campoValor, mostrarPago);
+      if (valorSiempreVisible) {
+        campoValor.style.display = '';
+        campoValor.classList.remove('invisible');
+        campoValor.setAttribute('aria-hidden', 'false');
+      } else {
+        alternarCampoReservado(campoValor, mostrarPago || esGratuito);
+      }
     }
 
     if (bloqueFormaPago) {
-      bloqueFormaPago.style.display = mostrarPago ? '' : 'none';
+      bloqueFormaPago.style.display = formaPagoSiempreVisible || mostrarPago ? '' : 'none';
     }
 
     if (bloquePagoLegacy) {
-      bloquePagoLegacy.style.display = mostrarPago ? '' : 'none';
+      bloquePagoLegacy.style.display = mostrarPago || esGratuito ? '' : 'none';
     }
 
     if (hiddenFormaPago) {
@@ -147,12 +164,15 @@
     }
 
     if (valorInput) {
-      valorInput.disabled = esGratuito || sinEvento || sinTipo;
+      valorInput.disabled = !mostrarPago;
       valorInput.readOnly = false;
       valorInput.required = mostrarPago;
+      valorInput.placeholder = esGratuito ? 'Gratuito' : 'Se completa según el tipo';
 
       if (mostrarPago && valorEvento > 0 && sugerirValor) {
         valorInput.value = valorEvento;
+      } else if ((esGratuito || sinEvento || sinTipo) && sugerirValor) {
+        valorInput.value = '';
       } else if (esGratuito) {
         valorInput.value = '';
       }

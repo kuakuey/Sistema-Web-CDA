@@ -252,10 +252,10 @@
         </select>
       </div>
 
-      <div class="col-md-6 js-campo-tipo-entrada-evento invisible" aria-hidden="true">
+      <div class="col-md-6 js-campo-tipo-entrada-evento">
         <label class="form-label" for="tipo_entrada_id">Tipo de entrada <span class="text-danger">*</span></label>
-        <select class="form-select js-tipo-entrada-evento" id="tipo_entrada_id" name="tipo_entrada_id">
-          <option value="">Seleccione tipo…</option>
+        <select class="form-select js-tipo-entrada-evento" id="tipo_entrada_id" name="tipo_entrada_id" required disabled>
+          <option value="">Seleccione evento primero…</option>
         </select>
       </div>
 
@@ -279,19 +279,19 @@
         <input type="date" class="form-control" id="fecha" name="fecha" required value="<?= htmlspecialchars(date('Y-m-d')) ?>">
       </div>
 
-      <div class="col-md-6 js-campo-valor-evento invisible" aria-hidden="true">
+      <div class="col-md-6 js-campo-valor-evento">
         <label class="form-label" for="valor">Valor <span class="text-danger">*</span></label>
-        <input type="number" class="form-control js-valor-evento" id="valor" name="valor" min="0.01" step="0.01" placeholder="Se completa según el tipo">
+        <input type="number" class="form-control js-valor-evento" id="valor" name="valor" min="0.01" step="0.01" placeholder="Se completa según el tipo" disabled>
       </div>
 
-      <div class="col-12 js-bloque-forma-pago-evento" style="display:none">
+      <div class="col-md-6 js-bloque-forma-pago-evento">
         <label class="form-label d-block">Forma de pago <span class="text-danger">*</span></label>
         <div class="form-check form-check-inline">
-          <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-efectivo" value="efectivo" checked>
+          <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-efectivo" value="efectivo" checked disabled>
           <label class="form-check-label" for="pago-efectivo">Efectivo</label>
         </div>
         <div class="form-check form-check-inline">
-          <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-transferencia" value="transferencia">
+          <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-transferencia" value="transferencia" disabled>
           <label class="form-check-label" for="pago-transferencia">Transferencia</label>
         </div>
       </div>

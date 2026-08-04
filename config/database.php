@@ -627,12 +627,16 @@ function migrarTablaActividadLog(PDO $pdo): void
             id INT AUTO_INCREMENT PRIMARY KEY,
             usuario_id INT NULL,
             usuario_nombre VARCHAR(100) NULL,
+            usuario_login VARCHAR(50) NULL,
+            rol_usuario VARCHAR(20) NULL,
             accion VARCHAR(80) NOT NULL,
             seccion VARCHAR(50) NULL,
             entidad VARCHAR(50) NULL,
             entidad_id INT NULL,
-            detalle VARCHAR(255) NULL,
+            detalle VARCHAR(500) NULL,
+            datos_extra TEXT NULL,
             ip_cliente VARCHAR(45) NULL,
+            agente_usuario VARCHAR(255) NULL,
             creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_usuario_id (usuario_id),
             INDEX idx_accion (accion),
@@ -640,6 +644,29 @@ function migrarTablaActividadLog(PDO $pdo): void
             INDEX idx_creado_en (creado_en)
         ) ENGINE=InnoDB'
     );
+
+    if (!tablaExiste($pdo, 'actividad_log')) {
+        return;
+    }
+
+    $columnas = [
+        'usuario_login'  => 'ADD COLUMN usuario_login VARCHAR(50) NULL AFTER usuario_nombre',
+        'rol_usuario'    => 'ADD COLUMN rol_usuario VARCHAR(20) NULL AFTER usuario_login',
+        'datos_extra'    => 'ADD COLUMN datos_extra TEXT NULL AFTER detalle',
+        'agente_usuario' => 'ADD COLUMN agente_usuario VARCHAR(255) NULL AFTER ip_cliente',
+    ];
+
+    foreach ($columnas as $nombre => $sqlAlter) {
+        $existe = $pdo->query("SHOW COLUMNS FROM actividad_log LIKE " . $pdo->quote($nombre))->fetch();
+        if (!$existe) {
+            $pdo->exec("ALTER TABLE actividad_log $sqlAlter");
+        }
+    }
+
+    $detalleCol = $pdo->query("SHOW COLUMNS FROM actividad_log LIKE 'detalle'")->fetch();
+    if ($detalleCol && isset($detalleCol['Type']) && stripos((string) $detalleCol['Type'], 'varchar(255)') !== false) {
+        $pdo->exec('ALTER TABLE actividad_log MODIFY COLUMN detalle VARCHAR(500) NULL');
+    }
 }
 
 function migrarTablaSesionesApi(PDO $pdo): void

@@ -71,6 +71,7 @@ function mapaMetadatosActividad(): array
         'crear_casa'                       => ['seccion' => 'estructura', 'entidad' => 'casa', 'etiqueta' => 'Crear casa de vida'],
         'actualizar_casa'                  => ['seccion' => 'estructura', 'entidad' => 'casa', 'etiqueta' => 'Editar casa de vida'],
         'generar_informe'                  => ['seccion' => 'generar_informe', 'entidad' => 'informe', 'etiqueta' => 'Generar informe'],
+        'limpiar_actividad_log'            => ['seccion' => 'actividad', 'entidad' => 'actividad_log', 'etiqueta' => 'Limpiar log de actividad'],
     ];
 }
 
@@ -117,8 +118,89 @@ function obtenerIpClienteActividad(): ?string
     return $ip !== '' ? mb_substr($ip, 0, 45) : null;
 }
 
+function obtenerAgenteUsuarioActividad(): ?string
+{
+    $agente = trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+
+    return $agente !== '' ? mb_substr($agente, 0, 255) : null;
+}
+
+/**
+ * @param array<string, mixed> $origen
+ * @return array<string, mixed>
+ */
+function sanitizarDatosExtraActividad(array $origen, int $profundidad = 0): array
+{
+    if ($profundidad > 2) {
+        return [];
+    }
+
+    $bloqueados = [
+        'clave', 'password', 'pass', 'clave_confirmacion', 'password_confirmation',
+        'token', 'm', 'accion',
+    ];
+    $resultado = [];
+
+    foreach ($origen as $clave => $valor) {
+        $claveStr = (string) $clave;
+        if (in_array(mb_strtolower($claveStr), $bloqueados, true)) {
+            $resultado[$claveStr] = '[oculto]';
+            continue;
+        }
+
+        if (is_array($valor)) {
+            $resultado[$claveStr] = sanitizarDatosExtraActividad($valor, $profundidad + 1);
+            continue;
+        }
+
+        if (is_bool($valor)) {
+            $resultado[$claveStr] = $valor ? 'sí' : 'no';
+            continue;
+        }
+
+        if ($valor === null) {
+            continue;
+        }
+
+        $texto = trim((string) $valor);
+        if ($texto === '') {
+            continue;
+        }
+
+        $resultado[$claveStr] = mb_substr($texto, 0, 200);
+    }
+
+    return $resultado;
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function capturarContextoActividad(string $accion = ''): array
+{
+    $contexto = [
+        'metodo' => strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')),
+        'ruta'   => mb_substr((string) ($_SERVER['REQUEST_URI'] ?? ''), 0, 255),
+    ];
+
+    if (!empty($_POST) && is_array($_POST)) {
+        $post = sanitizarDatosExtraActividad($_POST);
+        unset($post['redireccion']);
+        if ($post !== []) {
+            $contexto['datos'] = $post;
+        }
+    }
+
+    if ($accion !== '') {
+        $contexto['accion_interna'] = $accion;
+    }
+
+    return $contexto;
+}
+
 /**
  * @param array<string, mixed>|null $usuario
+ * @param array<string, mixed>|null $datosExtra
  */
 function registrarActividad(
     string $accion,
@@ -126,7 +208,8 @@ function registrarActividad(
     string $entidad = '',
     ?int $entidadId = null,
     string $detalle = '',
-    ?array $usuario = null
+    ?array $usuario = null,
+    ?array $datosExtra = null
 ): void {
     try {
         asegurarTablaActividadLog();
@@ -149,24 +232,55 @@ function registrarActividad(
             }
         }
 
+        if ($datosExtra === null) {
+            $datosExtra = capturarContextoActividad($accion);
+        }
+
+        $datosExtraJson = null;
+        if ($datosExtra !== []) {
+            $json = json_encode($datosExtra, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if (is_string($json)) {
+                $datosExtraJson = $json;
+            }
+        }
+
         $pdo = getConnection();
         $stmt = $pdo->prepare(
             'INSERT INTO actividad_log (
-                usuario_id, usuario_nombre, accion, seccion, entidad, entidad_id, detalle, ip_cliente, creado_en
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+                usuario_id, usuario_nombre, usuario_login, rol_usuario,
+                accion, seccion, entidad, entidad_id, detalle, datos_extra,
+                ip_cliente, agente_usuario, creado_en
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
         );
+
+        $nombreMostrar = null;
+        $login = null;
+        $rol = null;
+        if ($usuario) {
+            $nombreMostrar = mb_substr(
+                trim((string) (($usuario['nombre'] ?? '') !== '' ? $usuario['nombre'] : ($usuario['usuario'] ?? ''))),
+                0,
+                100
+            );
+            $login = trim((string) ($usuario['usuario'] ?? ''));
+            $login = $login !== '' ? mb_substr($login, 0, 50) : null;
+            $rol = trim((string) ($usuario['rol'] ?? ''));
+            $rol = $rol !== '' ? mb_substr($rol, 0, 20) : null;
+        }
 
         $stmt->execute([
             isset($usuario['id']) ? (int) $usuario['id'] : null,
-            $usuario
-                ? mb_substr(trim((string) (($usuario['nombre'] ?? '') !== '' ? $usuario['nombre'] : ($usuario['usuario'] ?? ''))), 0, 100)
-                : null,
+            $nombreMostrar,
+            $login,
+            $rol,
             mb_substr($accion, 0, 80),
             $seccion !== '' ? mb_substr($seccion, 0, 50) : null,
             $entidad !== '' ? mb_substr($entidad, 0, 50) : null,
             $entidadId !== null && $entidadId > 0 ? $entidadId : null,
-            $detalle !== '' ? mb_substr($detalle, 0, 255) : null,
+            $detalle !== '' ? mb_substr($detalle, 0, 500) : null,
+            $datosExtraJson,
             obtenerIpClienteActividad(),
+            obtenerAgenteUsuarioActividad(),
         ]);
     } catch (Throwable $e) {
         // El log nunca debe interrumpir la operación principal.
@@ -186,7 +300,7 @@ function registrarActividadPorAccion(string $accion, int $entidadId = 0, string 
             $extra = 'Rol: ' . $rol;
         }
     } elseif ($accion === 'crear_inscripcion') {
-        $tipo = trim((string) ($_POST['tipo_formulario'] ?? ''));
+        $tipo = trim((string) ($_POST['tipo_formulario'] ?? $_POST['seccion'] ?? ''));
         if ($tipo !== '') {
             $extra = 'Tipo: ' . $tipo;
         }
@@ -202,6 +316,21 @@ function registrarActividadPorAccion(string $accion, int $entidadId = 0, string 
         if ($estadoPago !== '') {
             $extra = 'Estado: ' . $estadoPago;
         }
+    } elseif ($accion === 'registrar_evento') {
+        $partes = [];
+        if (!empty($_POST['nombre'])) {
+            $partes[] = 'Participante: ' . trim((string) $_POST['nombre']);
+        }
+        if (!empty($_POST['tipo_entrada_id'])) {
+            $partes[] = 'Tipo entrada #' . (int) $_POST['tipo_entrada_id'];
+        }
+        if (isset($_POST['valor']) && $_POST['valor'] !== '') {
+            $partes[] = 'Valor: ' . $_POST['valor'];
+        }
+        if (!empty($_POST['estado_pago'])) {
+            $partes[] = 'Estado: ' . trim((string) $_POST['estado_pago']);
+        }
+        $extra = implode(' · ', $partes);
     }
 
     if ($detalle === '') {
@@ -250,8 +379,8 @@ function construirSqlActividadLog(array $filtros): array
 
     if ($filtros['buscar'] !== '') {
         $busqueda = '%' . $filtros['buscar'] . '%';
-        $condiciones[] = '(usuario_nombre LIKE ? OR detalle LIKE ? OR accion LIKE ? OR ip_cliente LIKE ?)';
-        array_push($parametros, $busqueda, $busqueda, $busqueda, $busqueda);
+        $condiciones[] = '(usuario_nombre LIKE ? OR usuario_login LIKE ? OR detalle LIKE ? OR accion LIKE ? OR ip_cliente LIKE ? OR datos_extra LIKE ?)';
+        array_push($parametros, $busqueda, $busqueda, $busqueda, $busqueda, $busqueda, $busqueda);
     }
 
     if ($filtros['accion'] !== '') {
@@ -318,4 +447,106 @@ function puedeVerActividadLog(string $rol): bool
     require_once __DIR__ . '/roles.php';
 
     return $rol === ROL_SUPERADMIN;
+}
+
+function obtenerActividadLogPorId(int $id): ?array
+{
+    if ($id <= 0) {
+        return null;
+    }
+
+    asegurarTablaActividadLog();
+    $pdo = getConnection();
+    $stmt = $pdo->prepare('SELECT * FROM actividad_log WHERE id = ? LIMIT 1');
+    $stmt->execute([$id]);
+    $fila = $stmt->fetch();
+
+    return $fila ?: null;
+}
+
+/**
+ * @param array{buscar: string, accion: string, seccion: string, fecha_desde: string, fecha_hasta: string} $filtros
+ */
+function limpiarActividadLog(array $filtros = [], bool $soloFiltrados = false): int
+{
+    asegurarTablaActividadLog();
+    $pdo = getConnection();
+
+    if (!$soloFiltrados) {
+        return (int) $pdo->exec('DELETE FROM actividad_log');
+    }
+
+    [$sql, $parametros] = construirSqlActividadLog($filtros);
+    $sqlDelete = preg_replace('/\s+ORDER BY.*$/i', '', $sql);
+    $sqlDelete = preg_replace('/SELECT \*.*?FROM/is', 'DELETE FROM', $sqlDelete, 1);
+    $stmt = $pdo->prepare($sqlDelete);
+    $stmt->execute($parametros);
+
+    return (int) $stmt->rowCount();
+}
+
+/**
+ * @param array<string, mixed> $fila
+ * @return array<int, array{etiqueta: string, valor: string, html?: bool}>
+ */
+function construirDetalleActividadLog(array $fila, array $etiquetasSeccionesLog = []): array
+{
+    require_once __DIR__ . '/roles.php';
+    require_once __DIR__ . '/submissions.php';
+
+    if ($etiquetasSeccionesLog === []) {
+        $etiquetasSeccionesLog = obtenerEtiquetasSeccionesActividad();
+    }
+
+    $etiquetasRoles = obtenerEtiquetasRoles();
+    $seccion = (string) ($fila['seccion'] ?? '');
+    $rol = (string) ($fila['rol_usuario'] ?? '');
+    $datosExtra = trim((string) ($fila['datos_extra'] ?? ''));
+    $datosFormateados = '—';
+
+    if ($datosExtra !== '') {
+        $decoded = json_decode($datosExtra, true);
+        if (is_array($decoded)) {
+            $datosFormateados = formatearDatosExtraActividad($decoded);
+        } else {
+            $datosFormateados = $datosExtra;
+        }
+    }
+
+    return [
+        ['etiqueta' => 'ID', 'valor' => '#' . (int) ($fila['id'] ?? 0)],
+        ['etiqueta' => 'Fecha y hora', 'valor' => formatearFechaHora($fila['creado_en'] ?? null)],
+        ['etiqueta' => 'Usuario', 'valor' => trim((string) ($fila['usuario_nombre'] ?? '')) !== '' ? (string) $fila['usuario_nombre'] : '—'],
+        ['etiqueta' => 'Login', 'valor' => trim((string) ($fila['usuario_login'] ?? '')) !== '' ? (string) $fila['usuario_login'] : '—'],
+        ['etiqueta' => 'Rol', 'valor' => $etiquetasRoles[$rol] ?? ($rol !== '' ? $rol : '—')],
+        ['etiqueta' => 'ID usuario', 'valor' => !empty($fila['usuario_id']) ? (string) (int) $fila['usuario_id'] : '—'],
+        ['etiqueta' => 'Acción', 'valor' => etiquetaAccionActividad((string) ($fila['accion'] ?? ''))],
+        ['etiqueta' => 'Clave acción', 'valor' => (string) ($fila['accion'] ?? '—')],
+        ['etiqueta' => 'Sección', 'valor' => $etiquetasSeccionesLog[$seccion] ?? ($seccion !== '' ? $seccion : '—')],
+        ['etiqueta' => 'Entidad', 'valor' => trim((string) ($fila['entidad'] ?? '')) !== '' ? (string) $fila['entidad'] : '—'],
+        ['etiqueta' => 'ID entidad', 'valor' => !empty($fila['entidad_id']) ? (string) (int) $fila['entidad_id'] : '—'],
+        ['etiqueta' => 'Resumen', 'valor' => trim((string) ($fila['detalle'] ?? '')) !== '' ? (string) $fila['detalle'] : '—'],
+        ['etiqueta' => 'IP', 'valor' => trim((string) ($fila['ip_cliente'] ?? '')) !== '' ? (string) $fila['ip_cliente'] : '—'],
+        ['etiqueta' => 'Navegador / dispositivo', 'valor' => trim((string) ($fila['agente_usuario'] ?? '')) !== '' ? (string) $fila['agente_usuario'] : '—'],
+        ['etiqueta' => 'Datos de la operación', 'valor' => $datosFormateados],
+    ];
+}
+
+/**
+ * @param array<string, mixed> $datos
+ */
+function formatearDatosExtraActividad(array $datos, int $nivel = 0): string
+{
+    $lineas = [];
+    foreach ($datos as $clave => $valor) {
+        $prefijo = str_repeat('  ', $nivel) . $clave . ': ';
+        if (is_array($valor)) {
+            $lineas[] = rtrim($prefijo);
+            $lineas[] = formatearDatosExtraActividad($valor, $nivel + 1);
+            continue;
+        }
+        $lineas[] = $prefijo . (string) $valor;
+    }
+
+    return trim(implode("\n", array_filter($lineas, static fn ($l) => trim((string) $l) !== '')));
 }

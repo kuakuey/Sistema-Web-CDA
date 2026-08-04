@@ -2,14 +2,68 @@
 require_once __DIR__ . '/../../includes/submissions.php';
 require_once __DIR__ . '/../../includes/actividad_log.php';
 require_once __DIR__ . '/../../includes/rutas.php';
+
+$hayFiltrosActivos = ($filtros['buscar'] ?? '') !== ''
+    || ($filtros['accion'] ?? '') !== ''
+    || ($filtros['seccion'] ?? '') !== ''
+    || ($filtros['fecha_desde'] ?? '') !== ''
+    || ($filtros['fecha_hasta'] ?? '') !== '';
+$modalesDetalle = [];
 ?>
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div>
     <h2 class="h4 mb-1">Log de actividad</h2>
-    <p class="text-muted small mb-0">Registro de acciones realizadas en el sistema (solo superadmin)</p>
+    <p class="text-muted small mb-0">Registro detallado de acciones del sistema (solo superadmin)</p>
   </div>
-  <span class="badge bg-primary fs-6"><?= (int) $totalRegistros ?> registro(s)</span>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <span class="badge bg-primary fs-6"><?= (int) $totalRegistros ?> registro(s)</span>
+    <?php if ($hayFiltrosActivos && $totalRegistros > 0): ?>
+    <form
+      method="POST"
+      action="actividad.php"
+      class="d-inline js-form-confirmar"
+      data-confirm-title="Limpiar log filtrado"
+      data-confirm="¿Eliminar los <?= (int) $totalRegistros ?> registro(s) que coinciden con los filtros actuales?"
+    >
+      <input type="hidden" name="accion" value="limpiar_actividad_filtrada">
+      <input type="hidden" name="filtro_buscar" value="<?= htmlspecialchars($filtros['buscar'] ?? '') ?>">
+      <input type="hidden" name="filtro_accion" value="<?= htmlspecialchars($filtros['accion'] ?? '') ?>">
+      <input type="hidden" name="filtro_seccion" value="<?= htmlspecialchars($filtros['seccion'] ?? '') ?>">
+      <input type="hidden" name="filtro_fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde'] ?? '') ?>">
+      <input type="hidden" name="filtro_fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta'] ?? '') ?>">
+      <button type="submit" class="btn btn-outline-warning btn-sm">
+        <i class="bi bi-funnel me-1"></i>Limpiar filtrados
+      </button>
+    </form>
+    <?php endif; ?>
+    <form
+      method="POST"
+      action="actividad.php"
+      class="d-inline js-form-confirmar"
+      data-confirm-title="Limpiar todo el log"
+      data-confirm="¿Eliminar TODOS los registros del log de actividad? Esta acción no se puede deshacer."
+    >
+      <input type="hidden" name="accion" value="limpiar_actividad_todo">
+      <button type="submit" class="btn btn-outline-danger btn-sm" <?= $totalRegistros <= 0 && !$hayFiltrosActivos ? 'disabled' : '' ?>>
+        <i class="bi bi-trash me-1"></i>Limpiar todo
+      </button>
+    </form>
+  </div>
 </div>
+
+<?php if (!empty($mensaje)): ?>
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  <i class="bi bi-check-circle me-1"></i><?= htmlspecialchars($mensaje) ?>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($error)): ?>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="bi bi-exclamation-triangle me-1"></i><?= htmlspecialchars($error) ?>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+</div>
+<?php endif; ?>
 
 <?php if ($errorBd): ?>
 <div class="alert alert-warning" role="alert">
@@ -82,7 +136,7 @@ require_once __DIR__ . '/../../includes/rutas.php';
           <button type="submit" class="btn btn-primary btn-sm">
             <i class="bi bi-funnel me-1"></i>Filtrar
           </button>
-          <a href="actividad.php" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+          <a href="actividad.php" class="btn btn-outline-secondary btn-sm">Limpiar filtros</a>
         </div>
       </form>
     </div>
@@ -102,23 +156,41 @@ require_once __DIR__ . '/../../includes/rutas.php';
             <th>Usuario</th>
             <th>Acción</th>
             <th>Sección</th>
-            <th>Detalle</th>
+            <th>Resumen</th>
             <th>IP</th>
+            <th class="text-end">Detalle</th>
           </tr>
         </thead>
         <tbody>
           <?php if (empty($registros)): ?>
           <tr>
-            <td colspan="6" class="text-center text-muted py-5">
+            <td colspan="7" class="text-center text-muted py-5">
               <i class="bi bi-inbox display-6 d-block mb-2"></i>
               No hay actividad con los filtros seleccionados.
             </td>
           </tr>
           <?php else: ?>
-          <?php foreach ($registros as $fila): ?>
+          <?php foreach ($registros as $fila):
+            $modalId = 'detalle-actividad-' . (int) $fila['id'];
+            $modalesDetalle[] = [
+                'id'     => $modalId,
+                'titulo' => 'Detalle de actividad #' . (int) $fila['id'],
+                'filas'  => construirDetalleActividadLog($fila, $etiquetasSeccionesLog),
+                'extra'  => '',
+            ];
+            $resumen = trim((string) ($fila['detalle'] ?? ''));
+            if (mb_strlen($resumen) > 70) {
+                $resumen = mb_substr($resumen, 0, 70) . '…';
+            }
+          ?>
           <tr>
             <td class="text-nowrap small"><?= htmlspecialchars(formatearFechaHora($fila['creado_en'] ?? null)) ?></td>
-            <td><?= htmlspecialchars(trim((string) ($fila['usuario_nombre'] ?? '')) !== '' ? $fila['usuario_nombre'] : '—') ?></td>
+            <td>
+              <div><?= htmlspecialchars(trim((string) ($fila['usuario_nombre'] ?? '')) !== '' ? $fila['usuario_nombre'] : '—') ?></div>
+              <?php if (trim((string) ($fila['usuario_login'] ?? '')) !== ''): ?>
+              <div class="small text-muted"><?= htmlspecialchars($fila['usuario_login']) ?></div>
+              <?php endif; ?>
+            </td>
             <td>
               <span class="badge bg-secondary-subtle text-secondary-emphasis">
                 <?= htmlspecialchars(etiquetaAccionActividad((string) ($fila['accion'] ?? ''))) ?>
@@ -130,8 +202,19 @@ require_once __DIR__ . '/../../includes/rutas.php';
               echo htmlspecialchars($etiquetasSeccionesLog[$claveSeccion] ?? ($claveSeccion !== '' ? $claveSeccion : '—'));
               ?>
             </td>
-            <td class="small"><?= htmlspecialchars(trim((string) ($fila['detalle'] ?? '')) !== '' ? $fila['detalle'] : '—') ?></td>
+            <td class="small"><?= htmlspecialchars($resumen !== '' ? $resumen : '—') ?></td>
             <td class="small text-muted"><?= htmlspecialchars(trim((string) ($fila['ip_cliente'] ?? '')) !== '' ? $fila['ip_cliente'] : '—') ?></td>
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                data-bs-toggle="modal"
+                data-bs-target="#<?= htmlspecialchars($modalId) ?>"
+                title="Ver detalle"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
           </tr>
           <?php endforeach; ?>
           <?php endif; ?>
@@ -145,5 +228,13 @@ require_once __DIR__ . '/../../includes/rutas.php';
     ?>
   </div>
 </div>
+
+<?php foreach ($modalesDetalle as $modal):
+    $modalId = $modal['id'];
+    $tituloModal = $modal['titulo'];
+    $filasDetalle = $modal['filas'];
+    $contenidoExtra = $modal['extra'] ?? '';
+    include __DIR__ . '/../partials/modal-detalle-registro.php';
+endforeach; ?>
 
 <?php endif; ?>

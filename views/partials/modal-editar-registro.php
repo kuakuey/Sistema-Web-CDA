@@ -202,17 +202,65 @@ $fila = $filaEditar;
           <?php elseif ($tipoEditar === 'registro_evento'): ?>
           <input type="hidden" name="accion" value="actualizar_registro_evento">
           <div class="row g-3">
+            <?php
+            $eventoSeleccionado = null;
+            foreach ($eventos ?? [] as $eventoItem) {
+                if ((int) ($fila['evento_id'] ?? 0) === (int) $eventoItem['id']) {
+                    $eventoSeleccionado = $eventoItem;
+                    break;
+                }
+            }
+            $tiposEntradaSeleccionados = $eventoSeleccionado['tipos_entrada'] ?? [];
+            $tipoEntradaActualId = (int) ($fila['tipo_entrada_id'] ?? 0);
+            $valorTipoActual = (float) ($fila['valor'] ?? 0);
+            if ($tipoEntradaActualId > 0 && is_array($tiposEntradaSeleccionados)) {
+                foreach ($tiposEntradaSeleccionados as $tipoItem) {
+                    if ((int) ($tipoItem['id'] ?? 0) === $tipoEntradaActualId) {
+                        $valorTipoActual = (float) ($tipoItem['valor'] ?? $valorTipoActual);
+                        break;
+                    }
+                }
+            }
+            $esGratuitoRegistro = $valorTipoActual <= 0 && (float) ($eventoSeleccionado['valor'] ?? 0) <= 0;
+            if ($tipoEntradaActualId > 0) {
+                $esGratuitoRegistro = $valorTipoActual <= 0;
+            }
+            ?>
             <div class="col-md-6">
               <label class="form-label">Evento <span class="text-danger">*</span></label>
               <select class="form-select" name="evento_id" required>
-                <?php foreach ($eventos ?? [] as $eventoItem): ?>
+                <?php foreach ($eventos ?? [] as $eventoItem):
+                  $tiposJson = array_map(static function (array $tipo): array {
+                      return [
+                          'id'     => (int) ($tipo['id'] ?? 0),
+                          'nombre' => (string) ($tipo['nombre'] ?? ''),
+                          'valor'  => (float) ($tipo['valor'] ?? 0),
+                      ];
+                  }, $eventoItem['tipos_entrada'] ?? []);
+                ?>
                 <option
                   value="<?= (int) $eventoItem['id'] ?>"
                   data-requiere-numeracion="<?= (int) ($eventoItem['requiere_numeracion'] ?? 0) ?>"
                   data-valor="<?= htmlspecialchars((string) ($eventoItem['valor'] ?? '0')) ?>"
+                  data-tipos-entrada="<?= htmlspecialchars(json_encode($tiposJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
                   <?= (int) ($fila['evento_id'] ?? 0) === (int) $eventoItem['id'] ? 'selected' : '' ?>
                 >
                   <?= htmlspecialchars($eventoItem['nombre']) ?>
+                </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="col-md-6 js-campo-tipo-entrada-evento" style="<?= empty($tiposEntradaSeleccionados) ? 'display:none' : '' ?>">
+              <label class="form-label">Tipo de entrada <span class="text-danger">*</span></label>
+              <select class="form-select js-tipo-entrada-evento" name="tipo_entrada_id" <?= empty($tiposEntradaSeleccionados) ? '' : 'required' ?>>
+                <option value="">Seleccione tipo…</option>
+                <?php foreach ($tiposEntradaSeleccionados as $tipoItem): ?>
+                <option
+                  value="<?= (int) ($tipoItem['id'] ?? 0) ?>"
+                  data-valor="<?= htmlspecialchars((string) ($tipoItem['valor'] ?? '0')) ?>"
+                  <?= $tipoEntradaActualId === (int) ($tipoItem['id'] ?? 0) ? 'selected' : '' ?>
+                >
+                  <?= htmlspecialchars((string) ($tipoItem['nombre'] ?? '')) ?>
                 </option>
                 <?php endforeach; ?>
               </select>
@@ -233,16 +281,6 @@ $fila = $filaEditar;
               <label class="form-label">Teléfono <span class="text-danger">*</span></label>
               <input type="tel" class="form-control" name="telefono" required maxlength="30" value="<?= htmlspecialchars($fila['telefono'] ?? '') ?>">
             </div>
-            <?php
-            $valorEventoSeleccionado = 0.0;
-            foreach ($eventos ?? [] as $eventoItem) {
-                if ((int) ($fila['evento_id'] ?? 0) === (int) $eventoItem['id']) {
-                    $valorEventoSeleccionado = (float) ($eventoItem['valor'] ?? 0);
-                    break;
-                }
-            }
-            $esGratuitoRegistro = $valorEventoSeleccionado <= 0;
-            ?>
             <div class="col-12 js-bloque-pago-evento" style="<?= $esGratuitoRegistro ? 'display:none' : '' ?>">
               <div class="row g-3">
                 <div class="col-md-6">
@@ -253,6 +291,7 @@ $fila = $filaEditar;
                     name="valor"
                     step="0.01"
                     min="0.01"
+                    readonly
                     value="<?= htmlspecialchars((string) ($fila['valor'] ?? '0')) ?>"
                   >
                 </div>

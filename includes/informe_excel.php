@@ -97,14 +97,15 @@ function enviarInformeExcel(array $informe, string $seccion = 'completo'): void
     if (in_array($seccion, ['completo', 'eventos'], true)) {
         echo '<h3>Eventos</h3>';
         echo '<table border="1" cellpadding="4" cellspacing="0">';
-        echo '<tr><th>Evento</th><th>Nombre</th><th>Numeración</th><th>Fecha</th><th>Teléfono</th><th>Forma de pago</th><th>Valor</th><th>Observación</th><th>Registró</th><th>Registrado el</th></tr>';
+        echo '<tr><th>Evento</th><th>Nombre</th><th>Tipo entrada</th><th>Numeración</th><th>Fecha</th><th>Teléfono</th><th>Forma de pago</th><th>Valor</th><th>Observación</th><th>Registró</th><th>Registrado el</th></tr>';
         if (empty($informe['registros_eventos'])) {
-            echo '<tr><td colspan="10">—</td></tr>';
+            echo '<tr><td colspan="11">—</td></tr>';
         } else {
             foreach ($informe['registros_eventos'] as $registroEvento) {
                 echo '<tr>';
                 echo '<td>' . htmlspecialchars($registroEvento['evento_nombre'] ?? '—') . '</td>';
                 echo '<td>' . htmlspecialchars($registroEvento['nombre']) . '</td>';
+                echo '<td>' . htmlspecialchars(trim((string) ($registroEvento['tipo_entrada'] ?? '')) !== '' ? $registroEvento['tipo_entrada'] : '—') . '</td>';
                 echo '<td>' . htmlspecialchars($registroEvento['numeracion'] ?? '—') . '</td>';
                 echo '<td>' . htmlspecialchars(formatearFechaInforme($registroEvento['fecha'])) . '</td>';
                 echo '<td>' . htmlspecialchars($registroEvento['telefono']) . '</td>';

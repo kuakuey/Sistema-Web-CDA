@@ -103,7 +103,7 @@
     </tr>
     <tr>
       <td><span class="resumen-label">Tipo</span><span class="resumen-valor"><?= htmlspecialchars($informe['evento_tipo_etiqueta']) ?></span></td>
-      <td><span class="resumen-label">Valor del evento</span><span class="resumen-valor"><strong><?= htmlspecialchars($informe['evento_valor_etiqueta']) ?></strong></span></td>
+      <td><span class="resumen-label">Tipos de entrada</span><span class="resumen-valor"><strong><?= htmlspecialchars($informe['evento_valor_etiqueta']) ?></strong></span></td>
     </tr>
     <tr>
       <td><span class="resumen-label">Requiere numeración</span><span class="resumen-valor"><?= htmlspecialchars($informe['evento_numeracion_etiqueta']) ?></span></td>
@@ -154,6 +154,7 @@
     <thead>
       <tr>
         <th>Nombre</th>
+        <th>Tipo entrada</th>
         <th>Numeración</th>
         <th>Fecha</th>
         <th>Teléfono</th>
@@ -164,6 +165,7 @@
       <?php foreach ($informe['registros'] as $registro): ?>
       <tr>
         <td><?= htmlspecialchars($registro['nombre']) ?></td>
+        <td><?= htmlspecialchars(trim((string) ($registro['tipo_entrada'] ?? '')) !== '' ? $registro['tipo_entrada'] : '—') ?></td>
         <td><?= htmlspecialchars($registro['numeracion'] ?? '—') ?></td>
         <td><?= htmlspecialchars(formatearFechaInforme($registro['fecha'])) ?></td>
         <td><?= htmlspecialchars($registro['telefono']) ?></td>

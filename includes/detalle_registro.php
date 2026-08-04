@@ -148,8 +148,11 @@ function construirDetalleRegistroEvento(array $fila): array
     $observacion = trim((string) ($fila['observacion'] ?? ''));
     $numeracion = trim((string) ($fila['numeracion'] ?? ''));
 
+    $tipoEntrada = trim((string) ($fila['tipo_entrada'] ?? ''));
+
     $filas = [
         ['etiqueta' => 'Evento', 'valor' => nombreEventoValorAdicional($fila) ?: '—'],
+        ['etiqueta' => 'Tipo de entrada', 'valor' => $tipoEntrada !== '' ? $tipoEntrada : '—'],
         ['etiqueta' => 'Nombre', 'valor' => (string) ($fila['nombre'] ?? '—')],
         ['etiqueta' => 'Fecha', 'valor' => formatearFechaTabla($fila['fecha'] ?? null)],
         filaDetalleHtml('Teléfono', enlaceWhatsApp($fila['telefono'] ?? null)),

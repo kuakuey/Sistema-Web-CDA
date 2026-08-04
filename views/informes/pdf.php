@@ -305,6 +305,7 @@ $incluirBautismos = $seccionExportacion === 'bautismos';
       <tr>
         <th>Evento</th>
         <th>Nombre</th>
+        <th>Tipo entrada</th>
         <th>Numeración</th>
         <th>Teléfono</th>
         <th>Valor</th>
@@ -319,6 +320,7 @@ $incluirBautismos = $seccionExportacion === 'bautismos';
       <tr>
         <td><?= htmlspecialchars($registroEvento['evento_nombre'] ?? '—') ?></td>
         <td><?= htmlspecialchars($registroEvento['nombre']) ?></td>
+        <td><?= htmlspecialchars(trim((string) ($registroEvento['tipo_entrada'] ?? '')) !== '' ? $registroEvento['tipo_entrada'] : '—') ?></td>
         <td><?= htmlspecialchars($registroEvento['numeracion'] ?? '—') ?></td>
         <td><?= htmlspecialchars($registroEvento['telefono']) ?></td>
         <td><strong><?= htmlspecialchars(formatearMonto((float) $registroEvento['valor'])) ?></strong></td>

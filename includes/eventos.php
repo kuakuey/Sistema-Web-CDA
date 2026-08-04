@@ -12,7 +12,7 @@ function obtenerEventos(): array
     $pdo = getConnection();
     asegurarColumnasEventos($pdo);
 
-    return $pdo->query(
+    $eventos = $pdo->query(
         'SELECT e.*,
                 (SELECT COUNT(*)
                  FROM valores_adicionales v
@@ -20,6 +20,8 @@ function obtenerEventos(): array
          FROM eventos e
          ORDER BY e.nombre ASC, e.id ASC'
     )->fetchAll();
+
+    return adjuntarTiposEntradaAEventos($eventos);
 }
 
 /**
@@ -30,18 +32,273 @@ function obtenerEventosHabilitados(): array
     $pdo = getConnection();
     asegurarColumnasEventos($pdo);
 
-    return $pdo->query(
+    $eventos = $pdo->query(
         'SELECT * FROM eventos WHERE habilitado = 1 ORDER BY nombre ASC, id ASC'
     )->fetchAll();
+
+    return adjuntarTiposEntradaAEventos($eventos);
 }
 
 function obtenerEvento(int $id): ?array
 {
     $pdo = getConnection();
+    asegurarColumnasEventos($pdo);
     $stmt = $pdo->prepare('SELECT * FROM eventos WHERE id = ?');
     $stmt->execute([$id]);
+    $evento = $stmt->fetch();
 
-    return $stmt->fetch() ?: null;
+    if (!$evento) {
+        return null;
+    }
+
+    $evento['tipos_entrada'] = obtenerTiposEntradaPorEvento((int) $evento['id']);
+
+    return $evento;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $eventos
+ * @return array<int, array<string, mixed>>
+ */
+function adjuntarTiposEntradaAEventos(array $eventos): array
+{
+    if ($eventos === []) {
+        return [];
+    }
+
+    $ids = array_map(static fn (array $evento): int => (int) $evento['id'], $eventos);
+    $tiposPorEvento = obtenerTiposEntradaPorEventos($ids);
+
+    foreach ($eventos as &$evento) {
+        $eventoId = (int) $evento['id'];
+        $evento['tipos_entrada'] = $tiposPorEvento[$eventoId] ?? [];
+    }
+    unset($evento);
+
+    return $eventos;
+}
+
+/**
+ * @return array<int, array<string, mixed>>
+ */
+function obtenerTiposEntradaPorEvento(int $eventoId): array
+{
+    if ($eventoId <= 0) {
+        return [];
+    }
+
+    $porEvento = obtenerTiposEntradaPorEventos([$eventoId]);
+
+    return $porEvento[$eventoId] ?? [];
+}
+
+/**
+ * @param array<int, int> $eventoIds
+ * @return array<int, array<int, array<string, mixed>>>
+ */
+function obtenerTiposEntradaPorEventos(array $eventoIds): array
+{
+    $eventoIds = array_values(array_unique(array_filter(array_map('intval', $eventoIds))));
+
+    if ($eventoIds === []) {
+        return [];
+    }
+
+    $pdo = getConnection();
+    asegurarColumnasEventos($pdo);
+
+    $placeholders = implode(',', array_fill(0, count($eventoIds), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT id, evento_id, nombre, valor, orden
+         FROM eventos_tipos_entrada
+         WHERE evento_id IN ($placeholders)
+         ORDER BY orden ASC, id ASC"
+    );
+    $stmt->execute($eventoIds);
+
+    $resultado = [];
+    foreach ($stmt->fetchAll() as $fila) {
+        $eventoId = (int) $fila['evento_id'];
+        $resultado[$eventoId][] = $fila;
+    }
+
+    return $resultado;
+}
+
+function obtenerTipoEntradaPorId(int $id, ?int $eventoId = null): ?array
+{
+    if ($id <= 0) {
+        return null;
+    }
+
+    $pdo = getConnection();
+    asegurarColumnasEventos($pdo);
+
+    if ($eventoId !== null && $eventoId > 0) {
+        $stmt = $pdo->prepare(
+            'SELECT id, evento_id, nombre, valor, orden
+             FROM eventos_tipos_entrada
+             WHERE id = ? AND evento_id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$id, $eventoId]);
+    } else {
+        $stmt = $pdo->prepare(
+            'SELECT id, evento_id, nombre, valor, orden
+             FROM eventos_tipos_entrada
+             WHERE id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$id]);
+    }
+
+    $fila = $stmt->fetch();
+
+    return $fila ?: null;
+}
+
+/**
+ * @param array<int, array<string, mixed>>|array<string, mixed> $tiposEntrada
+ * @return array<int, array{nombre: string, valor: float}>
+ */
+function normalizarTiposEntradaCatalogo($tiposEntrada, string $tipoCobro): array
+{
+    require_once __DIR__ . '/texto.php';
+
+    if (!is_array($tiposEntrada)) {
+        $tiposEntrada = [];
+    }
+
+    // Soporta arrays indexados o campos POST tipo_entrada[nombre][] / tipo_entrada[valor][].
+    if (isset($tiposEntrada['nombre']) || isset($tiposEntrada['valor'])) {
+        $nombres = $tiposEntrada['nombre'] ?? [];
+        $valores = $tiposEntrada['valor'] ?? [];
+        $tiposEntrada = [];
+
+        if (!is_array($nombres)) {
+            $nombres = [$nombres];
+        }
+        if (!is_array($valores)) {
+            $valores = [$valores];
+        }
+
+        $total = max(count($nombres), count($valores));
+        for ($i = 0; $i < $total; $i++) {
+            $tiposEntrada[] = [
+                'nombre' => $nombres[$i] ?? '',
+                'valor'  => $valores[$i] ?? 0,
+            ];
+        }
+    }
+
+    $normalizados = [];
+    $esGratuito = $tipoCobro === 'gratuito';
+
+    foreach ($tiposEntrada as $tipo) {
+        if (!is_array($tipo)) {
+            continue;
+        }
+
+        $nombre = normalizarTextoOrdenado($tipo['nombre'] ?? '');
+        if ($nombre === '') {
+            continue;
+        }
+
+        $valor = isset($tipo['valor']) ? (float) $tipo['valor'] : 0.0;
+        if ($esGratuito || $valor < 0) {
+            $valor = 0.0;
+        }
+
+        if (!$esGratuito && $valor <= 0) {
+            throw new InvalidArgumentException(
+                'Cada tipo de entrada de pago debe tener un valor mayor a cero.'
+            );
+        }
+
+        $normalizados[] = [
+            'nombre' => $nombre,
+            'valor'  => $valor,
+        ];
+    }
+
+    if ($normalizados === []) {
+        throw new InvalidArgumentException('Agrega al menos un tipo de entrada.');
+    }
+
+    return $normalizados;
+}
+
+/**
+ * @param array<int, array{nombre: string, valor: float}> $tiposEntrada
+ */
+function guardarTiposEntradaEvento(int $eventoId, array $tiposEntrada): void
+{
+    if ($eventoId <= 0) {
+        throw new InvalidArgumentException('Evento inválido.');
+    }
+
+    $pdo = getConnection();
+    asegurarColumnasEventos($pdo);
+
+    $pdo->prepare('DELETE FROM eventos_tipos_entrada WHERE evento_id = ?')->execute([$eventoId]);
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO eventos_tipos_entrada (evento_id, nombre, valor, orden, creado_en)
+         VALUES (?, ?, ?, ?, NOW())'
+    );
+
+    foreach ($tiposEntrada as $orden => $tipo) {
+        $stmt->execute([
+            $eventoId,
+            $tipo['nombre'],
+            $tipo['valor'],
+            (int) $orden,
+        ]);
+    }
+}
+
+/**
+ * @param array<int, array{nombre: string, valor: float}> $tiposEntrada
+ */
+function valorCatalogoDesdeTiposEntrada(array $tiposEntrada): float
+{
+    if ($tiposEntrada === []) {
+        return 0.0;
+    }
+
+    $valores = array_map(static fn (array $tipo): float => (float) $tipo['valor'], $tiposEntrada);
+    $maximo = max($valores);
+
+    // Si todos son gratuitos, el catálogo queda en 0; si hay pagos, usa el menor pago.
+    if ($maximo <= 0) {
+        return 0.0;
+    }
+
+    $pagos = array_values(array_filter($valores, static fn (float $valor): bool => $valor > 0));
+
+    return $pagos === [] ? 0.0 : min($pagos);
+}
+
+function formatearTiposEntradaEvento(array $evento): string
+{
+    $tipos = $evento['tipos_entrada'] ?? [];
+
+    if (!is_array($tipos) || $tipos === []) {
+        $valor = (float) ($evento['valor'] ?? 0);
+        return $valor <= 0 ? 'Gratuito' : formatearMonto($valor);
+    }
+
+    $partes = [];
+    foreach ($tipos as $tipo) {
+        $nombre = trim((string) ($tipo['nombre'] ?? ''));
+        $valor = (float) ($tipo['valor'] ?? 0);
+        if ($nombre === '') {
+            continue;
+        }
+        $partes[] = $nombre . ': ' . ($valor <= 0 ? 'Gratuito' : formatearMonto($valor));
+    }
+
+    return $partes === [] ? '—' : implode(' · ', $partes);
 }
 
 function obtenerEventoHabilitado(int $id): ?array
@@ -88,7 +345,14 @@ function etiquetaFormaPagoEvento(?string $formaPago): string
 
 /**
  * @param array<string, mixed> $datos
- * @return array{nombre: string, fecha: string, valor: float, habilitado: int, requiere_numeracion: int}
+ * @return array{
+ *   nombre: string,
+ *   fecha: string,
+ *   valor: float,
+ *   habilitado: int,
+ *   requiere_numeracion: int,
+ *   tipos_entrada: array<int, array{nombre: string, valor: float}>
+ * }
  */
 function normalizarDatosEventoCatalogo(array $datos): array
 {
@@ -97,7 +361,9 @@ function normalizarDatosEventoCatalogo(array $datos): array
     $nombre = normalizarTextoOrdenado($datos['nombre'] ?? '');
     $fecha = trim((string) ($datos['fecha'] ?? ''));
     $tipoCobro = trim(mb_strtolower((string) ($datos['tipo_cobro'] ?? 'pago')));
-    $valor = isset($datos['valor']) ? (float) $datos['valor'] : 0;
+    if ($tipoCobro !== 'gratuito') {
+        $tipoCobro = 'pago';
+    }
     $habilitado = !empty($datos['habilitado']) ? 1 : 0;
     $requiereNumeracion = !empty($datos['requiere_numeracion']) ? 1 : 0;
 
@@ -105,11 +371,21 @@ function normalizarDatosEventoCatalogo(array $datos): array
         throw new InvalidArgumentException('Nombre y fecha son obligatorios.');
     }
 
-    if ($tipoCobro === 'gratuito' || ($tipoCobro !== 'pago' && $valor <= 0)) {
-        $valor = 0;
-    } elseif ($valor <= 0) {
-        throw new InvalidArgumentException('Ingresa un valor mayor a cero o selecciona Gratuito.');
+    $tiposEntrada = $datos['tipos_entrada'] ?? null;
+
+    // Compatibilidad: si no vienen tipos, arma uno desde valor suelto.
+    if ($tiposEntrada === null || $tiposEntrada === []) {
+        $valorLegacy = isset($datos['valor']) ? (float) $datos['valor'] : 0.0;
+        if ($tipoCobro === 'gratuito') {
+            $valorLegacy = 0.0;
+        } elseif ($valorLegacy <= 0) {
+            throw new InvalidArgumentException('Agrega al menos un tipo de entrada con valor.');
+        }
+        $tiposEntrada = [['nombre' => 'General', 'valor' => $valorLegacy]];
     }
+
+    $tiposEntrada = normalizarTiposEntradaCatalogo($tiposEntrada, $tipoCobro);
+    $valor = valorCatalogoDesdeTiposEntrada($tiposEntrada);
 
     validarFechaEvento($fecha);
 
@@ -119,6 +395,7 @@ function normalizarDatosEventoCatalogo(array $datos): array
         'valor'                => $valor,
         'habilitado'           => $habilitado,
         'requiere_numeracion'  => $requiereNumeracion,
+        'tipos_entrada'        => $tiposEntrada,
     ];
 }
 
@@ -138,16 +415,40 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
     $observacion = normalizarTextoOrdenado($entrada['observacion'] ?? '');
     $numeracion = trim((string) ($entrada['numeracion'] ?? ''));
     $formaPago = normalizarFormaPagoEvento((string) ($entrada['forma_pago'] ?? ''));
+    $tipoEntradaId = isset($entrada['tipo_entrada_id']) ? (int) $entrada['tipo_entrada_id'] : 0;
 
     if ($evento === null) {
         $evento = $eventoId > 0 ? obtenerEventoHabilitado($eventoId) : null;
+    } elseif (!isset($evento['tipos_entrada'])) {
+        $evento['tipos_entrada'] = obtenerTiposEntradaPorEvento((int) ($evento['id'] ?? 0));
     }
 
     if (!$evento) {
         throw new InvalidArgumentException('Selecciona un evento habilitado.');
     }
 
-    $eventoEsGratuito = (float) ($evento['valor'] ?? 0) <= 0;
+    $tiposEntrada = $evento['tipos_entrada'] ?? [];
+    $tipoEntrada = null;
+    $tipoEntradaNombre = null;
+
+    if (is_array($tiposEntrada) && $tiposEntrada !== []) {
+        if ($tipoEntradaId <= 0) {
+            throw new InvalidArgumentException('Selecciona un tipo de entrada.');
+        }
+
+        $tipoEntrada = obtenerTipoEntradaPorId($tipoEntradaId, (int) $evento['id']);
+        if (!$tipoEntrada) {
+            throw new InvalidArgumentException('Tipo de entrada no válido para este evento.');
+        }
+
+        $tipoEntradaNombre = (string) $tipoEntrada['nombre'];
+        $valor = (float) $tipoEntrada['valor'];
+    }
+
+    $eventoEsGratuito = $valor <= 0 && (float) ($evento['valor'] ?? 0) <= 0;
+    if ($tipoEntrada !== null) {
+        $eventoEsGratuito = (float) $tipoEntrada['valor'] <= 0;
+    }
 
     if ($eventoEsGratuito) {
         $formaPago = 'gratuito';
@@ -176,14 +477,16 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
     }
 
     return [
-        'evento_id'    => (int) $evento['id'],
-        'nombre'       => $nombre,
-        'fecha'        => $fecha,
-        'telefono'     => $telefono,
-        'valor'        => $valor,
-        'observacion'  => $observacion,
-        'numeracion'   => $numeracion !== '' ? $numeracion : null,
-        'forma_pago'   => $formaPago,
+        'evento_id'        => (int) $evento['id'],
+        'nombre'           => $nombre,
+        'fecha'            => $fecha,
+        'telefono'         => $telefono,
+        'valor'            => $valor,
+        'observacion'      => $observacion,
+        'numeracion'       => $numeracion !== '' ? $numeracion : null,
+        'forma_pago'       => $formaPago,
+        'tipo_entrada_id'  => $tipoEntrada !== null ? (int) $tipoEntrada['id'] : null,
+        'tipo_entrada'     => $tipoEntradaNombre,
     ];
 }
 
@@ -209,30 +512,44 @@ function obtenerRegistroEventoPorId(int $id): ?array
 }
 
 /**
- * @param array{nombre: string, fecha: string, valor: float|int|string, habilitado?: bool|int, requiere_numeracion?: bool|int} $datos
+ * @param array{nombre: string, fecha: string, valor?: float|int|string, habilitado?: bool|int, requiere_numeracion?: bool|int, tipos_entrada?: array} $datos
  */
 function crearEvento(array $datos): int
 {
     $datos = normalizarDatosEventoCatalogo($datos);
 
     $pdo = getConnection();
-    $stmt = $pdo->prepare(
-        'INSERT INTO eventos (nombre, fecha, valor, habilitado, requiere_numeracion, creado_en)
-         VALUES (?, ?, ?, ?, ?, NOW())'
-    );
-    $stmt->execute([
-        $datos['nombre'],
-        $datos['fecha'],
-        $datos['valor'],
-        $datos['habilitado'],
-        $datos['requiere_numeracion'],
-    ]);
+    asegurarColumnasEventos($pdo);
+    $pdo->beginTransaction();
 
-    return (int) $pdo->lastInsertId();
+    try {
+        $stmt = $pdo->prepare(
+            'INSERT INTO eventos (nombre, fecha, valor, habilitado, requiere_numeracion, creado_en)
+             VALUES (?, ?, ?, ?, ?, NOW())'
+        );
+        $stmt->execute([
+            $datos['nombre'],
+            $datos['fecha'],
+            $datos['valor'],
+            $datos['habilitado'],
+            $datos['requiere_numeracion'],
+        ]);
+
+        $eventoId = (int) $pdo->lastInsertId();
+        guardarTiposEntradaEvento($eventoId, $datos['tipos_entrada']);
+        $pdo->commit();
+
+        return $eventoId;
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 }
 
 /**
- * @param array{nombre: string, fecha: string, valor: float|int|string, habilitado?: bool|int, requiere_numeracion?: bool|int} $datos
+ * @param array{nombre: string, fecha: string, valor?: float|int|string, habilitado?: bool|int, requiere_numeracion?: bool|int, tipos_entrada?: array} $datos
  */
 function actualizarEventoCatalogo(int $id, array $datos): bool
 {
@@ -243,20 +560,34 @@ function actualizarEventoCatalogo(int $id, array $datos): bool
     $datos = normalizarDatosEventoCatalogo($datos);
 
     $pdo = getConnection();
-    $stmt = $pdo->prepare(
-        'UPDATE eventos
-         SET nombre = ?, fecha = ?, valor = ?, habilitado = ?, requiere_numeracion = ?
-         WHERE id = ?'
-    );
+    asegurarColumnasEventos($pdo);
+    $pdo->beginTransaction();
 
-    return $stmt->execute([
-        $datos['nombre'],
-        $datos['fecha'],
-        $datos['valor'],
-        $datos['habilitado'],
-        $datos['requiere_numeracion'],
-        $id,
-    ]);
+    try {
+        $stmt = $pdo->prepare(
+            'UPDATE eventos
+             SET nombre = ?, fecha = ?, valor = ?, habilitado = ?, requiere_numeracion = ?
+             WHERE id = ?'
+        );
+        $ok = $stmt->execute([
+            $datos['nombre'],
+            $datos['fecha'],
+            $datos['valor'],
+            $datos['habilitado'],
+            $datos['requiere_numeracion'],
+            $id,
+        ]);
+
+        guardarTiposEntradaEvento($id, $datos['tipos_entrada']);
+        $pdo->commit();
+
+        return $ok;
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 }
 
 function validarFechaEvento(string $fecha): void
@@ -271,9 +602,22 @@ function validarFechaEvento(string $fecha): void
 function eliminarEvento(int $id): bool
 {
     $pdo = getConnection();
-    $stmt = $pdo->prepare('DELETE FROM eventos WHERE id = ?');
+    asegurarColumnasEventos($pdo);
 
-    return $stmt->execute([$id]) && $stmt->rowCount() > 0;
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('DELETE FROM eventos_tipos_entrada WHERE evento_id = ?')->execute([$id]);
+        $stmt = $pdo->prepare('DELETE FROM eventos WHERE id = ?');
+        $ok = $stmt->execute([$id]) && $stmt->rowCount() > 0;
+        $pdo->commit();
+
+        return $ok;
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 }
 
 function contarEventos(): int
@@ -359,17 +703,7 @@ function etiquetaEstadoEvento(int $habilitado): string
 
 function obtenerEventoPorId(int $id): ?array
 {
-    if ($id <= 0) {
-        return null;
-    }
-
-    $pdo = getConnection();
-    asegurarColumnasEventos($pdo);
-    $stmt = $pdo->prepare('SELECT * FROM eventos WHERE id = ? LIMIT 1');
-    $stmt->execute([$id]);
-    $fila = $stmt->fetch();
-
-    return $fila ?: null;
+    return obtenerEvento($id);
 }
 
 /**
@@ -439,7 +773,7 @@ function generarInformeEvento(int $eventoId): array
         ],
         'evento_tipo_etiqueta'       => etiquetaTipoEventoCatalogo($evento),
         'evento_fecha_etiqueta'      => formatearFechaInforme($evento['fecha'] ?? null),
-        'evento_valor_etiqueta'      => formatearMonto((float) ($evento['valor'] ?? 0)),
+        'evento_valor_etiqueta'      => formatearTiposEntradaEvento($evento),
         'evento_numeracion_etiqueta' => (int) ($evento['requiere_numeracion'] ?? 0) === 1 ? 'Sí' : 'No',
         'evento_estado_etiqueta'     => etiquetaEstadoEvento((int) ($evento['habilitado'] ?? 0)),
         'generado_en_etiqueta'       => formatearFechaHora(date('Y-m-d H:i:s')),

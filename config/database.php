@@ -296,6 +296,8 @@ function asegurarColumnasEventos(PDO $pdo): void
             $pdo->exec("ALTER TABLE eventos $sqlAlter");
         }
     }
+
+    migrarTablaEventosTiposEntrada($pdo);
 }
 
 function migrarTablaEventos(PDO $pdo): void
@@ -317,6 +319,36 @@ function migrarTablaEventos(PDO $pdo): void
     );
 
     asegurarColumnasEventos($pdo);
+}
+
+function migrarTablaEventosTiposEntrada(PDO $pdo): void
+{
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS eventos_tipos_entrada (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            evento_id INT NOT NULL,
+            nombre VARCHAR(100) NOT NULL,
+            valor DECIMAL(12,2) NOT NULL DEFAULT 0,
+            orden INT NOT NULL DEFAULT 0,
+            creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_evento_id (evento_id),
+            INDEX idx_orden (orden)
+        ) ENGINE=InnoDB'
+    );
+
+    if (!tablaExiste($pdo, 'eventos') || !tablaExiste($pdo, 'eventos_tipos_entrada')) {
+        return;
+    }
+
+    // Migra eventos existentes sin tipos: un tipo "General" con el valor del catálogo.
+    $pdo->exec(
+        'INSERT INTO eventos_tipos_entrada (evento_id, nombre, valor, orden, creado_en)
+         SELECT e.id, \'General\', e.valor, 0, NOW()
+         FROM eventos e
+         WHERE NOT EXISTS (
+             SELECT 1 FROM eventos_tipos_entrada t WHERE t.evento_id = e.id
+         )'
+    );
 }
 
 function migrarTablaValoresAdicionales(PDO $pdo): void
@@ -362,8 +394,10 @@ function asegurarColumnasValoresAdicionales(PDO $pdo): void
     }
 
     $columnas = [
-        'numeracion' => 'ADD COLUMN numeracion VARCHAR(30) NULL AFTER evento_id',
-        'forma_pago' => 'ADD COLUMN forma_pago VARCHAR(20) NULL AFTER numeracion',
+        'numeracion'       => 'ADD COLUMN numeracion VARCHAR(30) NULL AFTER evento_id',
+        'forma_pago'       => 'ADD COLUMN forma_pago VARCHAR(20) NULL AFTER numeracion',
+        'tipo_entrada_id'  => 'ADD COLUMN tipo_entrada_id INT NULL AFTER forma_pago',
+        'tipo_entrada'     => 'ADD COLUMN tipo_entrada VARCHAR(100) NULL AFTER tipo_entrada_id',
     ];
 
     foreach ($columnas as $nombre => $sqlAlter) {

@@ -119,6 +119,10 @@ CREATE TABLE IF NOT EXISTS valores_adicionales (
     valor DECIMAL(12,2) NOT NULL DEFAULT 0,
     observacion TEXT DEFAULT NULL,
     evento_id INT DEFAULT NULL,
+    numeracion VARCHAR(30) DEFAULT NULL,
+    forma_pago VARCHAR(20) DEFAULT NULL,
+    tipo_entrada_id INT DEFAULT NULL,
+    tipo_entrada VARCHAR(100) DEFAULT NULL,
     registrado_por_id INT DEFAULT NULL,
     registrado_por_nombre VARCHAR(100) DEFAULT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -134,11 +138,23 @@ CREATE TABLE IF NOT EXISTS eventos (
     fecha DATE NULL,
     valor DECIMAL(12,2) NOT NULL DEFAULT 0,
     habilitado TINYINT(1) NOT NULL DEFAULT 1,
+    requiere_numeracion TINYINT(1) NOT NULL DEFAULT 0,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_nombre (nombre),
     INDEX idx_fecha (fecha),
     INDEX idx_habilitado (habilitado),
     INDEX idx_creado_en (creado_en)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS eventos_tipos_entrada (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    evento_id INT NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    valor DECIMAL(12,2) NOT NULL DEFAULT 0,
+    orden INT NOT NULL DEFAULT 0,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_evento_id (evento_id),
+    INDEX idx_orden (orden)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS tipos_valor_adicional (

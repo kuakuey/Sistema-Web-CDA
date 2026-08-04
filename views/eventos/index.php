@@ -117,6 +117,7 @@
             <th>Nombre</th>
             <th>Evento</th>
             <th>Numeración</th>
+            <th>Tipo entrada</th>
             <th>Valor</th>
             <th>Forma de pago</th>
             <th class="text-end">Acciones</th>
@@ -125,7 +126,7 @@
         <tbody>
           <?php if (empty($registros)): ?>
           <tr>
-            <td colspan="6" class="text-center text-muted py-5">
+            <td colspan="7" class="text-center text-muted py-5">
               <i class="bi bi-inbox display-6 d-block mb-2"></i>
               No hay registros de eventos.
             </td>
@@ -152,6 +153,7 @@
             <td><?= htmlspecialchars($fila['nombre']) ?></td>
             <td><span class="badge bg-secondary"><?= htmlspecialchars($fila['evento_nombre'] ?? '—') ?></span></td>
             <td><?= htmlspecialchars($fila['numeracion'] ?? '—') ?></td>
+            <td><?= htmlspecialchars(trim((string) ($fila['tipo_entrada'] ?? '')) !== '' ? $fila['tipo_entrada'] : '—') ?></td>
             <td><strong><?= htmlspecialchars(formatearMonto((float) $fila['valor'])) ?></strong></td>
             <td><?= htmlspecialchars(etiquetaFormaPagoEvento($fila['forma_pago'] ?? null)) ?></td>
             <td class="text-end">
@@ -202,15 +204,31 @@
         <label class="form-label" for="evento_id">Nombre evento <span class="text-danger">*</span></label>
         <select class="form-select" id="evento_id" name="evento_id" required>
           <option value="">Seleccione evento…</option>
-          <?php foreach ($eventosHabilitados as $evento): ?>
+          <?php foreach ($eventosHabilitados as $evento):
+            $tiposJson = array_map(static function (array $tipo): array {
+                return [
+                    'id'     => (int) ($tipo['id'] ?? 0),
+                    'nombre' => (string) ($tipo['nombre'] ?? ''),
+                    'valor'  => (float) ($tipo['valor'] ?? 0),
+                ];
+            }, $evento['tipos_entrada'] ?? []);
+          ?>
           <option
             value="<?= (int) $evento['id'] ?>"
             data-valor="<?= htmlspecialchars((string) $evento['valor']) ?>"
             data-requiere-numeracion="<?= (int) ($evento['requiere_numeracion'] ?? 0) ?>"
+            data-tipos-entrada="<?= htmlspecialchars(json_encode($tiposJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
           >
             <?= htmlspecialchars($evento['nombre']) ?>
           </option>
           <?php endforeach; ?>
+        </select>
+      </div>
+
+      <div class="col-md-6 js-campo-tipo-entrada-evento invisible" aria-hidden="true">
+        <label class="form-label" for="tipo_entrada_id">Tipo de entrada <span class="text-danger">*</span></label>
+        <select class="form-select js-tipo-entrada-evento" id="tipo_entrada_id" name="tipo_entrada_id">
+          <option value="">Seleccione tipo…</option>
         </select>
       </div>
 
@@ -236,7 +254,7 @@
 
       <div class="col-md-6 js-campo-valor-evento invisible" aria-hidden="true">
         <label class="form-label" for="valor">Valor <span class="text-danger">*</span></label>
-        <input type="number" class="form-control js-valor-evento" id="valor" name="valor" min="0.01" step="0.01">
+        <input type="number" class="form-control js-valor-evento" id="valor" name="valor" min="0.01" step="0.01" readonly>
       </div>
 
       <div class="col-12 js-bloque-forma-pago-evento" style="display:none">
@@ -285,7 +303,7 @@
         <input type="date" class="form-control" id="fecha_evento" name="fecha" required value="<?= htmlspecialchars(date('Y-m-d')) ?>">
       </div>
       <div class="col-12">
-        <label class="form-label d-block">Tipo <span class="text-danger">*</span></label>
+        <label class="form-label d-block">Tipo de cobro <span class="text-danger">*</span></label>
         <div class="form-check form-check-inline">
           <input class="form-check-input js-tipo-cobro-catalogo" type="radio" name="tipo_cobro" id="catalogo-gratuito" value="gratuito">
           <label class="form-check-label" for="catalogo-gratuito">Gratuito</label>
@@ -295,11 +313,33 @@
           <label class="form-check-label" for="catalogo-pago">Pago</label>
         </div>
       </div>
-      <div class="col-md-6 col-lg-4 js-bloque-valor-catalogo">
-        <label class="form-label" for="valor_evento">Valor <span class="text-danger">*</span></label>
-        <input type="number" class="form-control" id="valor_evento" name="valor" min="0.01" step="0.01">
+      <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <label class="form-label mb-0">Tipos de entrada <span class="text-danger">*</span></label>
+          <button type="button" class="btn btn-sm btn-outline-primary js-agregar-tipo-entrada">
+            <i class="bi bi-plus-lg me-1"></i>Agregar tipo
+          </button>
+        </div>
+        <div class="js-tipos-entrada-lista">
+          <div class="row g-2 align-items-end mb-2 js-tipo-entrada-fila">
+            <div class="col-md-6">
+              <label class="form-label">Tipo de entrada <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="tipo_entrada[nombre][]" required maxlength="100" placeholder="Ej. General, VIP…">
+            </div>
+            <div class="col-md-4 js-campo-valor-tipo-entrada">
+              <label class="form-label">Valor <span class="text-danger">*</span></label>
+              <input type="number" class="form-control js-valor-tipo-entrada" name="tipo_entrada[valor][]" min="0.01" step="0.01" required>
+            </div>
+            <input type="hidden" class="js-valor-tipo-entrada-gratuito" name="tipo_entrada[valor][]" value="0" disabled>
+            <div class="col-md-2">
+              <button type="button" class="btn btn-outline-danger w-100 js-quitar-tipo-entrada" title="Quitar" disabled>
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <p class="text-muted small mb-0">Puedes agregar varios tipos de entrada con su valor.</p>
       </div>
-      <input type="hidden" name="valor" class="js-valor-catalogo-gratuito" value="0" disabled>
       <div class="col-12">
         <div class="form-check mb-2">
           <input class="form-check-input" type="checkbox" name="habilitado" id="habilitado_nuevo" value="1" checked>
@@ -330,7 +370,7 @@
             <th class="text-center col-numero">#</th>
             <th>Nombre</th>
             <th>Fecha</th>
-            <th>Valor</th>
+            <th>Tipos de entrada</th>
             <th>Numeración</th>
             <th>Estado</th>
             <th>Registros</th>
@@ -348,7 +388,7 @@
             <td class="text-center text-muted"><?= $indice + 1 ?></td>
             <td><?= htmlspecialchars($evento['nombre']) ?></td>
             <td><?= htmlspecialchars(formatearFechaTabla($evento['fecha'] ?? '')) ?></td>
-            <td><strong><?= htmlspecialchars(formatearMonto((float) ($evento['valor'] ?? 0))) ?></strong></td>
+            <td><small><?= htmlspecialchars(formatearTiposEntradaEvento($evento)) ?></small></td>
             <td>
               <?php if ((int) ($evento['requiere_numeracion'] ?? 0) === 1): ?>
               <span class="badge bg-info text-dark">Sí</span>
@@ -397,7 +437,7 @@
 <?php if (!empty($puedeAgregar)): ?>
 <?php foreach ($eventos as $evento): ?>
 <div class="modal fade" id="modalEditarEvento<?= (int) $evento['id'] ?>" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form method="POST" action="eventos.php?pestaña=catalogo">
         <input type="hidden" name="accion" value="actualizar_evento_catalogo">
@@ -416,8 +456,17 @@
             <input type="date" class="form-control" name="fecha" required value="<?= htmlspecialchars($evento['fecha'] ?? '') ?>">
           </div>
           <div class="mb-3">
-            <label class="form-label d-block">Tipo <span class="text-danger">*</span></label>
-            <?php $esGratuitoCatalogo = (float) ($evento['valor'] ?? 0) <= 0; ?>
+            <label class="form-label d-block">Tipo de cobro <span class="text-danger">*</span></label>
+            <?php
+            $tiposEntradaEvento = $evento['tipos_entrada'] ?? [];
+            if (!is_array($tiposEntradaEvento) || $tiposEntradaEvento === []) {
+                $tiposEntradaEvento = [[
+                    'nombre' => 'General',
+                    'valor'  => (float) ($evento['valor'] ?? 0),
+                ]];
+            }
+            $esGratuitoCatalogo = (float) ($evento['valor'] ?? 0) <= 0;
+            ?>
             <div class="form-check form-check-inline">
               <input class="form-check-input js-tipo-cobro-catalogo" type="radio" name="tipo_cobro" id="catalogo-gratuito<?= (int) $evento['id'] ?>" value="gratuito" <?= $esGratuitoCatalogo ? 'checked' : '' ?>>
               <label class="form-check-label" for="catalogo-gratuito<?= (int) $evento['id'] ?>">Gratuito</label>
@@ -427,11 +476,42 @@
               <label class="form-check-label" for="catalogo-pago<?= (int) $evento['id'] ?>">Pago</label>
             </div>
           </div>
-          <div class="mb-3 js-bloque-valor-catalogo" style="<?= $esGratuitoCatalogo ? 'display:none' : '' ?>">
-            <label class="form-label">Valor <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" name="valor" min="0.01" step="0.01" value="<?= htmlspecialchars((string) ($evento['valor'] ?? '')) ?>">
+          <div class="mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <label class="form-label mb-0">Tipos de entrada <span class="text-danger">*</span></label>
+              <button type="button" class="btn btn-sm btn-outline-primary js-agregar-tipo-entrada">
+                <i class="bi bi-plus-lg me-1"></i>Agregar tipo
+              </button>
+            </div>
+            <div class="js-tipos-entrada-lista">
+              <?php foreach ($tiposEntradaEvento as $indiceTipo => $tipoEntrada): ?>
+              <div class="row g-2 align-items-end mb-2 js-tipo-entrada-fila">
+                <div class="col-md-6">
+                  <label class="form-label">Tipo de entrada <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="tipo_entrada[nombre][]" required maxlength="100" value="<?= htmlspecialchars((string) ($tipoEntrada['nombre'] ?? '')) ?>">
+                </div>
+                <div class="col-md-4 js-campo-valor-tipo-entrada" style="<?= $esGratuitoCatalogo ? 'display:none' : '' ?>">
+                  <label class="form-label">Valor <span class="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control js-valor-tipo-entrada"
+                    name="tipo_entrada[valor][]"
+                    min="0.01"
+                    step="0.01"
+                    value="<?= htmlspecialchars((string) ((float) ($tipoEntrada['valor'] ?? 0) > 0 ? $tipoEntrada['valor'] : '')) ?>"
+                    <?= $esGratuitoCatalogo ? 'disabled' : 'required' ?>
+                  >
+                </div>
+                <input type="hidden" class="js-valor-tipo-entrada-gratuito" name="tipo_entrada[valor][]" value="0" <?= !$esGratuitoCatalogo ? 'disabled' : '' ?>>
+                <div class="col-md-2">
+                  <button type="button" class="btn btn-outline-danger w-100 js-quitar-tipo-entrada" title="Quitar" <?= count($tiposEntradaEvento) <= 1 ? 'disabled' : '' ?>>
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <?php endforeach; ?>
+            </div>
           </div>
-          <input type="hidden" name="valor" class="js-valor-catalogo-gratuito" value="0" <?= !$esGratuitoCatalogo ? 'disabled' : '' ?>>
           <div class="form-check mb-2">
             <input class="form-check-input" type="checkbox" name="habilitado" id="habilitado<?= (int) $evento['id'] ?>" value="1" <?= (int) ($evento['habilitado'] ?? 0) === 1 ? 'checked' : '' ?>>
             <label class="form-check-label" for="habilitado<?= (int) $evento['id'] ?>">Habilitado para registro</label>

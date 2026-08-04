@@ -263,8 +263,9 @@ function insertarValorAdicional(array $datos): int
     $stmt = $pdo->prepare(
         'INSERT INTO valores_adicionales (
             tipo, nombre, fecha, telefono, valor, observacion, evento_id,
-            numeracion, forma_pago, registrado_por_id, registrado_por_nombre, creado_en
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+            numeracion, forma_pago, tipo_entrada_id, tipo_entrada,
+            registrado_por_id, registrado_por_nombre, creado_en
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
     );
 
     $stmt->execute([
@@ -277,6 +278,8 @@ function insertarValorAdicional(array $datos): int
         isset($datos['evento_id']) && (int) $datos['evento_id'] > 0 ? (int) $datos['evento_id'] : null,
         $datos['numeracion'] ?? null,
         $datos['forma_pago'] ?? null,
+        isset($datos['tipo_entrada_id']) && (int) $datos['tipo_entrada_id'] > 0 ? (int) $datos['tipo_entrada_id'] : null,
+        $datos['tipo_entrada'] ?? null,
         $datos['registrado_por_id'],
         $datos['registrado_por_nombre'],
     ]);
@@ -303,7 +306,7 @@ function actualizarValorAdicional(int $id, array $datos): bool
     $stmt = $pdo->prepare(
         'UPDATE valores_adicionales SET
             tipo = ?, nombre = ?, fecha = ?, telefono = ?, valor = ?, observacion = ?, evento_id = ?,
-            numeracion = ?, forma_pago = ?
+            numeracion = ?, forma_pago = ?, tipo_entrada_id = ?, tipo_entrada = ?
          WHERE id = ?'
     );
 
@@ -317,6 +320,8 @@ function actualizarValorAdicional(int $id, array $datos): bool
         isset($datos['evento_id']) && (int) $datos['evento_id'] > 0 ? (int) $datos['evento_id'] : null,
         $datos['numeracion'] ?? null,
         $datos['forma_pago'] ?? null,
+        isset($datos['tipo_entrada_id']) && (int) $datos['tipo_entrada_id'] > 0 ? (int) $datos['tipo_entrada_id'] : null,
+        $datos['tipo_entrada'] ?? null,
         $id,
     ]);
 }
@@ -340,15 +345,17 @@ function actualizarRegistroEvento(int $id, array $datos): bool
     $validados = validarDatosRegistroEvento($datos, $evento);
 
     return actualizarValorAdicional($id, [
-        'tipo'        => TIPO_VALOR_EVENTOS_INTERNO,
-        'nombre'      => $validados['nombre'],
-        'fecha'       => $validados['fecha'],
-        'telefono'    => $validados['telefono'],
-        'valor'       => $validados['valor'],
-        'observacion' => $validados['observacion'],
-        'evento_id'   => $validados['evento_id'],
-        'numeracion'  => $validados['numeracion'],
-        'forma_pago'  => $validados['forma_pago'],
+        'tipo'             => TIPO_VALOR_EVENTOS_INTERNO,
+        'nombre'           => $validados['nombre'],
+        'fecha'            => $validados['fecha'],
+        'telefono'         => $validados['telefono'],
+        'valor'            => $validados['valor'],
+        'observacion'      => $validados['observacion'],
+        'evento_id'        => $validados['evento_id'],
+        'numeracion'       => $validados['numeracion'],
+        'forma_pago'       => $validados['forma_pago'],
+        'tipo_entrada_id'  => $validados['tipo_entrada_id'],
+        'tipo_entrada'     => $validados['tipo_entrada'],
     ]);
 }
 

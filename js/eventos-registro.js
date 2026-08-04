@@ -6,13 +6,53 @@
     return marcado ? marcado.value : 'pago';
   }
 
-  function obtenerValorEventoSeleccionado(contenedor) {
+  function obtenerOpcionEvento(contenedor) {
     var eventoSelect = contenedor.querySelector('select[name="evento_id"]');
     if (!eventoSelect || !eventoSelect.value) {
       return null;
     }
 
-    var opcion = eventoSelect.options[eventoSelect.selectedIndex];
+    return eventoSelect.options[eventoSelect.selectedIndex] || null;
+  }
+
+  function obtenerTiposEntradaEvento(contenedor) {
+    var opcion = obtenerOpcionEvento(contenedor);
+    if (!opcion) {
+      return null;
+    }
+
+    var raw = opcion.getAttribute('data-tipos-entrada') || '[]';
+    try {
+      var tipos = JSON.parse(raw);
+      return Array.isArray(tipos) ? tipos : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function obtenerValorEventoSeleccionado(contenedor) {
+    var tipoSelect = contenedor.querySelector('.js-tipo-entrada-evento');
+    if (tipoSelect && tipoSelect.value) {
+      var opcionTipo = tipoSelect.options[tipoSelect.selectedIndex];
+      if (opcionTipo) {
+        return parseFloat(opcionTipo.getAttribute('data-valor') || '0');
+      }
+    }
+
+    var tipos = obtenerTiposEntradaEvento(contenedor);
+    if (tipos === null) {
+      return null;
+    }
+
+    if (tipos.length === 1) {
+      return parseFloat(tipos[0].valor || 0);
+    }
+
+    if (tipos.length > 1) {
+      return null;
+    }
+
+    var opcion = obtenerOpcionEvento(contenedor);
     return opcion ? parseFloat(opcion.getAttribute('data-valor') || '0') : 0;
   }
 
@@ -26,10 +66,55 @@
     elemento.setAttribute('aria-hidden', visible ? 'false' : 'true');
   }
 
+  function actualizarSelectTiposEntrada(contenedor) {
+    var campoTipo = contenedor.querySelector('.js-campo-tipo-entrada-evento');
+    var tipoSelect = contenedor.querySelector('.js-tipo-entrada-evento');
+    var tipos = obtenerTiposEntradaEvento(contenedor);
+    var valorActual = tipoSelect ? tipoSelect.value : '';
+
+    if (!campoTipo || !tipoSelect) {
+      return;
+    }
+
+    var sinEvento = tipos === null;
+    var tieneTipos = !sinEvento && tipos.length > 0;
+
+    if (campoTipo.classList.contains('invisible') || campoTipo.hasAttribute('aria-hidden')) {
+      alternarCampoReservado(campoTipo, tieneTipos);
+    } else {
+      campoTipo.style.display = tieneTipos ? '' : 'none';
+    }
+
+    tipoSelect.innerHTML = '<option value="">Seleccione tipo…</option>';
+
+    if (tieneTipos) {
+      tipos.forEach(function (tipo) {
+        var option = document.createElement('option');
+        option.value = String(tipo.id || '');
+        option.textContent = tipo.nombre || '';
+        option.setAttribute('data-valor', String(tipo.valor != null ? tipo.valor : 0));
+        if (String(tipo.id) === String(valorActual)) {
+          option.selected = true;
+        }
+        tipoSelect.appendChild(option);
+      });
+
+      if (!tipoSelect.value && tipos.length === 1) {
+        tipoSelect.value = String(tipos[0].id || '');
+      }
+    }
+
+    tipoSelect.required = tieneTipos;
+    tipoSelect.disabled = !tieneTipos;
+  }
+
   function actualizarBloquePagoEvento(contenedor) {
     var valorEvento = obtenerValorEventoSeleccionado(contenedor);
-    var sinEvento = valorEvento === null;
-    var esGratuito = !sinEvento && valorEvento <= 0;
+    var tipos = obtenerTiposEntradaEvento(contenedor);
+    var sinEvento = tipos === null;
+    var tipoSelect = contenedor.querySelector('.js-tipo-entrada-evento');
+    var sinTipo = !sinEvento && tipos.length > 0 && (!tipoSelect || !tipoSelect.value);
+    var esGratuito = !sinEvento && !sinTipo && valorEvento !== null && valorEvento <= 0;
     var campoValor = contenedor.querySelector('.js-campo-valor-evento');
     var bloqueFormaPago = contenedor.querySelector('.js-bloque-forma-pago-evento');
     var bloquePagoLegacy = contenedor.querySelector('.js-bloque-pago-evento');
@@ -37,7 +122,7 @@
     var hiddenValor = contenedor.querySelector('.js-valor-gratuito');
     var valorInput = contenedor.querySelector('.js-valor-evento');
     var metodosPago = contenedor.querySelectorAll('.js-metodo-pago-evento');
-    var mostrarPago = !esGratuito && !sinEvento;
+    var mostrarPago = !esGratuito && !sinEvento && !sinTipo && valorEvento !== null && valorEvento > 0;
 
     if (campoValor) {
       alternarCampoReservado(campoValor, mostrarPago);
@@ -60,13 +145,13 @@
     }
 
     if (valorInput) {
-      valorInput.disabled = esGratuito || sinEvento;
+      valorInput.disabled = esGratuito || sinEvento || sinTipo;
       valorInput.required = mostrarPago;
 
       if (mostrarPago && valorEvento > 0) {
-        if (!valorInput.value || parseFloat(valorInput.value) <= 0) {
-          valorInput.value = valorEvento;
-        }
+        valorInput.value = valorEvento;
+      } else if (esGratuito) {
+        valorInput.value = '';
       }
     }
 
@@ -76,24 +161,62 @@
     });
   }
 
+  function actualizarBotonesQuitarTipos(contenedor) {
+    var filas = contenedor.querySelectorAll('.js-tipo-entrada-fila');
+    filas.forEach(function (fila) {
+      var boton = fila.querySelector('.js-quitar-tipo-entrada');
+      if (boton) {
+        boton.disabled = filas.length <= 1;
+      }
+    });
+  }
+
   function actualizarBloqueValorCatalogo(contenedor) {
     var esGratuito = tipoCobroSeleccionado(contenedor, '.js-tipo-cobro-catalogo') === 'gratuito';
-    var bloqueValor = contenedor.querySelector('.js-bloque-valor-catalogo');
-    var hiddenValor = contenedor.querySelector('.js-valor-catalogo-gratuito');
-    var valorInput = bloqueValor ? bloqueValor.querySelector('input[name="valor"]:not(.js-valor-catalogo-gratuito)') : null;
 
-    if (bloqueValor) {
-      bloqueValor.style.display = esGratuito ? 'none' : '';
+    contenedor.querySelectorAll('.js-tipo-entrada-fila').forEach(function (fila) {
+      var campoValor = fila.querySelector('.js-campo-valor-tipo-entrada');
+      var valorInput = fila.querySelector('.js-valor-tipo-entrada');
+      var hiddenValor = fila.querySelector('.js-valor-tipo-entrada-gratuito');
+
+      if (campoValor) {
+        campoValor.style.display = esGratuito ? 'none' : '';
+      }
+
+      if (valorInput) {
+        valorInput.disabled = esGratuito;
+        valorInput.required = !esGratuito;
+        if (esGratuito) {
+          valorInput.removeAttribute('required');
+        }
+      }
+
+      if (hiddenValor) {
+        hiddenValor.disabled = !esGratuito;
+      }
+    });
+
+    actualizarBotonesQuitarTipos(contenedor);
+  }
+
+  function crearFilaTipoEntrada(contenedor) {
+    var lista = contenedor.querySelector('.js-tipos-entrada-lista');
+    var plantilla = lista ? lista.querySelector('.js-tipo-entrada-fila') : null;
+    if (!lista || !plantilla) {
+      return;
     }
 
-    if (hiddenValor) {
-      hiddenValor.disabled = !esGratuito;
-    }
+    var nueva = plantilla.cloneNode(true);
+    nueva.querySelectorAll('input').forEach(function (input) {
+      if (input.classList.contains('js-valor-tipo-entrada-gratuito')) {
+        input.value = '0';
+      } else {
+        input.value = '';
+      }
+    });
 
-    if (valorInput) {
-      valorInput.disabled = esGratuito;
-      valorInput.required = !esGratuito;
-    }
+    lista.appendChild(nueva);
+    actualizarBloqueValorCatalogo(contenedor);
   }
 
   function actualizarNumeracion(contenedor) {
@@ -114,7 +237,11 @@
       requiere = true;
     }
 
-    alternarCampoReservado(campoNumeracion, requiere);
+    if (campoNumeracion.classList.contains('invisible') || campoNumeracion.hasAttribute('aria-hidden')) {
+      alternarCampoReservado(campoNumeracion, requiere);
+    } else {
+      campoNumeracion.style.display = requiere ? '' : 'none';
+    }
 
     if (inputNumeracion) {
       inputNumeracion.required = requiere;
@@ -126,14 +253,23 @@
 
   function inicializarContenedorRegistro(contenedor) {
     var eventoSelect = contenedor.querySelector('select[name="evento_id"]');
+    var tipoSelect = contenedor.querySelector('.js-tipo-entrada-evento');
 
     if (eventoSelect) {
       eventoSelect.addEventListener('change', function () {
+        actualizarSelectTiposEntrada(contenedor);
         actualizarNumeracion(contenedor);
         actualizarBloquePagoEvento(contenedor);
       });
     }
 
+    if (tipoSelect) {
+      tipoSelect.addEventListener('change', function () {
+        actualizarBloquePagoEvento(contenedor);
+      });
+    }
+
+    actualizarSelectTiposEntrada(contenedor);
     actualizarNumeracion(contenedor);
     actualizarBloquePagoEvento(contenedor);
   }
@@ -145,17 +281,42 @@
       });
     });
 
+    var botonAgregar = contenedor.querySelector('.js-agregar-tipo-entrada');
+    if (botonAgregar && !botonAgregar.dataset.boundTipos) {
+      botonAgregar.dataset.boundTipos = '1';
+      botonAgregar.addEventListener('click', function () {
+        crearFilaTipoEntrada(contenedor);
+      });
+    }
+
+    if (!contenedor.dataset.boundQuitarTipos) {
+      contenedor.dataset.boundQuitarTipos = '1';
+      contenedor.addEventListener('click', function (event) {
+        var boton = event.target.closest('.js-quitar-tipo-entrada');
+        if (!boton || !contenedor.contains(boton)) {
+          return;
+        }
+
+        var fila = boton.closest('.js-tipo-entrada-fila');
+        var filas = contenedor.querySelectorAll('.js-tipo-entrada-fila');
+        if (fila && filas.length > 1) {
+          fila.remove();
+          actualizarBotonesQuitarTipos(contenedor);
+        }
+      });
+    }
+
     actualizarBloqueValorCatalogo(contenedor);
   }
 
   document.querySelectorAll('#formRegistroEvento, .modal-editar-registro form').forEach(function (form) {
-    if (form.querySelector('select[name="evento_id"]') && (form.querySelector('.js-campo-valor-evento') || form.querySelector('.js-bloque-forma-pago-evento') || form.querySelector('.js-bloque-pago-evento'))) {
+    if (form.querySelector('select[name="evento_id"]') && (form.querySelector('.js-campo-valor-evento') || form.querySelector('.js-bloque-forma-pago-evento') || form.querySelector('.js-bloque-pago-evento') || form.querySelector('.js-campo-tipo-entrada-evento'))) {
       inicializarContenedorRegistro(form);
     }
   });
 
   document.querySelectorAll('#formAgregarEvento, .modal').forEach(function (contenedor) {
-    if (contenedor.querySelector('.js-tipo-cobro-catalogo')) {
+    if (contenedor.querySelector('.js-tipo-cobro-catalogo') || contenedor.querySelector('.js-tipos-entrada-lista')) {
       inicializarContenedorCatalogo(contenedor);
     }
   });

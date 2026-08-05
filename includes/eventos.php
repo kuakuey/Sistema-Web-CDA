@@ -1233,8 +1233,12 @@ function agruparRegistrosInformeEventoPorTipoEntrada(array $registros, array $ev
 /**
  * @return array<string, mixed>
  */
-function generarInformeEvento(int $eventoId): array
-{
+function generarInformeEvento(
+    int $eventoId,
+    string $fechaDesde = '',
+    string $fechaHasta = '',
+    string $turno = 'todos'
+): array {
     require_once __DIR__ . '/informes.php';
 
     $evento = obtenerEventoPorId($eventoId);
@@ -1243,29 +1247,56 @@ function generarInformeEvento(int $eventoId): array
         throw new InvalidArgumentException('Evento no encontrado.');
     }
 
-    $registros = obtenerRegistrosPorEvento($eventoId);
+    $rango = resolverRangoFechasInforme($fechaDesde, $fechaHasta);
+    $turno = normalizarTurnoInforme($turno);
+    $registros = obtenerRegistrosEventosPorRangoRegistro(
+        $rango['desde'],
+        $rango['hasta'],
+        $turno,
+        $eventoId
+    );
     $resumenFinanciero = calcularResumenFinancieroInformeEvento($registros);
     $resumenTiposEntrada = construirResumenTiposEntradaInformeEvento($registros, $evento);
     $registrosPorTipo = agruparRegistrosInformeEventoPorTipoEntrada($registros, $evento);
     $totalEntradas = array_sum(array_column($resumenTiposEntrada, 'cantidad'));
+    $generadoEn = date('Y-m-d H:i:s');
 
     return [
         'evento' => $evento,
         'registros' => $registros,
         'registros_por_tipo' => $registrosPorTipo,
         'resumen' => [
-            'total_participantes'   => count($registros),
+            'total_participantes' => count($registros),
             'total_entradas'      => $totalEntradas,
-            'monto_por_cancelar'    => $resumenFinanciero['monto_por_cancelar'],
-            'monto_recaudado'       => $resumenFinanciero['monto_recaudado'],
-            'monto_total'           => $resumenFinanciero['monto_total'],
-            'por_tipo_entrada'      => $resumenTiposEntrada,
+            'monto_por_cancelar'  => $resumenFinanciero['monto_por_cancelar'],
+            'monto_recaudado'     => $resumenFinanciero['monto_recaudado'],
+            'monto_total'         => $resumenFinanciero['monto_total'],
+            'por_tipo_entrada'    => $resumenTiposEntrada,
         ],
+        'fecha_desde'                => $rango['desde'] ?? 'todo',
+        'fecha_hasta'                => $rango['hasta'] ?? 'todo',
+        'fecha_desde_etiqueta'       => $rango['fecha_desde_etiqueta'],
+        'fecha_hasta_etiqueta'       => $rango['fecha_hasta_etiqueta'],
+        'periodo_etiqueta'           => $rango['periodo_etiqueta'],
+        'sin_filtro_fecha'           => $rango['sin_filtro_fecha'],
+        'turno'                      => $turno,
+        'turno_etiqueta'             => etiquetaTurnoInforme($turno),
+        'evento_id'                  => $eventoId,
+        'evento_etiqueta'            => (string) ($evento['nombre'] ?? 'Evento #' . $eventoId),
         'evento_tipo_etiqueta'       => etiquetaTipoEventoCatalogo($evento),
         'evento_fecha_etiqueta'      => formatearFechaInforme($evento['fecha'] ?? null),
         'evento_valor_etiqueta'      => formatearTiposEntradaEvento($evento),
         'evento_numeracion_etiqueta' => (int) ($evento['requiere_numeracion'] ?? 0) === 1 ? 'Sí' : 'No',
         'evento_estado_etiqueta'     => etiquetaEstadoEvento((int) ($evento['habilitado'] ?? 0)),
-        'generado_en_etiqueta'       => formatearFechaHora(date('Y-m-d H:i:s')),
+        'generado_en'                => date('d/m/Y H:i', strtotime($generadoEn)),
+        'generado_en_etiqueta'       => formatearFechaHora($generadoEn),
     ];
+}
+
+function renderizarContenidoInformeEventoHtml(array $informe): string
+{
+    ob_start();
+    include __DIR__ . '/../views/partials/contenido-informe-evento.php';
+
+    return (string) ob_get_clean();
 }

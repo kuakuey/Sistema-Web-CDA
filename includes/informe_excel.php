@@ -95,30 +95,39 @@ function enviarInformeExcel(array $informe, string $seccion = 'completo'): void
     }
 
     if (in_array($seccion, ['completo', 'eventos'], true)) {
-        echo '<h3>Eventos</h3>';
-        echo '<table border="1" cellpadding="4" cellspacing="0">';
-        echo '<tr><th>Evento</th><th>Nombre</th><th>Tipo entrada</th><th>Numeración</th><th>Estado</th><th>Fecha</th><th>Teléfono</th><th>Forma de pago</th><th>Valor</th><th>Observación</th><th>Registró</th><th>Registrado el</th></tr>';
-        if (empty($informe['registros_eventos'])) {
-            echo '<tr><td colspan="12">—</td></tr>';
+        if ($seccion === 'eventos') {
+            echo '<h3>Informe de evento</h3>';
+            echo '<p>' . htmlspecialchars($informe['evento']['nombre'] ?? 'Evento')
+                . ' · Periodo de registro: ' . htmlspecialchars($informe['periodo_etiqueta'] ?? ($informe['fecha_desde_etiqueta'] . ' al ' . $informe['fecha_hasta_etiqueta']))
+                . ' · Jornada: ' . htmlspecialchars($informe['turno_etiqueta'])
+                . ' · Generado: ' . htmlspecialchars($informe['generado_en']) . '</p>';
+            echo renderizarContenidoInformeEventoHtml($informe);
         } else {
-            foreach ($informe['registros_eventos'] as $registroEvento) {
-                echo '<tr>';
-                echo '<td>' . htmlspecialchars($registroEvento['evento_nombre'] ?? '—') . '</td>';
-                echo '<td>' . htmlspecialchars($registroEvento['nombre']) . '</td>';
-                echo '<td>' . htmlspecialchars(trim((string) ($registroEvento['tipo_entrada'] ?? '')) !== '' ? $registroEvento['tipo_entrada'] : '—') . '</td>';
-                echo '<td>' . htmlspecialchars($registroEvento['numeracion'] ?? '—') . '</td>';
-                echo '<td>' . htmlspecialchars(etiquetaEstadoPagoRegistroEvento($registroEvento)) . '</td>';
-                echo '<td>' . htmlspecialchars(formatearFechaInforme($registroEvento['fecha'])) . '</td>';
-                echo '<td>' . htmlspecialchars($registroEvento['telefono']) . '</td>';
-                echo '<td>' . htmlspecialchars(etiquetaFormaPagoEvento($registroEvento['forma_pago'] ?? null)) . '</td>';
-                echo '<td>' . htmlspecialchars(formatearMonto((float) $registroEvento['valor'])) . '</td>';
-                echo '<td>' . ($registroEvento['observacion'] ? htmlspecialchars($registroEvento['observacion']) : '—') . '</td>';
-                echo '<td>' . htmlspecialchars($registroEvento['registrado_por_nombre'] ?? '—') . '</td>';
-                echo '<td>' . htmlspecialchars(formatearFechaHora($registroEvento['creado_en'])) . '</td>';
-                echo '</tr>';
+            echo '<h3>Eventos</h3>';
+            echo '<table border="1" cellpadding="4" cellspacing="0">';
+            echo '<tr><th>Evento</th><th>Nombre</th><th>Tipo entrada</th><th>Numeración</th><th>Estado</th><th>Fecha</th><th>Teléfono</th><th>Forma de pago</th><th>Valor</th><th>Observación</th><th>Registró</th><th>Registrado el</th></tr>';
+            if (empty($informe['registros_eventos'])) {
+                echo '<tr><td colspan="12">—</td></tr>';
+            } else {
+                foreach ($informe['registros_eventos'] as $registroEvento) {
+                    echo '<tr>';
+                    echo '<td>' . htmlspecialchars($registroEvento['evento_nombre'] ?? '—') . '</td>';
+                    echo '<td>' . htmlspecialchars($registroEvento['nombre']) . '</td>';
+                    echo '<td>' . htmlspecialchars(trim((string) ($registroEvento['tipo_entrada'] ?? '')) !== '' ? $registroEvento['tipo_entrada'] : '—') . '</td>';
+                    echo '<td>' . htmlspecialchars($registroEvento['numeracion'] ?? '—') . '</td>';
+                    echo '<td>' . htmlspecialchars(etiquetaEstadoPagoRegistroEvento($registroEvento)) . '</td>';
+                    echo '<td>' . htmlspecialchars(formatearFechaInforme($registroEvento['fecha'])) . '</td>';
+                    echo '<td>' . htmlspecialchars($registroEvento['telefono']) . '</td>';
+                    echo '<td>' . htmlspecialchars(etiquetaFormaPagoEvento($registroEvento['forma_pago'] ?? null)) . '</td>';
+                    echo '<td>' . htmlspecialchars(formatearMonto((float) $registroEvento['valor'])) . '</td>';
+                    echo '<td>' . ($registroEvento['observacion'] ? htmlspecialchars($registroEvento['observacion']) : '—') . '</td>';
+                    echo '<td>' . htmlspecialchars($registroEvento['registrado_por_nombre'] ?? '—') . '</td>';
+                    echo '<td>' . htmlspecialchars(formatearFechaHora($registroEvento['creado_en'])) . '</td>';
+                    echo '</tr>';
+                }
             }
+            echo '</table>';
         }
-        echo '</table>';
     }
 
     if (in_array($seccion, ['completo', 'valores'], true)) {

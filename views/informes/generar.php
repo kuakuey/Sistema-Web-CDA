@@ -87,9 +87,9 @@
         </div>
 
         <div class="col-md-4 js-campo-evento" style="<?= $seccion === 'eventos' ? '' : 'display:none' ?>">
-          <label class="form-label" for="evento_id">Evento</label>
-          <select class="form-select" id="evento_id" name="evento_id">
-            <option value="">Todos los eventos</option>
+          <label class="form-label" for="evento_id">Evento <span class="text-danger">*</span></label>
+          <select class="form-select" id="evento_id" name="evento_id" required>
+            <option value="" disabled <?= (int) ($eventoId ?? 0) <= 0 ? 'selected' : '' ?>>Selecciona un evento</option>
             <?php foreach ($eventos ?? [] as $evento): ?>
             <option
               value="<?= (int) $evento['id'] ?>"
@@ -99,6 +99,7 @@
             </option>
             <?php endforeach; ?>
           </select>
+          <p class="form-text mb-0">Obligatorio para el informe de eventos.</p>
         </div>
 
         <div class="col-12 js-campo-presentaciones-estados" style="<?= $seccion === 'presentaciones' ? '' : 'display:none' ?>">
@@ -165,6 +166,8 @@
   var checkboxSinEntregar = document.getElementById('mostrar_sin_entregar');
   var checkboxesEstadosPresentacion = document.querySelectorAll('.js-estado-presentacion-informe');
 
+  var selectorEvento = document.getElementById('evento_id');
+
   if (!formulario || !campoFormato || !selectorSeccion) {
     return;
   }
@@ -174,6 +177,10 @@
 
     if (campoEvento) {
       campoEvento.style.display = seccion === 'eventos' ? '' : 'none';
+    }
+
+    if (selectorEvento) {
+      selectorEvento.required = seccion === 'eventos';
     }
 
     if (campoSinEntregar) {
@@ -212,6 +219,11 @@
           window.alert('Selecciona al menos un estado de presentación.');
           return;
         }
+      }
+
+      if (selectorSeccion.value === 'eventos' && selectorEvento && !selectorEvento.value) {
+        window.alert('Selecciona un evento para generar el informe.');
+        return;
       }
 
       campoFormato.value = boton.getAttribute('data-formato') || 'pdf';

@@ -87,24 +87,56 @@
     .estado-pendiente {
       color: #856404;
     }
+
+    table.meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+    }
+
+    table.meta td {
+      border: 1px solid #dee2e6;
+      padding: 6px 8px;
+      width: 50%;
+    }
+
+    .resumen-evento td {
+      width: 25%;
+    }
+
+    .destacado {
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 <?php
 $resumen = $informe['resumen'];
 $seccionExportacion = normalizarSeccionInforme($informe['seccion_exportacion'] ?? 'completo');
+$esInformeEventoDedicado = $seccionExportacion === 'eventos';
 $incluirOfrendas = in_array($seccionExportacion, ['completo', 'ofrendas'], true);
-$incluirEventos = in_array($seccionExportacion, ['completo', 'eventos'], true);
+$incluirEventosEnCompleto = $seccionExportacion === 'completo';
 $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
 $incluirPresentaciones = $seccionExportacion === 'presentaciones';
 $incluirBautismos = $seccionExportacion === 'bautismos';
 ?>
 
+  <?php if ($esInformeEventoDedicado): ?>
+  <h1>Informe de evento</h1>
+  <p class="subtitulo">
+    <?= htmlspecialchars($informe['evento']['nombre'] ?? 'Evento') ?>
+    · Periodo de registro: <?= htmlspecialchars($informe['periodo_etiqueta'] ?? ($informe['fecha_desde_etiqueta'] . ' al ' . $informe['fecha_hasta_etiqueta'])) ?>
+    · Jornada: <?= htmlspecialchars($informe['turno_etiqueta']) ?>
+    · Generado: <?= htmlspecialchars($informe['generado_en']) ?>
+  </p>
+  <?php include __DIR__ . '/../partials/contenido-informe-evento.php'; ?>
+  <?php else: ?>
+
   <h1><?= htmlspecialchars(tituloSeccionInforme($seccionExportacion)) ?></h1>
   <p class="subtitulo">
     Periodo de registro: <?= htmlspecialchars($informe['periodo_etiqueta'] ?? ($informe['fecha_desde_etiqueta'] . ' al ' . $informe['fecha_hasta_etiqueta'])) ?>
     · Jornada: <?= htmlspecialchars($informe['turno_etiqueta']) ?>
-    <?php if ($incluirEventos && ($informe['evento_id'] ?? 0) > 0): ?>
+    <?php if ($incluirEventosEnCompleto && ($informe['evento_id'] ?? 0) > 0): ?>
     · Evento: <?= htmlspecialchars($informe['evento_etiqueta'] ?? '—') ?>
     <?php endif; ?>
     <?php if ($incluirPresentaciones): ?>
@@ -175,19 +207,6 @@ $incluirBautismos = $seccionExportacion === 'bautismos';
       <td>
         <span class="resumen-label">Total ofrendas</span>
         <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) $resumen['total_monto_ofrendas'])) ?></strong></span>
-      </td>
-    </tr>
-  </table>
-  <?php elseif ($incluirEventos): ?>
-  <table class="resumen">
-    <tr>
-      <td>
-        <span class="resumen-label">Registros de eventos</span>
-        <span class="resumen-valor"><?= (int) ($resumen['cantidad_registros_eventos'] ?? 0) ?></span>
-      </td>
-      <td>
-        <span class="resumen-label">Total recaudado</span>
-        <span class="resumen-valor"><strong><?= htmlspecialchars(formatearMonto((float) ($resumen['total_monto_eventos'] ?? 0))) ?></strong></span>
       </td>
     </tr>
   </table>
@@ -295,7 +314,7 @@ $incluirBautismos = $seccionExportacion === 'bautismos';
   <?php endif; ?>
   <?php endif; ?>
 
-  <?php if ($incluirEventos): ?>
+  <?php if ($incluirEventosEnCompleto): ?>
   <h2>Eventos</h2>
   <?php if (empty($informe['registros_eventos'])): ?>
   <p class="vacio">No hay registros de eventos en este periodo.</p>
@@ -432,6 +451,7 @@ $incluirBautismos = $seccionExportacion === 'bautismos';
       <?php endforeach; ?>
     </tbody>
   </table>
+  <?php endif; ?>
   <?php endif; ?>
   <?php endif; ?>
 </body>

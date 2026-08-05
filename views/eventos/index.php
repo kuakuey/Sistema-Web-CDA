@@ -173,7 +173,7 @@
     <div class="d-flex flex-wrap gap-2">
       <?php if (!empty($puedeVerInformeEventos)): ?>
       <a
-        href="generar-informe-evento.php?evento_id=<?= (int) $eventoParticipantes['id'] ?>"
+        href="generar-informe.php?generar=1&amp;seccion=eventos&amp;evento_id=<?= (int) $eventoParticipantes['id'] ?>&amp;formato=pdf"
         class="btn btn-sm btn-success"
         target="_blank"
         rel="noopener"
@@ -421,7 +421,7 @@
             <td class="text-end">
               <?php if (!empty($puedeVerInformeEventos) && (int) ($evento['total_registros'] ?? 0) > 0): ?>
               <a
-                href="generar-informe-evento.php?evento_id=<?= (int) $evento['id'] ?>"
+                href="generar-informe.php?generar=1&amp;seccion=eventos&amp;evento_id=<?= (int) $evento['id'] ?>&amp;formato=pdf"
                 class="btn btn-sm btn-outline-success"
                 title="Informe PDF"
                 target="_blank"

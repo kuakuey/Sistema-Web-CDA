@@ -15,7 +15,10 @@ requerirSesion();
 $usuario = obtenerUsuarioActual();
 $rol = $usuario['rol'];
 
-if (!puedeGenerarInforme($rol)) {
+$seccionSolicitada = normalizarSeccionInforme($seccion);
+$descargaInformeEvento = $generar && $seccionSolicitada === 'eventos' && puedeVerInformeEventos($rol);
+
+if (!puedeGenerarInforme($rol) && !$descargaInformeEvento) {
     header('Location: ' . obtenerUrlInicioPorRol($rol));
     exit;
 }
@@ -70,6 +73,12 @@ try {
                 $turno,
                 $estadoBautismoInforme
             );
+        } elseif ($seccion === 'eventos') {
+            if ($eventoId <= 0) {
+                throw new InvalidArgumentException('Selecciona un evento para generar el informe.');
+            }
+
+            $informe = generarInformeEvento($eventoId, $fechaDesde, $fechaHasta, $turno);
         } else {
             $informe = generarInformeOfrendasYValores(
                 $fechaDesde,

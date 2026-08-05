@@ -15,18 +15,6 @@ requerirSesion();
 $usuario = obtenerUsuarioActual();
 $rol = $usuario['rol'];
 
-$seccionSolicitada = normalizarSeccionInforme($seccion);
-$descargaInformeEvento = $generar && $seccionSolicitada === 'eventos' && puedeVerInformeEventos($rol);
-
-if (!puedeGenerarInforme($rol) && !$descargaInformeEvento) {
-    header('Location: ' . obtenerUrlInicioPorRol($rol));
-    exit;
-}
-
-$seccionesPermitidas = obtenerSeccionesPermitidas($rol);
-$etiquetasSecciones = obtenerEtiquetasSecciones();
-$etiquetasRoles = obtenerEtiquetasRoles();
-
 $fechaDesde = isset($_GET['fecha_desde']) ? trim((string) $_GET['fecha_desde']) : '';
 $fechaHasta = isset($_GET['fecha_hasta']) ? trim((string) $_GET['fecha_hasta']) : '';
 $mostrarSinEntregar = isset($_GET['mostrar_sin_entregar']) && $_GET['mostrar_sin_entregar'] === '1';
@@ -39,6 +27,18 @@ $estadosPresentacionInforme = isset($_GET['estados_presentacion']) && is_array($
     : obtenerEstadosPresentacion();
 $estadoBautismoInforme = isset($_GET['estado_bautismo']) ? trim((string) $_GET['estado_bautismo']) : 'todos';
 $generar = isset($_GET['generar']);
+
+$seccionSolicitada = normalizarSeccionInforme($seccion);
+$descargaInformeEvento = $generar && $seccionSolicitada === 'eventos' && puedeVerInformeEventos($rol);
+
+if (!puedeGenerarInforme($rol) && !$descargaInformeEvento) {
+    header('Location: ' . obtenerUrlInicioPorRol($rol));
+    exit;
+}
+
+$seccionesPermitidas = obtenerSeccionesPermitidas($rol);
+$etiquetasSecciones = obtenerEtiquetasSecciones();
+$etiquetasRoles = obtenerEtiquetasRoles();
 
 $error = isset($_GET['error']) ? trim((string) $_GET['error']) : null;
 $errorBd = null;

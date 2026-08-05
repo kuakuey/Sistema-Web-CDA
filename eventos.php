@@ -181,6 +181,7 @@ view('eventos/index', [
     'puedeVerTabla'          => puedeVerTablaEventos($rol),
     'puedeVerCatalogo'       => puedeVerCatalogoEventos($rol),
     'puedeVerParticipantes'  => esRolConControlTotal($rol),
+    'puedeVerInformeEventos'   => puedeVerInformeEventos($rol),
     'eventos'                => $eventos,
     'eventosHabilitados'     => $eventosHabilitados,
     'eventoParticipantes'    => $eventoParticipantes,

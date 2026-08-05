@@ -1048,6 +1048,189 @@ function etiquetaTipoEventoCatalogo(array $evento): string
 }
 
 /**
+ * @param array<int, array<string, mixed>> $registros
+ * @return array{monto_por_cancelar: float, monto_recaudado: float, monto_total: float}
+ */
+function calcularResumenFinancieroInformeEvento(array $registros): array
+{
+    $porCancelar = 0.0;
+    $recaudado = 0.0;
+
+    foreach ($registros as $registro) {
+        if (registroEventoEsEntradaGratis($registro)) {
+            continue;
+        }
+
+        $valor = (float) ($registro['valor'] ?? 0);
+        $estado = normalizarEstadoPagoEvento((string) ($registro['estado_pago'] ?? '')) ?: 'por_cancelar';
+        $forma = normalizarFormaPagoEvento((string) ($registro['forma_pago'] ?? ''));
+
+        if ($estado === 'pagado' && in_array($forma, ['efectivo', 'transferencia'], true)) {
+            $recaudado += $valor;
+        } else {
+            $porCancelar += $valor;
+        }
+    }
+
+    return [
+        'monto_por_cancelar' => $porCancelar,
+        'monto_recaudado'    => $recaudado,
+        'monto_total'        => $porCancelar + $recaudado,
+    ];
+}
+
+/**
+ * @param array<int, array<string, mixed>> $registros
+ * @return array<int, array{nombre: string, cantidad: int, valor_catalogo: string}>
+ */
+function construirResumenTiposEntradaInformeEvento(array $registros, array $evento): array
+{
+    $conteo = [];
+
+    foreach ($registros as $registro) {
+        $tipoId = (int) ($registro['tipo_entrada_id'] ?? 0);
+        $nombre = trim((string) ($registro['tipo_entrada'] ?? ''));
+
+        if (!isset($conteo[$tipoId])) {
+            $conteo[$tipoId] = [
+                'nombre'   => $nombre !== '' ? $nombre : 'Sin tipo',
+                'cantidad' => 0,
+            ];
+        }
+
+        $conteo[$tipoId]['cantidad']++;
+    }
+
+    $resumen = [];
+    $tiposVistos = [];
+
+    foreach ($evento['tipos_entrada'] ?? [] as $tipo) {
+        $tipoId = (int) ($tipo['id'] ?? 0);
+        $tiposVistos[$tipoId] = true;
+        $nombre = trim((string) ($tipo['nombre'] ?? ''));
+
+        if (tipoEntradaEsGratis($tipo)) {
+            $valorCatalogo = 'Gratuito';
+        } elseif ((float) ($tipo['valor'] ?? 0) <= 0) {
+            $valorCatalogo = 'Pendiente de pago';
+        } else {
+            $valorCatalogo = formatearMonto((float) ($tipo['valor'] ?? 0));
+        }
+
+        $resumen[] = [
+            'nombre'         => $nombre !== '' ? $nombre : 'Sin nombre',
+            'cantidad'       => (int) ($conteo[$tipoId]['cantidad'] ?? 0),
+            'valor_catalogo' => $valorCatalogo,
+        ];
+    }
+
+    foreach ($conteo as $tipoId => $datos) {
+        if (isset($tiposVistos[(int) $tipoId])) {
+            continue;
+        }
+
+        $resumen[] = [
+            'nombre'         => (string) ($datos['nombre'] ?? 'Sin tipo'),
+            'cantidad'       => (int) ($datos['cantidad'] ?? 0),
+            'valor_catalogo' => '—',
+        ];
+    }
+
+    return $resumen;
+}
+
+function compararRegistrosInformeEventoPorNumeracion(array $a, array $b): int
+{
+    $numeracionA = trim((string) ($a['numeracion'] ?? ''));
+    $numeracionB = trim((string) ($b['numeracion'] ?? ''));
+
+    if ($numeracionA === '' && $numeracionB === '') {
+        return strcasecmp((string) ($a['nombre'] ?? ''), (string) ($b['nombre'] ?? ''));
+    }
+
+    if ($numeracionA === '') {
+        return 1;
+    }
+
+    if ($numeracionB === '') {
+        return -1;
+    }
+
+    $comparacion = strnatcasecmp($numeracionA, $numeracionB);
+
+    return $comparacion !== 0
+        ? $comparacion
+        : strcasecmp((string) ($a['nombre'] ?? ''), (string) ($b['nombre'] ?? ''));
+}
+
+/**
+ * @param array<int, array<string, mixed>> $registros
+ * @return array<int, array{tipo_entrada_id: int, tipo_entrada: string, registros: array<int, array<string, mixed>>}>
+ */
+function agruparRegistrosInformeEventoPorTipoEntrada(array $registros, array $evento): array
+{
+    $grupos = [];
+
+    foreach ($evento['tipos_entrada'] ?? [] as $tipo) {
+        $tipoId = (int) ($tipo['id'] ?? 0);
+        $nombre = trim((string) ($tipo['nombre'] ?? ''));
+
+        $grupos[$tipoId] = [
+            'tipo_entrada_id' => $tipoId,
+            'tipo_entrada'    => $nombre !== '' ? $nombre : 'Sin nombre',
+            'registros'       => [],
+        ];
+    }
+
+    $grupoSinTipo = [
+        'tipo_entrada_id' => 0,
+        'tipo_entrada'    => 'Sin tipo de entrada',
+        'registros'       => [],
+    ];
+
+    foreach ($registros as $registro) {
+        $tipoId = (int) ($registro['tipo_entrada_id'] ?? 0);
+
+        if ($tipoId > 0 && isset($grupos[$tipoId])) {
+            $grupos[$tipoId]['registros'][] = $registro;
+            continue;
+        }
+
+        if ($tipoId > 0) {
+            if (!isset($grupos[$tipoId])) {
+                $grupos[$tipoId] = [
+                    'tipo_entrada_id' => $tipoId,
+                    'tipo_entrada'    => trim((string) ($registro['tipo_entrada'] ?? 'Entrada')),
+                    'registros'       => [],
+                ];
+            }
+            $grupos[$tipoId]['registros'][] = $registro;
+            continue;
+        }
+
+        $grupoSinTipo['registros'][] = $registro;
+    }
+
+    $resultado = [];
+
+    foreach ($grupos as $grupo) {
+        if ($grupo['registros'] === []) {
+            continue;
+        }
+
+        usort($grupo['registros'], 'compararRegistrosInformeEventoPorNumeracion');
+        $resultado[] = $grupo;
+    }
+
+    if ($grupoSinTipo['registros'] !== []) {
+        usort($grupoSinTipo['registros'], 'compararRegistrosInformeEventoPorNumeracion');
+        $resultado[] = $grupoSinTipo;
+    }
+
+    return $resultado;
+}
+
+/**
  * @return array<string, mixed>
  */
 function generarInformeEvento(int $eventoId): array
@@ -1061,29 +1244,22 @@ function generarInformeEvento(int $eventoId): array
     }
 
     $registros = obtenerRegistrosPorEvento($eventoId);
-    $totalMonto = 0.0;
-    $porFormaPago = [];
-
-    foreach ($registros as $registro) {
-        $monto = (float) ($registro['valor'] ?? 0);
-        $totalMonto += $monto;
-        $etiquetaPago = etiquetaFormaPagoEvento($registro['forma_pago'] ?? null);
-
-        if (!isset($porFormaPago[$etiquetaPago])) {
-            $porFormaPago[$etiquetaPago] = ['cantidad' => 0, 'monto' => 0.0];
-        }
-
-        $porFormaPago[$etiquetaPago]['cantidad']++;
-        $porFormaPago[$etiquetaPago]['monto'] += $monto;
-    }
+    $resumenFinanciero = calcularResumenFinancieroInformeEvento($registros);
+    $resumenTiposEntrada = construirResumenTiposEntradaInformeEvento($registros, $evento);
+    $registrosPorTipo = agruparRegistrosInformeEventoPorTipoEntrada($registros, $evento);
+    $totalEntradas = array_sum(array_column($resumenTiposEntrada, 'cantidad'));
 
     return [
         'evento' => $evento,
         'registros' => $registros,
+        'registros_por_tipo' => $registrosPorTipo,
         'resumen' => [
-            'total_participantes' => count($registros),
-            'total_monto'         => $totalMonto,
-            'por_forma_pago'      => $porFormaPago,
+            'total_participantes'   => count($registros),
+            'total_entradas'      => $totalEntradas,
+            'monto_por_cancelar'    => $resumenFinanciero['monto_por_cancelar'],
+            'monto_recaudado'       => $resumenFinanciero['monto_recaudado'],
+            'monto_total'           => $resumenFinanciero['monto_total'],
+            'por_tipo_entrada'      => $resumenTiposEntrada,
         ],
         'evento_tipo_etiqueta'       => etiquetaTipoEventoCatalogo($evento),
         'evento_fecha_etiqueta'      => formatearFechaInforme($evento['fecha'] ?? null),

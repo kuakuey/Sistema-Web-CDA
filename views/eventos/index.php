@@ -170,9 +170,21 @@
         <?php endif; ?>
       </p>
     </div>
-    <a href="eventos.php?pestaña=catalogo" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-arrow-left me-1"></i>Volver al catálogo
-    </a>
+    <div class="d-flex flex-wrap gap-2">
+      <?php if (!empty($puedeVerInformeEventos)): ?>
+      <a
+        href="generar-informe-evento.php?evento_id=<?= (int) $eventoParticipantes['id'] ?>"
+        class="btn btn-sm btn-success"
+        target="_blank"
+        rel="noopener"
+      >
+        <i class="bi bi-file-earmark-pdf me-1"></i>Informe PDF
+      </a>
+      <?php endif; ?>
+      <a href="eventos.php?pestaña=catalogo" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Volver al catálogo
+      </a>
+    </div>
   </div>
   <div class="card-body p-0">
     <?php
@@ -407,6 +419,17 @@
             </td>
             <td><span class="badge bg-secondary"><?= (int) ($evento['total_registros'] ?? 0) ?></span></td>
             <td class="text-end">
+              <?php if (!empty($puedeVerInformeEventos) && (int) ($evento['total_registros'] ?? 0) > 0): ?>
+              <a
+                href="generar-informe-evento.php?evento_id=<?= (int) $evento['id'] ?>"
+                class="btn btn-sm btn-outline-success"
+                title="Informe PDF"
+                target="_blank"
+                rel="noopener"
+              >
+                <i class="bi bi-file-earmark-pdf"></i>
+              </a>
+              <?php endif; ?>
               <?php if (!empty($puedeVerParticipantes) && (int) ($evento['total_registros'] ?? 0) > 0): ?>
               <a
                 href="eventos.php?pestaña=participantes&evento_id=<?= (int) $evento['id'] ?>"

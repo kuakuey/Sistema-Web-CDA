@@ -156,7 +156,7 @@ $modalesDetalle = [];
             <th style="width: 10rem;">Usuario</th>
             <th style="width: 12rem;">Acción</th>
             <th style="width: 9rem;">Sección</th>
-            <th>Detalle</th>
+            <th class="text-end" style="width: 4rem;">Detalle</th>
           </tr>
         </thead>
         <tbody>
@@ -170,7 +170,6 @@ $modalesDetalle = [];
           <?php else: ?>
           <?php foreach ($registros as $fila):
             $modalId = 'detalle-actividad-' . (int) $fila['id'];
-            $textoDetalle = obtenerTextoDetalleActividad($fila);
             $modalesDetalle[] = [
                 'id'     => $modalId,
                 'titulo' => 'Detalle de actividad',
@@ -194,21 +193,16 @@ $modalesDetalle = [];
               echo htmlspecialchars($etiquetasSeccionesLog[$claveSeccion] ?? ($claveSeccion !== '' ? $claveSeccion : '—'));
               ?>
             </td>
-            <td class="small">
-              <div class="d-flex align-items-start gap-2">
-                <div class="flex-grow-1" style="white-space: pre-wrap; max-height: 7.5rem; overflow: auto;">
-                  <?= htmlspecialchars($textoDetalle) ?>
-                </div>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary flex-shrink-0"
-                  data-bs-toggle="modal"
-                  data-bs-target="#<?= htmlspecialchars($modalId) ?>"
-                  title="Ver detalle completo"
-                >
-                  <i class="bi bi-eye"></i>
-                </button>
-              </div>
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                data-bs-toggle="modal"
+                data-bs-target="#<?= htmlspecialchars($modalId) ?>"
+                title="Ver detalle"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
             </td>
           </tr>
           <?php endforeach; ?>

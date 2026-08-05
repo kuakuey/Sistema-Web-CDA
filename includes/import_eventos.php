@@ -431,28 +431,146 @@ function normalizarEncabezadoImportEvento(string $encabezado): string
 }
 
 /**
- * @return array<int, array<string, string>>
+ * @return array{
+ *   filas: array<int, array<string, string>>,
+ *   diagnostico: array<string, mixed>
+ * }
  */
 function leerFilasArchivoImportEventos(string $rutaTemporal, string $nombreOriginal): array
 {
+    $diagnostico = [
+        'archivo'              => $nombreOriginal,
+        'formato'              => 'desconocido',
+        'hojas_encontradas'    => [],
+        'hoja_usada'           => '',
+        'encabezados_archivo'  => [],
+        'columnas_mapeadas'    => [],
+        'columnas_faltantes'   => [],
+        'filas_totales_hoja'   => 0,
+        'filas_omitidas'       => [],
+        'filas_validas'        => 0,
+        'sugerencias'          => [],
+    ];
+
     if ($rutaTemporal === '' || !is_readable($rutaTemporal)) {
+        $diagnostico['sugerencias'][] = 'Verifica que el archivo se haya subido correctamente.';
+        guardarDiagnosticoImportEventos($diagnostico);
         throw new InvalidArgumentException('No se pudo leer el archivo subido.');
     }
 
-    $muestra = (string) file_get_contents($rutaTemporal, false, null, 0, 4096);
+    $muestra = (string) file_get_contents($rutaTemporal, false, null, 0, 8192);
     if ($muestra === '') {
+        $diagnostico['sugerencias'][] = 'El archivo está vacío. Agrega registros en la pestaña «Datos».';
+        guardarDiagnosticoImportEventos($diagnostico);
         throw new InvalidArgumentException('El archivo está vacío.');
     }
 
+    if (str_starts_with($muestra, 'PK')) {
+        $diagnostico['formato'] = 'xlsx';
+        $diagnostico['sugerencias'] = [
+            'El archivo parece ser Excel .xlsx (formato binario).',
+            'Descarga de nuevo la plantilla y guárdala como «Excel 97-2003 (.xls)» o expórtala como CSV.',
+            'También puedes copiar la pestaña «Datos» a un archivo .csv sin cambiar los encabezados.',
+        ];
+        guardarDiagnosticoImportEventos($diagnostico);
+        throw new InvalidArgumentException('Formato .xlsx no compatible. Guarda el archivo como .xls o .csv.');
+    }
+
+    if (str_starts_with($muestra, "\xD0\xCF\x11\xE0")) {
+        $diagnostico['formato'] = 'xls_binario';
+        $diagnostico['sugerencias'] = [
+            'El archivo es un Excel binario (.xls) que no puede leerse directamente.',
+            'En Excel: Archivo → Guardar como → «CSV UTF-8» o usa la plantilla descargada sin convertirla.',
+            'Si descargaste la plantilla del sistema, súbela tal cual (.xls XML) o guarda solo como CSV.',
+        ];
+        guardarDiagnosticoImportEventos($diagnostico);
+        throw new InvalidArgumentException('Formato Excel binario no compatible. Guarda como .csv o usa la plantilla .xls descargada.');
+    }
+
     if (esArchivoSpreadsheetMlImportEventos($muestra)) {
-        return leerFilasSpreadsheetMlImportEventos($rutaTemporal);
+        $diagnostico['formato'] = 'spreadsheetml';
+        $resultado = leerFilasSpreadsheetMlImportEventos($rutaTemporal, $diagnostico);
+        guardarDiagnosticoImportEventos($resultado['diagnostico']);
+
+        return $resultado;
     }
 
     if (stripos($muestra, '<html') !== false || stripos($muestra, '<table') !== false) {
-        return leerFilasHtmlImportEventos($rutaTemporal);
+        $diagnostico['formato'] = 'html';
+        $filas = leerFilasHtmlImportEventos($rutaTemporal, $diagnostico);
+        $diagnostico['filas_validas'] = count($filas);
+        guardarDiagnosticoImportEventos($diagnostico);
+
+        return ['filas' => $filas, 'diagnostico' => $diagnostico];
     }
 
-    return leerFilasCsvImportEventos($rutaTemporal);
+    $diagnostico['formato'] = 'csv';
+    $filas = leerFilasCsvImportEventos($rutaTemporal, $diagnostico);
+    $diagnostico['filas_validas'] = count($filas);
+    guardarDiagnosticoImportEventos($diagnostico);
+
+    return ['filas' => $filas, 'diagnostico' => $diagnostico];
+}
+
+/**
+ * @param array<string, mixed> $diagnostico
+ */
+function guardarDiagnosticoImportEventos(array $diagnostico): void
+{
+    $GLOBALS['import_eventos_diagnostico'] = $diagnostico;
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function obtenerUltimoDiagnosticoImportEventos(): array
+{
+    return is_array($GLOBALS['import_eventos_diagnostico'] ?? null)
+        ? $GLOBALS['import_eventos_diagnostico']
+        : [];
+}
+
+/**
+ * @param array<string, mixed> $diagnostico
+ */
+function construirMensajeErrorLecturaImportEventos(array $diagnostico): string
+{
+    $formato = (string) ($diagnostico['formato'] ?? 'desconocido');
+    $filasOmitidas = (int) count($diagnostico['filas_omitidas'] ?? []);
+    $filasTotales = (int) ($diagnostico['filas_totales_hoja'] ?? 0);
+    $hoja = (string) ($diagnostico['hoja_usada'] ?? '');
+
+    if ($filasTotales <= 1) {
+        return 'La pestaña «Datos» solo tiene encabezados. Agrega al menos una fila con participantes.';
+    }
+
+    if ($filasOmitidas > 0 && (int) ($diagnostico['filas_validas'] ?? 0) === 0) {
+        return 'Se encontraron filas en «Datos», pero ninguna es válida para importar. Revisa el detalle abajo.';
+    }
+
+    if ($formato === 'csv' && ($diagnostico['columnas_mapeadas'] ?? []) === []) {
+        return 'No se reconocieron las columnas del CSV. Usa los mismos encabezados de la plantilla.';
+    }
+
+    if ($hoja !== '' && ($diagnostico['columnas_faltantes'] ?? []) !== []) {
+        return 'Faltan columnas obligatorias en la hoja «' . $hoja . '». Revisa el detalle abajo.';
+    }
+
+    return 'El archivo no contiene filas de datos válidas para importar.';
+}
+
+/**
+ * @param array<int, string> $encabezados
+ * @param array<string, mixed> $diagnostico
+ */
+function completarDiagnosticoColumnasImportEventos(array $encabezados, array &$diagnostico): void
+{
+    $diagnostico['encabezados_archivo'] = $encabezados;
+    $mapa = mapearEncabezadosImportEventos($encabezados);
+    $diagnostico['columnas_mapeadas'] = array_keys($mapa);
+
+    $requeridas = ['evento', 'nombre', 'telefono', 'fecha'];
+    $diagnostico['columnas_faltantes'] = array_values(array_diff($requeridas, array_keys($mapa)));
 }
 
 function esArchivoSpreadsheetMlImportEventos(string $muestra): bool
@@ -463,12 +581,14 @@ function esArchivoSpreadsheetMlImportEventos(string $muestra): bool
 }
 
 /**
- * @return array<int, array<string, string>>
+ * @param array<string, mixed> $diagnostico
+ * @return array{filas: array<int, array<string, string>>, diagnostico: array<string, mixed>}
  */
-function leerFilasSpreadsheetMlImportEventos(string $ruta): array
+function leerFilasSpreadsheetMlImportEventos(string $ruta, array $diagnostico): array
 {
     $xml = file_get_contents($ruta);
     if ($xml === false) {
+        $diagnostico['sugerencias'][] = 'No se pudo leer el contenido del archivo Excel.';
         throw new InvalidArgumentException('No se pudo leer el archivo Excel.');
     }
 
@@ -479,6 +599,7 @@ function leerFilasSpreadsheetMlImportEventos(string $ruta): array
     libxml_use_internal_errors(true);
     $dom = new DOMDocument();
     if (!$dom->loadXML($xml, LIBXML_NOERROR | LIBXML_NOWARNING)) {
+        $diagnostico['sugerencias'][] = 'El XML del Excel está dañado. Descarga la plantilla nuevamente.';
         throw new InvalidArgumentException('El archivo Excel no tiene un formato válido.');
     }
 
@@ -486,7 +607,14 @@ function leerFilasSpreadsheetMlImportEventos(string $ruta): array
     /** @var DOMNodeList<DOMElement> $hojas */
     $hojas = $xpath->query('//*[local-name()="Worksheet"]');
     if ($hojas === false || $hojas->length === 0) {
+        $diagnostico['sugerencias'][] = 'No se encontraron hojas. Usa la plantilla descargada del sistema.';
         throw new InvalidArgumentException('No se encontró ninguna hoja en el archivo Excel.');
+    }
+
+    foreach ($hojas as $hoja) {
+        if ($hoja instanceof DOMElement) {
+            $diagnostico['hojas_encontradas'][] = obtenerNombreHojaSpreadsheetMl($hoja) ?: '(sin nombre)';
+        }
     }
 
     $hojaDatos = null;
@@ -497,6 +625,7 @@ function leerFilasSpreadsheetMlImportEventos(string $ruta): array
         $nombre = obtenerNombreHojaSpreadsheetMl($hoja);
         if (strcasecmp($nombre, 'Datos') === 0) {
             $hojaDatos = $hoja;
+            $diagnostico['hoja_usada'] = $nombre;
             break;
         }
     }
@@ -504,18 +633,27 @@ function leerFilasSpreadsheetMlImportEventos(string $ruta): array
     if ($hojaDatos === null) {
         $primera = $hojas->item(0);
         $hojaDatos = $primera instanceof DOMElement ? $primera : null;
+        if ($hojaDatos !== null) {
+            $diagnostico['hoja_usada'] = obtenerNombreHojaSpreadsheetMl($hojaDatos) ?: 'Hoja 1';
+            $diagnostico['sugerencias'][] = 'No se encontró la hoja «Datos». Se usó «' . $diagnostico['hoja_usada'] . '».';
+        }
     }
 
     if ($hojaDatos === null) {
         throw new InvalidArgumentException('No se encontró la hoja «Datos» en el archivo.');
     }
 
-    $filas = extraerFilasDatosSpreadsheetMl($hojaDatos);
+    $filas = extraerFilasDatosSpreadsheetMl($hojaDatos, $diagnostico);
+    $diagnostico['filas_validas'] = count($filas);
+
     if ($filas === []) {
-        throw new InvalidArgumentException('La hoja «Datos» no contiene registros para importar.');
+        if ($diagnostico['sugerencias'] === []) {
+            $diagnostico['sugerencias'][] = 'Agrega filas en la pestaña «Datos» debajo del encabezado.';
+            $diagnostico['sugerencias'][] = 'Copia el formato desde «Guía y ejemplos» si necesitas un ejemplo.';
+        }
     }
 
-    return $filas;
+    return ['filas' => $filas, 'diagnostico' => $diagnostico];
 }
 
 function obtenerNombreHojaSpreadsheetMl(DOMElement $hoja): string
@@ -538,9 +676,10 @@ function obtenerNombreHojaSpreadsheetMl(DOMElement $hoja): string
 }
 
 /**
+ * @param array<string, mixed> $diagnostico
  * @return array<int, array<string, string>>
  */
-function extraerFilasDatosSpreadsheetMl(DOMElement $hoja): array
+function extraerFilasDatosSpreadsheetMl(DOMElement $hoja, array &$diagnostico): array
 {
     $filasDom = [];
     foreach ($hoja->getElementsByTagName('*') as $nodo) {
@@ -549,12 +688,16 @@ function extraerFilasDatosSpreadsheetMl(DOMElement $hoja): array
         }
     }
 
+    $diagnostico['filas_totales_hoja'] = count($filasDom);
+
     if ($filasDom === []) {
+        $diagnostico['sugerencias'][] = 'La hoja «Datos» no tiene filas. Verifica que hayas editado la pestaña correcta.';
         return [];
     }
 
     $encabezados = [];
     $indiceEncabezado = -1;
+    $celdasEncabezado = [];
 
     foreach ($filasDom as $indice => $fila) {
         $celdas = extraerCeldasFilaSpreadsheetMl($fila);
@@ -562,24 +705,68 @@ function extraerFilasDatosSpreadsheetMl(DOMElement $hoja): array
         if (isset($mapa['evento'], $mapa['nombre'])) {
             $encabezados = $mapa;
             $indiceEncabezado = $indice;
+            $celdasEncabezado = $celdas;
             break;
         }
     }
 
     if ($encabezados === []) {
+        $diagnostico['sugerencias'][] = 'No se encontró la fila de encabezados (Evento, Nombre, etc.). No modifiques la fila 1.';
+        if ($filasDom !== []) {
+            $primerasCeldas = extraerCeldasFilaSpreadsheetMl($filasDom[0]);
+            $diagnostico['encabezados_archivo'] = $primerasCeldas;
+        }
         return [];
+    }
+
+    completarDiagnosticoColumnasImportEventos($celdasEncabezado, $diagnostico);
+
+    if ($diagnostico['columnas_faltantes'] !== []) {
+        $diagnostico['sugerencias'][] = 'Faltan columnas: ' . implode(', ', $diagnostico['columnas_faltantes']) . '.';
     }
 
     $filas = [];
     for ($i = $indiceEncabezado + 1, $total = count($filasDom); $i < $total; $i++) {
+        $numeroFila = $i + 1;
         $celdas = extraerCeldasFilaSpreadsheetMl($filasDom[$i]);
-        $datos = construirFilaImportEvento($encabezados, $celdas);
+        $motivoOmitida = null;
+        $datos = construirFilaImportEvento($encabezados, $celdas, $motivoOmitida);
         if ($datos !== null) {
+            $datos['_fila_excel'] = $numeroFila;
             $filas[] = $datos;
+            continue;
+        }
+
+        if ($motivoOmitida !== null) {
+            $diagnostico['filas_omitidas'][] = [
+                'fila'    => $numeroFila,
+                'motivo'  => $motivoOmitida,
+                'preview' => resumenFilaImportEvento($encabezados, $celdas),
+            ];
         }
     }
 
     return $filas;
+}
+
+/**
+ * @param array<string, int> $mapa
+ * @param array<int, string> $valores
+ */
+function resumenFilaImportEvento(array $mapa, array $valores): string
+{
+    $partes = [];
+    foreach (['evento', 'nombre', 'telefono'] as $clave) {
+        if (!isset($mapa[$clave])) {
+            continue;
+        }
+        $valor = trim((string) ($valores[$mapa[$clave]] ?? ''));
+        if ($valor !== '') {
+            $partes[] = $clave . ': ' . $valor;
+        }
+    }
+
+    return $partes !== [] ? implode(' · ', $partes) : '(vacía)';
 }
 
 /**
@@ -642,10 +829,13 @@ function extraerCeldasFilaSpreadsheetMl(DOMElement $fila): array
 }
 
 /**
+ * @param array<string, mixed> $diagnostico
  * @return array<int, array<string, string>>
  */
-function leerFilasCsvImportEventos(string $ruta): array
+function leerFilasCsvImportEventos(string $ruta, array &$diagnostico): array
 {
+    $diagnostico['hoja_usada'] = 'CSV';
+
     $contenido = file_get_contents($ruta);
     if ($contenido === false) {
         throw new InvalidArgumentException('No se pudo leer el archivo CSV.');
@@ -658,35 +848,63 @@ function leerFilasCsvImportEventos(string $ruta): array
     $lineas = preg_split('/\R/u', $contenido) ?: [];
     $lineas = array_values(array_filter($lineas, static fn (string $linea): bool => trim($linea) !== ''));
 
+    $diagnostico['filas_totales_hoja'] = count($lineas);
+
     if ($lineas === []) {
+        $diagnostico['sugerencias'][] = 'El CSV no tiene contenido.';
         return [];
     }
 
     $delimitador = substr_count($lineas[0], ';') > substr_count($lineas[0], ',') ? ';' : ',';
     $encabezados = str_getcsv($lineas[0], $delimitador);
-    $mapa = mapearEncabezadosImportEventos($encabezados);
+    completarDiagnosticoColumnasImportEventos($encabezados, $diagnostico);
 
+    $mapa = mapearEncabezadosImportEventos($encabezados);
     if ($mapa === []) {
-        throw new InvalidArgumentException('No se encontraron columnas válidas en el archivo.');
+        $diagnostico['sugerencias'][] = 'La primera fila del CSV no tiene encabezados reconocidos.';
+        throw new InvalidArgumentException('No se encontraron columnas válidas en el archivo CSV.');
+    }
+
+    if ($diagnostico['columnas_faltantes'] !== []) {
+        $diagnostico['sugerencias'][] = 'Faltan columnas obligatorias: ' . implode(', ', $diagnostico['columnas_faltantes']) . '.';
     }
 
     $filas = [];
     for ($i = 1, $total = count($lineas); $i < $total; $i++) {
+        $numeroFila = $i + 1;
         $valores = str_getcsv($lineas[$i], $delimitador);
-        $fila = construirFilaImportEvento($mapa, $valores);
+        $motivoOmitida = null;
+        $fila = construirFilaImportEvento($mapa, $valores, $motivoOmitida);
         if ($fila !== null) {
+            $fila['_fila_excel'] = $numeroFila;
             $filas[] = $fila;
+            continue;
         }
+
+        if ($motivoOmitida !== null) {
+            $diagnostico['filas_omitidas'][] = [
+                'fila'    => $numeroFila,
+                'motivo'  => $motivoOmitida,
+                'preview' => resumenFilaImportEvento($mapa, $valores),
+            ];
+        }
+    }
+
+    if ($filas === [] && count($lineas) <= 1) {
+        $diagnostico['sugerencias'][] = 'El CSV solo tiene encabezados. Agrega filas con datos debajo.';
     }
 
     return $filas;
 }
 
 /**
+ * @param array<string, mixed> $diagnostico
  * @return array<int, array<string, string>>
  */
-function leerFilasHtmlImportEventos(string $ruta): array
+function leerFilasHtmlImportEventos(string $ruta, array &$diagnostico): array
 {
+    $diagnostico['hoja_usada'] = 'HTML';
+
     $html = file_get_contents($ruta);
     if ($html === false) {
         throw new InvalidArgumentException('No se pudo leer el archivo Excel.');
@@ -701,27 +919,32 @@ function leerFilasHtmlImportEventos(string $ruta): array
     /** @var DOMNodeList<DOMElement> $tablas */
     $tablas = $dom->getElementsByTagName('table');
     foreach ($tablas as $tabla) {
-        $filasTabla = extraerFilasTablaHtmlImportEventos($tabla);
+        $filasTabla = extraerFilasTablaHtmlImportEventos($tabla, $diagnostico);
         if ($filasTabla !== []) {
             return $filasTabla;
         }
     }
 
+    $diagnostico['sugerencias'][] = 'No se encontró una tabla con columnas Evento y Nombre.';
     throw new InvalidArgumentException('No se encontró la tabla de datos en el archivo.');
 }
 
 /**
+ * @param array<string, mixed> $diagnostico
  * @return array<int, array<string, string>>
  */
-function extraerFilasTablaHtmlImportEventos(DOMElement $tabla): array
+function extraerFilasTablaHtmlImportEventos(DOMElement $tabla, array &$diagnostico): array
 {
     $filasDom = $tabla->getElementsByTagName('tr');
+    $diagnostico['filas_totales_hoja'] = $filasDom->length;
+
     if ($filasDom->length === 0) {
         return [];
     }
 
     $encabezados = [];
     $indiceEncabezado = -1;
+    $celdasEncabezado = [];
 
     for ($i = 0; $i < $filasDom->length; $i++) {
         $fila = $filasDom->item($i);
@@ -734,6 +957,7 @@ function extraerFilasTablaHtmlImportEventos(DOMElement $tabla): array
         if (isset($mapa['evento'], $mapa['nombre'])) {
             $encabezados = $mapa;
             $indiceEncabezado = $i;
+            $celdasEncabezado = $celdas;
             break;
         }
     }
@@ -742,17 +966,31 @@ function extraerFilasTablaHtmlImportEventos(DOMElement $tabla): array
         return [];
     }
 
+    completarDiagnosticoColumnasImportEventos($celdasEncabezado, $diagnostico);
+
     $filas = [];
     for ($i = $indiceEncabezado + 1; $i < $filasDom->length; $i++) {
+        $numeroFila = $i + 1;
         $fila = $filasDom->item($i);
         if (!$fila instanceof DOMElement) {
             continue;
         }
 
         $celdas = extraerCeldasFilaHtml($fila);
-        $datos = construirFilaImportEvento($encabezados, $celdas);
+        $motivoOmitida = null;
+        $datos = construirFilaImportEvento($encabezados, $celdas, $motivoOmitida);
         if ($datos !== null) {
+            $datos['_fila_excel'] = $numeroFila;
             $filas[] = $datos;
+            continue;
+        }
+
+        if ($motivoOmitida !== null) {
+            $diagnostico['filas_omitidas'][] = [
+                'fila'    => $numeroFila,
+                'motivo'  => $motivoOmitida,
+                'preview' => resumenFilaImportEvento($encabezados, $celdas),
+            ];
         }
     }
 
@@ -802,23 +1040,37 @@ function mapearEncabezadosImportEventos(array $encabezados): array
  * @param array<int, string> $valores
  * @return array<string, string>|null
  */
-function construirFilaImportEvento(array $mapa, array $valores): ?array
+function construirFilaImportEvento(array $mapa, array $valores, ?string &$motivoOmitida = null): ?array
 {
+    $motivoOmitida = null;
     $fila = [];
     foreach ($mapa as $clave => $indice) {
         $fila[$clave] = trim((string) ($valores[$indice] ?? ''));
     }
 
     if (($fila['evento'] ?? '') === '' && ($fila['nombre'] ?? '') === '') {
+        $motivoOmitida = 'Fila vacía (sin evento ni nombre).';
         return null;
     }
 
     if (filaEsEjemploImportEvento($fila)) {
+        $motivoOmitida = 'Fila de ejemplo (Observación empieza con EJEMPLO:).';
         return null;
     }
 
     $primeraCelda = mb_strtolower(trim((string) ($valores[0] ?? '')));
     if (str_contains($primeraCelda, 'nombre del evento') || str_contains($primeraCelda, 'instruc')) {
+        $motivoOmitida = 'Fila instructiva de la plantilla.';
+        return null;
+    }
+
+    if (($fila['evento'] ?? '') === '') {
+        $motivoOmitida = 'Falta el nombre del evento.';
+        return null;
+    }
+
+    if (($fila['nombre'] ?? '') === '') {
+        $motivoOmitida = 'Falta el nombre del participante.';
         return null;
     }
 
@@ -905,9 +1157,12 @@ function procesarImportacionRegistrosEventos(array $archivo, array $usuario): ar
         throw new InvalidArgumentException('Formato no válido. Usa .csv, .xls o la plantilla descargada.');
     }
 
-    $filas = leerFilasArchivoImportEventos((string) ($archivo['tmp_name'] ?? ''), $nombreOriginal);
+    $lectura = leerFilasArchivoImportEventos((string) ($archivo['tmp_name'] ?? ''), $nombreOriginal);
+    $filas = $lectura['filas'];
+    $diagnostico = $lectura['diagnostico'];
+
     if ($filas === []) {
-        throw new InvalidArgumentException('El archivo no contiene filas de datos para importar.');
+        throw new InvalidArgumentException(construirMensajeErrorLecturaImportEventos($diagnostico));
     }
 
     $rol = (string) ($usuario['rol'] ?? ROL_SUPERADMIN);
@@ -918,7 +1173,8 @@ function procesarImportacionRegistrosEventos(array $archivo, array $usuario): ar
 
     try {
         foreach ($filas as $indice => $fila) {
-            $numeroFila = $indice + 2;
+            $numeroFila = (int) ($fila['_fila_excel'] ?? ($indice + 2));
+            unset($fila['_fila_excel']);
 
             try {
                 $evento = resolverEventoImportPorNombre($fila['evento'] ?? '');
@@ -972,8 +1228,9 @@ function procesarImportacionRegistrosEventos(array $archivo, array $usuario): ar
     }
 
     return [
-        'importados' => $importados,
-        'omitidos'   => count($errores),
-        'errores'    => $errores,
+        'importados'  => $importados,
+        'omitidos'    => count($errores),
+        'errores'     => $errores,
+        'diagnostico' => $diagnostico,
     ];
 }

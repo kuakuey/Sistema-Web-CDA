@@ -30,7 +30,12 @@ if ($pestaña === 'importar' && isset($_GET['descargar']) && $_GET['descargar'] 
 }
 
 $resultadoImportEventos = $_SESSION['import_eventos_resultado'] ?? null;
-unset($_SESSION['import_eventos_resultado']);
+$errorImportEventos = $_SESSION['import_eventos_error'] ?? null;
+unset($_SESSION['import_eventos_resultado'], $_SESSION['import_eventos_error']);
+
+if ($pestaña === 'importar' && $errorImportEventos !== null) {
+    $error = (string) ($errorImportEventos['mensaje'] ?? 'Error al importar.');
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = trim((string) ($_POST['accion'] ?? ''));
@@ -52,10 +57,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: avanzado.php?pestaña=importar&ok=1');
             exit;
         } catch (InvalidArgumentException $e) {
-            header('Location: avanzado.php?pestaña=importar&error=' . urlencode($e->getMessage()));
+            $_SESSION['import_eventos_error'] = [
+                'mensaje'     => $e->getMessage(),
+                'diagnostico' => obtenerUltimoDiagnosticoImportEventos(),
+            ];
+            header('Location: avanzado.php?pestaña=importar&error=1');
             exit;
         } catch (PDOException $e) {
-            header('Location: avanzado.php?pestaña=importar&error=' . urlencode('No se pudieron importar los registros.'));
+            $_SESSION['import_eventos_error'] = [
+                'mensaje'     => 'No se pudieron importar los registros.',
+                'diagnostico' => obtenerUltimoDiagnosticoImportEventos(),
+            ];
+            header('Location: avanzado.php?pestaña=importar&error=1');
             exit;
         }
     }
@@ -157,9 +170,12 @@ if (isset($_GET['ok'])) {
         $mensaje = isset($_GET['bd_msg']) ? (string) $_GET['bd_msg'] : 'Operación de base de datos realizada correctamente.';
     } elseif ($pestaña === 'importar') {
         $importados = (int) ($resultadoImportEventos['importados'] ?? 0);
-        $mensaje = $importados > 0
-            ? ('Importación completada: ' . $importados . ' registro(s) importado(s).')
-            : 'Importación procesada.';
+        $conErrores = (int) ($resultadoImportEventos['omitidos'] ?? 0);
+        if ($importados > 0 && $conErrores === 0) {
+            $mensaje = 'Importación completada: ' . $importados . ' registro(s) importado(s).';
+        } elseif ($importados > 0) {
+            $mensaje = 'Importación parcial: ' . $importados . ' importado(s), ' . $conErrores . ' con error.';
+        }
     } elseif ($pestaña === 'logs') {
         $mensaje = isset($_GET['limpiados'])
             ? ('Se eliminaron ' . (int) $_GET['limpiados'] . ' registro(s) del log.')
@@ -244,4 +260,5 @@ view('avanzado/index', [
     'archivoPagina'          => 'avanzado.php',
     'estadoBd'               => $estadoBd,
     'resultadoImportEventos' => $resultadoImportEventos,
+    'errorImportEventos'     => $errorImportEventos,
 ], 'app');

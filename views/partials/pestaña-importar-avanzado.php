@@ -1,6 +1,9 @@
 <?php
-/** @var array{importados?: int, omitidos?: int, errores?: array<int, array{fila: int, mensaje: string}>}|null $resultadoImportEventos */
+/** @var array{importados?: int, omitidos?: int, errores?: array<int, array{fila: int, mensaje: string}>, diagnostico?: array<string, mixed>}|null $resultadoImportEventos */
+/** @var array{mensaje?: string, diagnostico?: array<string, mixed>}|null $errorImportEventos */
 $resultadoImportEventos = $resultadoImportEventos ?? null;
+$errorImportEventos = $errorImportEventos ?? null;
+$diagnosticoImport = $errorImportEventos['diagnostico'] ?? ($resultadoImportEventos['diagnostico'] ?? null);
 ?>
 <div class="row g-4">
   <div class="col-lg-5">
@@ -17,7 +20,7 @@ $resultadoImportEventos = $resultadoImportEventos ?? null;
           <li>Complete sus registros en la pestaña <strong>Datos</strong>.</li>
           <li>Consulte la pestaña <strong>Guía y ejemplos</strong> para ver 7 casos y la tabla de referencia.</li>
           <li>Al importar, el sistema lee únicamente la pestaña «Datos».</li>
-          <li>También puede subir un archivo <code>.csv</code> con las mismas columnas.</li>
+          <li>Si Excel convierte el archivo a <code>.xlsx</code>, guárdelo como <code>.csv</code> o use la plantilla .xls descargada.</li>
         </ul>
         <a href="avanzado.php?pestaña=importar&amp;descargar=plantilla" class="btn btn-success">
           <i class="bi bi-download me-1"></i>Descargar plantilla Excel
@@ -44,10 +47,10 @@ $resultadoImportEventos = $resultadoImportEventos ?? null;
               class="form-control"
               id="archivo_import_eventos"
               name="archivo"
-              accept=".csv,.xls,.xlsx,application/vnd.ms-excel,text/csv"
+              accept=".csv,.xls,application/vnd.ms-excel,text/csv"
               required
             >
-            <div class="form-text">Formatos: .xls (plantilla), .csv</div>
+            <div class="form-text">Formatos recomendados: plantilla .xls descargada o .csv</div>
           </div>
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-cloud-upload me-1"></i>Importar registros
@@ -57,6 +60,10 @@ $resultadoImportEventos = $resultadoImportEventos ?? null;
     </div>
   </div>
 </div>
+
+<?php if ($errorImportEventos !== null || $diagnosticoImport !== null): ?>
+<?php include __DIR__ . '/detalle-error-import-eventos.php'; ?>
+<?php endif; ?>
 
 <?php if ($resultadoImportEventos !== null): ?>
 <div class="card border-0 shadow-sm mt-4">
@@ -93,7 +100,7 @@ $resultadoImportEventos = $resultadoImportEventos ?? null;
     <?php elseif ((int) ($resultadoImportEventos['importados'] ?? 0) > 0): ?>
     <p class="text-muted small mb-0">Todos los registros del archivo se importaron correctamente.</p>
     <?php else: ?>
-    <p class="text-muted small mb-0">No se importó ningún registro. Revise los errores del archivo.</p>
+    <p class="text-muted small mb-0">No se importó ningún registro. Revise el detalle de errores abajo.</p>
     <?php endif; ?>
   </div>
 </div>

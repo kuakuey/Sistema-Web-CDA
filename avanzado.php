@@ -8,6 +8,7 @@ require_once 'includes/permisos.php';
 require_once 'includes/actividad_log.php';
 require_once 'includes/paginacion.php';
 require_once 'includes/instalacion_bd.php';
+require_once 'includes/import_eventos.php';
 
 requerirSuperadmin();
 
@@ -17,14 +18,47 @@ $mensaje = null;
 $error = isset($_GET['error']) ? (string) $_GET['error'] : null;
 
 $pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : 'usuarios';
-$pestañasPermitidas = ['usuarios', 'permisos', 'logs', 'bd'];
+$pestañasPermitidas = ['usuarios', 'permisos', 'logs', 'bd', 'importar'];
 
 if (!in_array($pestaña, $pestañasPermitidas, true)) {
     $pestaña = 'usuarios';
 }
 
+if ($pestaña === 'importar' && isset($_GET['descargar']) && $_GET['descargar'] === 'plantilla') {
+    enviarPlantillaImportEventos();
+    exit;
+}
+
+$resultadoImportEventos = $_SESSION['import_eventos_resultado'] ?? null;
+unset($_SESSION['import_eventos_resultado']);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = trim((string) ($_POST['accion'] ?? ''));
+
+    if ($accion === 'importar_registros_eventos') {
+        try {
+            $resultadoImport = procesarImportacionRegistrosEventos($_FILES['archivo'] ?? [], $usuario);
+            $_SESSION['import_eventos_resultado'] = $resultadoImport;
+            registrarActividad(
+                'importar_registros_eventos',
+                'eventos',
+                'registro_evento',
+                null,
+                'Importar registros · ' . (int) ($resultadoImport['importados'] ?? 0) . ' importado(s), '
+                    . (int) ($resultadoImport['omitidos'] ?? 0) . ' error(es)',
+                $usuario,
+                $resultadoImport
+            );
+            header('Location: avanzado.php?pestaña=importar&ok=1');
+            exit;
+        } catch (InvalidArgumentException $e) {
+            header('Location: avanzado.php?pestaña=importar&error=' . urlencode($e->getMessage()));
+            exit;
+        } catch (PDOException $e) {
+            header('Location: avanzado.php?pestaña=importar&error=' . urlencode('No se pudieron importar los registros.'));
+            exit;
+        }
+    }
 
     if (in_array($accion, ['bd_crear', 'bd_actualizar', 'bd_instalacion_completa'], true)) {
         $resultadoBd = ejecutarAccionInstalacionBd($accion);
@@ -121,6 +155,11 @@ if (isset($_GET['ok'])) {
         $mensaje = 'Permisos actualizados correctamente.';
     } elseif ($pestaña === 'bd') {
         $mensaje = isset($_GET['bd_msg']) ? (string) $_GET['bd_msg'] : 'Operación de base de datos realizada correctamente.';
+    } elseif ($pestaña === 'importar') {
+        $importados = (int) ($resultadoImportEventos['importados'] ?? 0);
+        $mensaje = $importados > 0
+            ? ('Importación completada: ' . $importados . ' registro(s) importado(s).')
+            : 'Importación procesada.';
     } elseif ($pestaña === 'logs') {
         $mensaje = isset($_GET['limpiados'])
             ? ('Se eliminaron ' . (int) $_GET['limpiados'] . ' registro(s) del log.')
@@ -204,4 +243,5 @@ view('avanzado/index', [
     'etiquetasSeccionesLog'  => obtenerEtiquetasSeccionesActividad(),
     'archivoPagina'          => 'avanzado.php',
     'estadoBd'               => $estadoBd,
+    'resultadoImportEventos' => $resultadoImportEventos,
 ], 'app');

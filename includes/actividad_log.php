@@ -26,6 +26,7 @@ function mapaMetadatosActividad(): array
         'logout'                           => ['seccion' => 'auth', 'entidad' => 'sesion', 'etiqueta' => 'Cierre de sesión'],
         'crear_valor_adicional'            => ['seccion' => 'valores_adicionales', 'entidad' => 'valor_adicional', 'etiqueta' => 'Crear valor adicional'],
         'registrar_evento'                 => ['seccion' => 'eventos', 'entidad' => 'registro_evento', 'etiqueta' => 'Registrar participante de evento'],
+        'importar_registros_eventos'       => ['seccion' => 'eventos', 'entidad' => 'registro_evento', 'etiqueta' => 'Importar registros de eventos'],
         'guardar_permisos_rol'             => ['seccion' => 'usuarios', 'entidad' => 'permisos', 'etiqueta' => 'Guardar permisos de rol'],
         'cambiar_clave_usuario'            => ['seccion' => 'usuarios', 'entidad' => 'usuario', 'etiqueta' => 'Cambiar contraseña'],
         'crear_usuario'                    => ['seccion' => 'usuarios', 'entidad' => 'usuario', 'etiqueta' => 'Crear usuario'],

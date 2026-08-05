@@ -1,12 +1,14 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div>
     <h2 class="h4 mb-1">Avanzado</h2>
-    <p class="text-muted small mb-0">Usuarios, permisos, log de actividad y base de datos</p>
+    <p class="text-muted small mb-0">Usuarios, permisos, importación, log de actividad y base de datos</p>
   </div>
   <?php if ($pestaña === 'usuarios'): ?>
   <span class="badge bg-primary fs-6"><?= count($usuarios) ?> usuario(s)</span>
   <?php elseif ($pestaña === 'bd'): ?>
   <span class="badge bg-primary fs-6"><?= (int) ($estadoBd['tablas_instaladas'] ?? 0) ?>/<?= (int) ($estadoBd['total_tablas'] ?? 0) ?> tablas</span>
+  <?php elseif ($pestaña === 'importar'): ?>
+  <span class="badge bg-primary fs-6">Importar</span>
   <?php elseif ($pestaña === 'logs'): ?>
   <span class="badge bg-primary fs-6"><?= (int) $totalRegistrosLog ?> registro(s)</span>
   <?php endif; ?>
@@ -40,6 +42,11 @@
   <li class="nav-item" role="presentation">
     <a class="nav-link <?= $pestaña === 'bd' ? 'active' : '' ?>" href="avanzado.php?pestaña=bd" role="tab">
       <i class="bi bi-database-gear me-1"></i>Base de datos
+    </a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link <?= $pestaña === 'importar' ? 'active' : '' ?>" href="avanzado.php?pestaña=importar" role="tab">
+      <i class="bi bi-file-earmark-arrow-up me-1"></i>Importar registros
     </a>
   </li>
   <li class="nav-item" role="presentation">
@@ -340,6 +347,10 @@
 <?php elseif ($pestaña === 'bd'): ?>
 
 <?php include __DIR__ . '/../partials/pestaña-bd-avanzado.php'; ?>
+
+<?php elseif ($pestaña === 'importar'): ?>
+
+<?php include __DIR__ . '/../partials/pestaña-importar-avanzado.php'; ?>
 
 <?php elseif ($pestaña === 'logs'): ?>
 <?php

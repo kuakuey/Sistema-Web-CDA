@@ -316,25 +316,18 @@ function registrarActividadPorAccion(string $accion, int $entidadId = 0, string 
     } elseif ($accion === 'actualizar_estado_conexion') {
         $extra = !empty($_POST['contactado']) ? 'Contactado' : 'No contactado';
     } elseif ($accion === 'actualizar_estado_pago_evento') {
-        $estadoPago = trim((string) ($_POST['estado_pago'] ?? ''));
-        if ($estadoPago !== '') {
-            $extra = 'Estado: ' . $estadoPago;
+        $detalleEstado = construirDetalleActividadEstadoPagoEvento(
+            (int) ($_POST['id'] ?? $entidadId),
+            (string) ($_POST['estado_pago'] ?? '')
+        );
+        if ($detalleEstado !== '') {
+            $detalle = $detalleEstado;
         }
-    } elseif ($accion === 'registrar_evento') {
-        $partes = [];
-        if (!empty($_POST['nombre'])) {
-            $partes[] = 'Participante: ' . trim((string) $_POST['nombre']);
+    } elseif (in_array($accion, ['registrar_evento', 'actualizar_registro_evento'], true)) {
+        $detalleEvento = construirDetalleActividadRegistroEvento($_POST);
+        if ($detalleEvento !== '') {
+            $detalle = $detalleEvento;
         }
-        if (!empty($_POST['tipo_entrada_id'])) {
-            $partes[] = 'Tipo entrada #' . (int) $_POST['tipo_entrada_id'];
-        }
-        if (isset($_POST['valor']) && $_POST['valor'] !== '') {
-            $partes[] = 'Valor: ' . $_POST['valor'];
-        }
-        if (!empty($_POST['estado_pago'])) {
-            $partes[] = 'Estado: ' . trim((string) $_POST['estado_pago']);
-        }
-        $extra = implode(' · ', $partes);
     }
 
     if ($detalle === '') {
@@ -347,7 +340,154 @@ function registrarActividadPorAccion(string $accion, int $entidadId = 0, string 
         }
     }
 
+    if ($datosExtra === null && in_array($accion, ['registrar_evento', 'actualizar_registro_evento', 'actualizar_estado_pago_evento'], true)) {
+        $datosExtra = capturarContextoActividadEvento($accion);
+    }
+
     registrarActividad($accion, '', '', $entidadId > 0 ? $entidadId : null, $detalle, null, $datosExtra);
+}
+
+/**
+ * Resuelve nombres de evento y tipo de entrada (nunca IDs) para el detalle del log.
+ *
+ * @param array<string, mixed> $datos
+ * @return array{evento: string, tipo_entrada: string}
+ */
+function resolverNombresEventoParaLog(array $datos): array
+{
+    require_once __DIR__ . '/eventos.php';
+
+    $eventoNombre = trim((string) ($datos['evento_nombre'] ?? $datos['evento'] ?? ''));
+    $tipoEntradaNombre = trim((string) ($datos['tipo_entrada'] ?? ''));
+    $eventoId = isset($datos['evento_id']) ? (int) $datos['evento_id'] : 0;
+    $tipoEntradaId = isset($datos['tipo_entrada_id']) ? (int) $datos['tipo_entrada_id'] : 0;
+
+    if ($eventoNombre === '' && $eventoId > 0) {
+        $evento = obtenerEvento($eventoId);
+        if ($evento) {
+            $eventoNombre = trim((string) ($evento['nombre'] ?? ''));
+        }
+    }
+
+    if ($tipoEntradaNombre === '' && $tipoEntradaId > 0) {
+        $tipo = obtenerTipoEntradaPorId($tipoEntradaId, $eventoId > 0 ? $eventoId : null);
+        if ($tipo) {
+            $tipoEntradaNombre = trim((string) ($tipo['nombre'] ?? ''));
+        }
+    }
+
+    return [
+        'evento'        => $eventoNombre,
+        'tipo_entrada'  => $tipoEntradaNombre,
+    ];
+}
+
+/**
+ * @param array<string, mixed> $datos
+ */
+function construirDetalleActividadRegistroEvento(array $datos): string
+{
+    require_once __DIR__ . '/submissions.php';
+    require_once __DIR__ . '/eventos.php';
+
+    $nombres = resolverNombresEventoParaLog($datos);
+    $lineas = [];
+
+    if ($nombres['evento'] !== '') {
+        $lineas[] = 'Evento: ' . $nombres['evento'];
+    }
+    if ($nombres['tipo_entrada'] !== '') {
+        $lineas[] = 'Tipo de entrada: ' . $nombres['tipo_entrada'];
+    }
+    if (!empty($datos['nombre'])) {
+        $lineas[] = 'Nombre completo: ' . trim((string) $datos['nombre']);
+    }
+    if (!empty($datos['telefono'])) {
+        $lineas[] = 'Teléfono: ' . trim((string) $datos['telefono']);
+    }
+    if (!empty($datos['fecha'])) {
+        $lineas[] = 'Fecha: ' . formatearFechaTabla($datos['fecha']);
+    }
+    if (isset($datos['valor']) && $datos['valor'] !== '') {
+        $lineas[] = 'Valor: ' . formatearMonto((float) $datos['valor']);
+    }
+    if (!empty($datos['forma_pago'])) {
+        $lineas[] = 'Forma de pago: ' . etiquetaFormaPagoEvento((string) $datos['forma_pago']);
+    }
+    if (!empty($datos['estado_pago'])) {
+        $lineas[] = 'Estado: ' . etiquetaEstadoPagoEvento((string) $datos['estado_pago']);
+    }
+    if (!empty($datos['numeracion'])) {
+        $lineas[] = 'Numeración: ' . trim((string) $datos['numeracion']);
+    }
+    if (!empty($datos['observacion'])) {
+        $lineas[] = 'Observación: ' . trim((string) $datos['observacion']);
+    }
+
+    return implode("\n", $lineas);
+}
+
+/**
+ * Contexto POST enriquecido: nombres de evento/entrada en lugar de IDs.
+ *
+ * @return array<string, mixed>
+ */
+function capturarContextoActividadEvento(string $accion = ''): array
+{
+    $contexto = capturarContextoActividad($accion);
+    $nombres = resolverNombresEventoParaLog($_POST);
+
+    if ($accion === 'actualizar_estado_pago_evento') {
+        $registroId = (int) ($_POST['id'] ?? 0);
+        if ($registroId > 0) {
+            require_once __DIR__ . '/eventos.php';
+            $registro = obtenerRegistroEventoPorId($registroId);
+            if ($registro) {
+                $nombres = resolverNombresEventoParaLog($registro);
+            }
+        }
+    }
+
+    if (!empty($contexto['datos']) && is_array($contexto['datos'])) {
+        unset($contexto['datos']['evento_id'], $contexto['datos']['tipo_entrada_id']);
+        if ($nombres['evento'] !== '') {
+            $contexto['datos']['evento'] = $nombres['evento'];
+        }
+        if ($nombres['tipo_entrada'] !== '') {
+            $contexto['datos']['tipo_entrada'] = $nombres['tipo_entrada'];
+        }
+    }
+
+    return $contexto;
+}
+
+function construirDetalleActividadEstadoPagoEvento(int $registroId, string $estadoPago): string
+{
+    require_once __DIR__ . '/eventos.php';
+
+    $lineas = [];
+    if ($registroId > 0) {
+        $registro = obtenerRegistroEventoPorId($registroId);
+        if ($registro) {
+            $nombres = resolverNombresEventoParaLog($registro);
+            if ($nombres['evento'] !== '') {
+                $lineas[] = 'Evento: ' . $nombres['evento'];
+            }
+            if ($nombres['tipo_entrada'] !== '') {
+                $lineas[] = 'Tipo de entrada: ' . $nombres['tipo_entrada'];
+            }
+            if (!empty($registro['nombre'])) {
+                $lineas[] = 'Nombre completo: ' . trim((string) $registro['nombre']);
+            }
+        }
+    }
+
+    $estadoPago = trim($estadoPago);
+    if ($estadoPago !== '') {
+        $lineas[] = 'Estado: ' . etiquetaEstadoPagoEvento($estadoPago);
+    }
+
+    return implode("\n", $lineas);
 }
 
 /**
@@ -632,9 +772,9 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
 
     if ($accion === 'eliminar_registro_evento') {
         require_once __DIR__ . '/eventos.php';
-        $campos['ID'] = '#' . (int) ($registro['id'] ?? 0);
-        $campos['Evento'] = $valorTexto($registro['evento_nombre'] ?? '');
-        $campos['Tipo de entrada'] = $valorTexto($registro['tipo_entrada'] ?? '');
+        $nombres = resolverNombresEventoParaLog($registro);
+        $campos['Evento'] = $nombres['evento'] !== '' ? $nombres['evento'] : $valorTexto($registro['evento_nombre'] ?? '');
+        $campos['Tipo de entrada'] = $nombres['tipo_entrada'] !== '' ? $nombres['tipo_entrada'] : $valorTexto($registro['tipo_entrada'] ?? '');
         $campos['Nombre completo'] = $valorTexto($registro['nombre'] ?? '');
         $campos['Teléfono'] = $valorTexto($registro['telefono'] ?? '');
         $campos['Fecha'] = formatearFechaTabla($registro['fecha'] ?? null);
@@ -688,11 +828,24 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
         'estado_pago'          => 'Estado pago',
         'tipo_entrada'         => 'Tipo de entrada',
         'numeracion'           => 'Numeración',
-        'evento_id'            => 'Evento ID',
     ];
+
+    // Si hay IDs de evento/entrada, mostrar nombres legibles.
+    if (!empty($registro['evento_id']) || !empty($registro['tipo_entrada_id']) || !empty($registro['tipo_entrada'])) {
+        $nombres = resolverNombresEventoParaLog($registro);
+        if ($nombres['evento'] !== '') {
+            $campos['Evento'] = $nombres['evento'];
+        }
+        if ($nombres['tipo_entrada'] !== '') {
+            $campos['Tipo de entrada'] = $nombres['tipo_entrada'];
+        }
+    }
 
     foreach ($mapaEtiquetas as $clave => $etiqueta) {
         if (!array_key_exists($clave, $registro)) {
+            continue;
+        }
+        if (isset($campos[$etiqueta])) {
             continue;
         }
         $valor = $registro[$clave];
@@ -704,7 +857,6 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
             continue;
         }
         if ($clave === 'id' || str_ends_with($clave, '_id')) {
-            $campos[$etiqueta] = '#' . (int) $valor;
             continue;
         }
         $campos[$etiqueta] = $valorTexto($valor);

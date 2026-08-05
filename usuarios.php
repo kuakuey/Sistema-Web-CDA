@@ -1,95 +1,28 @@
 <?php
 
 require_once 'includes/auth.php';
-require_once 'includes/view.php';
-require_once 'includes/submissions.php';
-require_once 'includes/users.php';
-require_once 'includes/permisos.php';
 
-requerirSuperadmin();
+requerirSesion();
 
-$usuario = obtenerUsuarioActual();
-$rol = $usuario['rol'];
-$mensaje = null;
+$pestañaLegacy = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : 'lista';
+$mapaPestañas = [
+    'lista'     => 'usuarios',
+    'registrar' => 'usuarios',
+    'permisos'  => 'permisos',
+];
 
-$pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : 'lista';
-if (!in_array($pestaña, ['lista', 'registrar', 'permisos'], true)) {
-    $pestaña = 'lista';
+$pestaña = $mapaPestañas[$pestañaLegacy] ?? 'usuarios';
+$parametros = ['pestaña' => $pestaña];
+
+if ($pestaña === 'permisos' && isset($_GET['rol']) && trim((string) $_GET['rol']) !== '') {
+    $parametros['rol'] = trim((string) $_GET['rol']);
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'crear_usuario') {
-    $resultado = crearUsuario(
-        $_POST['usuario'] ?? '',
-        $_POST['clave'] ?? '',
-        $_POST['nombre'] ?? '',
-        $_POST['rol'] ?? ''
-    );
-
-    if ($resultado['exito']) {
-        require_once 'includes/actividad_log.php';
-        $detalleUsuario = 'Crear usuario · ' . trim((string) ($_POST['usuario'] ?? ''));
-        salirConActividad('usuarios.php?pestaña=registrar&ok=1', 'crear_usuario', 0, $detalleUsuario);
-    }
-
-    header('Location: usuarios.php?pestaña=registrar&error=' . urlencode($resultado['mensaje']));
-    exit;
-}
-
-if (isset($_GET['ok'])) {
-    if ($pestaña === 'permisos') {
-        $mensaje = 'Permisos actualizados correctamente.';
-    } elseif (isset($_GET['clave'])) {
-        $mensaje = 'Contraseña actualizada correctamente.';
-    } else {
-        $mensaje = 'Usuario creado correctamente.';
+foreach (['ok', 'error', 'clave'] as $clave) {
+    if (isset($_GET[$clave])) {
+        $parametros[$clave] = (string) $_GET[$clave];
     }
 }
 
-$error = isset($_GET['error']) ? (string) $_GET['error'] : null;
-
-$usuarios = obtenerTodosUsuarios();
-$etiquetasRoles = obtenerEtiquetasRoles();
-$seccionesPermitidas = obtenerSeccionesPermitidas($rol);
-$etiquetasSecciones = obtenerEtiquetasSecciones();
-$seccionesPermisos = obtenerSeccionesConfigurablesPermisos();
-$catalogoPermisos = obtenerCatalogoPermisosDetallados();
-$rolesPermisos = obtenerRolesConfigurablesPermisos();
-$matrizPermisos = cargarMatrizPermisosRoles();
-$rolPermisosActivo = isset($_GET['rol']) ? trim((string) $_GET['rol']) : ROL_ADMIN;
-
-if (!array_key_exists($rolPermisosActivo, $rolesPermisos)) {
-    $rolPermisosActivo = ROL_ADMIN;
-}
-
-$permisosActivosRol = normalizarPermisosParaUi($matrizPermisos[$rolPermisosActivo] ?? []);
-
-$estadisticas = [];
-
-try {
-    $estadisticas = obtenerEstadisticasPorRol($rol);
-} catch (PDOException $e) {
-    // Sidebar sin contadores si falla la BD
-}
-
-view('usuarios/index', [
-    'tituloPagina'        => 'Usuarios',
-    'usuario'             => $usuario,
-    'seccionActiva'       => 'usuarios',
-    'seccion'             => '',
-    'usuarios'            => $usuarios,
-    'etiquetasRoles'      => $etiquetasRoles,
-    'seccionesPermitidas' => $seccionesPermitidas,
-    'etiquetasSecciones'  => $etiquetasSecciones,
-    'estadisticas'        => $estadisticas,
-    'mensaje'             => $mensaje,
-    'error'               => $error,
-    'pestaña'             => $pestaña,
-    'puedeEliminar'       => true,
-    'puedeGestionarUsuarios' => true,
-    'seccionesPermisos'   => $seccionesPermisos,
-    'catalogoPermisos'    => $catalogoPermisos,
-    'rolesPermisos'       => $rolesPermisos,
-    'matrizPermisos'      => $matrizPermisos,
-    'rolPermisosActivo'   => $rolPermisosActivo,
-    'permisosActivosRol'  => $permisosActivosRol,
-], 'app');
+header('Location: avanzado.php?' . http_build_query($parametros));
+exit;

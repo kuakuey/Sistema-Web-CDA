@@ -258,8 +258,7 @@ function obtenerEtiquetasSecciones(): array
         'consejeria'          => "Consejer\u{00ED}a",
         'generar_informe'     => 'Generar informe',
         'estructura'          => 'Estructura CDV',
-        'usuarios'            => 'Usuarios',
-        'actividad'           => 'Log de actividad',
+        'avanzado'            => 'Avanzado',
     ];
 }
 
@@ -278,8 +277,7 @@ function obtenerIconosSecciones(): array
         'consejeria'          => 'bi-chat-heart',
         'generar_informe'     => 'bi-file-earmark-bar-graph',
         'estructura'          => 'bi-diagram-3',
-        'usuarios'            => 'bi-person-gear',
-        'actividad'           => 'bi-journal-text',
+        'avanzado'            => 'bi-sliders',
     ];
 }
 
@@ -303,8 +301,7 @@ function obtenerOrdenMenuSidebar(): array
         'consejeria',
         'generar_informe',
         'estructura',
-        'usuarios',
-        'actividad',
+        'avanzado',
     ];
 }
 
@@ -316,11 +313,7 @@ function puedeVerItemMenuSidebar(string $rol, string $clave): bool
             || obtenerTiposInscripcionPermitidos($rol) !== [];
     }
 
-    if ($clave === 'usuarios') {
-        return puedeGestionarUsuarios($rol);
-    }
-
-    if ($clave === 'actividad') {
+    if ($clave === 'avanzado') {
         return $rol === ROL_SUPERADMIN;
     }
 
@@ -354,8 +347,7 @@ function obtenerUrlMenuSidebar(string $clave): string
         'consejeria'          => 'consejeria.php',
         'generar_informe'     => 'generar-informe.php',
         'estructura'          => 'estructura.php',
-        'usuarios'            => 'usuarios.php',
-        'actividad'           => 'actividad.php',
+        'avanzado'            => 'avanzado.php',
     ]);
 
     return $mapa[$clave] ?? 'registros-generales.php';

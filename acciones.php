@@ -125,7 +125,7 @@ if ($accion === 'guardar_permisos_rol') {
 
     $rolPermiso = trim((string) ($_POST['rol'] ?? ''));
     $permisos = isset($_POST['permisos']) && is_array($_POST['permisos']) ? $_POST['permisos'] : [];
-    $redireccionPermisos = $_POST['redireccion'] ?? 'usuarios.php?pestaña=permisos';
+    $redireccionPermisos = $_POST['redireccion'] ?? 'avanzado.php?pestaña=permisos';
 
     try {
         guardarPermisosRol($rolPermiso, $permisos);
@@ -151,7 +151,7 @@ if ($accion === 'cambiar_clave_usuario') {
 
     require_once 'includes/users.php';
 
-    $redireccionClave = $_POST['redireccion'] ?? 'usuarios.php?pestaña=lista';
+    $redireccionClave = $_POST['redireccion'] ?? 'avanzado.php?pestaña=usuarios';
     $resultado = cambiarClaveUsuario(
         (int) ($_POST['id'] ?? 0),
         (string) ($_POST['clave'] ?? ''),
@@ -696,7 +696,7 @@ if (in_array($accion, $accionesEliminar, true)) {
             require_once 'includes/users.php';
             $usuario = obtenerUsuarioActual();
             eliminarUsuario($id, (int) $usuario['id']);
-            $redireccion = 'usuarios.php';
+            $redireccion = 'avanzado.php?pestaña=usuarios';
             break;
         case 'eliminar_territorio':
             eliminarTerritorio($id);

@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (InvalidArgumentException $e) {
         $error = $e->getMessage();
     } catch (PDOException $e) {
-        $error = 'No se pudo guardar. Verifica que exista la tabla eventos.';
+        $error = 'No se pudo guardar el evento. Intenta de nuevo.';
     }
 }
 

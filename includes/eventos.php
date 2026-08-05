@@ -231,8 +231,9 @@ function guardarTiposEntradaEvento(int $eventoId, array $tiposEntrada): void
         throw new InvalidArgumentException('Evento inválido.');
     }
 
+    // No llamar migraciones/DDL aquí: si se usa dentro de una transacción,
+    // MySQL hace COMMIT implícito y el commit/rollback posterior falla.
     $pdo = getConnection();
-    asegurarColumnasEventos($pdo);
 
     $pdo->prepare('DELETE FROM eventos_tipos_entrada WHERE evento_id = ?')->execute([$eventoId]);
 
@@ -584,6 +585,7 @@ function crearEvento(array $datos): int
 
     $pdo = getConnection();
     asegurarColumnasEventos($pdo);
+
     $pdo->beginTransaction();
 
     try {
@@ -601,7 +603,10 @@ function crearEvento(array $datos): int
 
         $eventoId = (int) $pdo->lastInsertId();
         guardarTiposEntradaEvento($eventoId, $datos['tipos_entrada']);
-        $pdo->commit();
+
+        if ($pdo->inTransaction()) {
+            $pdo->commit();
+        }
 
         return $eventoId;
     } catch (Throwable $e) {
@@ -625,6 +630,7 @@ function actualizarEventoCatalogo(int $id, array $datos): bool
 
     $pdo = getConnection();
     asegurarColumnasEventos($pdo);
+
     $pdo->beginTransaction();
 
     try {
@@ -643,7 +649,10 @@ function actualizarEventoCatalogo(int $id, array $datos): bool
         ]);
 
         guardarTiposEntradaEvento($id, $datos['tipos_entrada']);
-        $pdo->commit();
+
+        if ($pdo->inTransaction()) {
+            $pdo->commit();
+        }
 
         return $ok;
     } catch (Throwable $e) {
@@ -673,7 +682,10 @@ function eliminarEvento(int $id): bool
         $pdo->prepare('DELETE FROM eventos_tipos_entrada WHERE evento_id = ?')->execute([$id]);
         $stmt = $pdo->prepare('DELETE FROM eventos WHERE id = ?');
         $ok = $stmt->execute([$id]) && $stmt->rowCount() > 0;
-        $pdo->commit();
+
+        if ($pdo->inTransaction()) {
+            $pdo->commit();
+        }
 
         return $ok;
     } catch (Throwable $e) {

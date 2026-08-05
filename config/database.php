@@ -324,20 +324,29 @@ function migrarTablaEventos(PDO $pdo): void
 
 function migrarTablaEventosTiposEntrada(PDO $pdo): void
 {
-    $pdo->exec(
-        'CREATE TABLE IF NOT EXISTS eventos_tipos_entrada (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            evento_id INT NOT NULL,
-            nombre VARCHAR(100) NOT NULL,
-            valor DECIMAL(12,2) NOT NULL DEFAULT 0,
-            orden INT NOT NULL DEFAULT 0,
-            creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_evento_id (evento_id),
-            INDEX idx_orden (orden)
-        ) ENGINE=InnoDB'
-    );
+    static $migrado = false;
+
+    if ($migrado) {
+        return;
+    }
+
+    if (!tablaExiste($pdo, 'eventos_tipos_entrada')) {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS eventos_tipos_entrada (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                evento_id INT NOT NULL,
+                nombre VARCHAR(100) NOT NULL,
+                valor DECIMAL(12,2) NOT NULL DEFAULT 0,
+                orden INT NOT NULL DEFAULT 0,
+                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_evento_id (evento_id),
+                INDEX idx_orden (orden)
+            ) ENGINE=InnoDB'
+        );
+    }
 
     if (!tablaExiste($pdo, 'eventos') || !tablaExiste($pdo, 'eventos_tipos_entrada')) {
+        $migrado = true;
         return;
     }
 
@@ -350,6 +359,8 @@ function migrarTablaEventosTiposEntrada(PDO $pdo): void
              SELECT 1 FROM eventos_tipos_entrada t WHERE t.evento_id = e.id
          )'
     );
+
+    $migrado = true;
 }
 
 function migrarTablaValoresAdicionales(PDO $pdo): void

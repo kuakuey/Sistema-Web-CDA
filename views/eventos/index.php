@@ -204,18 +204,21 @@
         <select class="form-select" id="evento_id" name="evento_id" required>
           <option value="">Seleccione evento…</option>
           <?php foreach ($eventosHabilitados as $evento):
+            $tiposVisibles = filtrarTiposEntradaEventoPorRol($evento['tipos_entrada'] ?? [], (string) ($usuario['rol'] ?? ''));
             $tiposJson = array_map(static function (array $tipo): array {
                 return [
                     'id'     => (int) ($tipo['id'] ?? 0),
                     'nombre' => (string) ($tipo['nombre'] ?? ''),
                     'valor'  => (float) ($tipo['valor'] ?? 0),
                 ];
-            }, $evento['tipos_entrada'] ?? []);
+            }, $tiposVisibles);
+            $esGratuitoEvento = eventoEsGratuitoCatalogo($evento);
           ?>
           <option
             value="<?= (int) $evento['id'] ?>"
             data-valor="<?= htmlspecialchars((string) $evento['valor']) ?>"
             data-requiere-numeracion="<?= (int) ($evento['requiere_numeracion'] ?? 0) ?>"
+            data-evento-gratuito="<?= $esGratuitoEvento ? '1' : '0' ?>"
             data-tipos-entrada="<?= htmlspecialchars(json_encode($tiposJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
           >
             <?= htmlspecialchars($evento['nombre']) ?>
@@ -281,8 +284,10 @@
       </div>
 
       <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" disabled>
+      <input type="hidden" name="forma_pago" class="js-forma-pago-pendiente" value="pendiente" disabled>
       <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
       <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" disabled>
+      <input type="hidden" name="estado_pago" class="js-estado-pago-pendiente" value="por_cancelar" disabled>
 
       <div class="col-12">
         <label class="form-label" for="observacion">Observación</label>
@@ -334,11 +339,11 @@
         </div>
         <div class="js-tipos-entrada-lista">
           <div class="row g-2 align-items-end mb-2 js-tipo-entrada-fila">
-            <div class="col-md-6">
+            <div class="col-md-5">
               <label class="form-label">Tipo de entrada <span class="text-danger">*</span></label>
               <input type="text" class="form-control" name="tipo_entrada[nombre][]" required maxlength="100" placeholder="Ej. General, VIP…">
             </div>
-            <div class="col-md-4 js-campo-valor-tipo-entrada">
+            <div class="col-md-3 js-campo-valor-tipo-entrada">
               <label class="form-label">Valor <span class="text-danger">*</span></label>
               <input type="number" class="form-control js-valor-tipo-entrada" name="tipo_entrada[valor][]" min="0" step="0.01" value="0" required>
             </div>
@@ -348,9 +353,17 @@
                 <i class="bi bi-trash"></i>
               </button>
             </div>
+            <div class="col-12">
+              <input type="hidden" class="js-visible-publico-valor" name="tipo_entrada[visible_publico][]" value="1">
+              <div class="form-check">
+                <input class="form-check-input js-visible-publico-check" type="checkbox" id="visible_publico_nuevo_0" checked>
+                <label class="form-check-label" for="visible_publico_nuevo_0">Visible al público</label>
+              </div>
+              <p class="text-muted small mb-0">Si no está marcado, solo admin y superadmin podrán usar este tipo al registrar.</p>
+            </div>
           </div>
         </div>
-        <p class="text-muted small mb-0">Puedes agregar varios tipos de entrada con su valor.</p>
+        <p class="text-muted small mb-0">Puedes agregar varios tipos de entrada con su valor. Valor 0 en eventos de pago significa pendiente de pago.</p>
       </div>
       <div class="col-12">
         <div class="form-check mb-2">
@@ -505,13 +518,15 @@
               </button>
             </div>
             <div class="js-tipos-entrada-lista">
-              <?php foreach ($tiposEntradaEvento as $indiceTipo => $tipoEntrada): ?>
+              <?php foreach ($tiposEntradaEvento as $indiceTipo => $tipoEntrada):
+                $visiblePublico = (int) ($tipoEntrada['visible_publico'] ?? 1) === 1;
+              ?>
               <div class="row g-2 align-items-end mb-2 js-tipo-entrada-fila">
-                <div class="col-md-6">
+                <div class="col-md-5">
                   <label class="form-label">Tipo de entrada <span class="text-danger">*</span></label>
                   <input type="text" class="form-control" name="tipo_entrada[nombre][]" required maxlength="100" value="<?= htmlspecialchars((string) ($tipoEntrada['nombre'] ?? '')) ?>">
                 </div>
-                <div class="col-md-4 js-campo-valor-tipo-entrada" style="<?= $esGratuitoCatalogo ? 'display:none' : '' ?>">
+                <div class="col-md-3 js-campo-valor-tipo-entrada" style="<?= $esGratuitoCatalogo ? 'display:none' : '' ?>">
                   <label class="form-label">Valor <span class="text-danger">*</span></label>
                   <input
                     type="number"
@@ -528,6 +543,18 @@
                   <button type="button" class="btn btn-outline-danger w-100 js-quitar-tipo-entrada" title="Quitar" <?= count($tiposEntradaEvento) <= 1 ? 'disabled' : '' ?>>
                     <i class="bi bi-trash"></i>
                   </button>
+                </div>
+                <div class="col-12">
+                  <input type="hidden" class="js-visible-publico-valor" name="tipo_entrada[visible_publico][]" value="<?= $visiblePublico ? '1' : '0' ?>">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input js-visible-publico-check"
+                      type="checkbox"
+                      id="visible_publico<?= (int) $evento['id'] ?>_<?= (int) $indiceTipo ?>"
+                      <?= $visiblePublico ? 'checked' : '' ?>
+                    >
+                    <label class="form-check-label" for="visible_publico<?= (int) $evento['id'] ?>_<?= (int) $indiceTipo ?>">Visible al público</label>
+                  </div>
                 </div>
               </div>
               <?php endforeach; ?>

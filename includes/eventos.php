@@ -109,7 +109,7 @@ function obtenerTiposEntradaPorEventos(array $eventoIds): array
 
     $placeholders = implode(',', array_fill(0, count($eventoIds), '?'));
     $stmt = $pdo->prepare(
-        "SELECT id, evento_id, nombre, valor, orden
+        "SELECT id, evento_id, nombre, valor, orden, visible_publico
          FROM eventos_tipos_entrada
          WHERE evento_id IN ($placeholders)
          ORDER BY orden ASC, id ASC"
@@ -136,7 +136,7 @@ function obtenerTipoEntradaPorId(int $id, ?int $eventoId = null): ?array
 
     if ($eventoId !== null && $eventoId > 0) {
         $stmt = $pdo->prepare(
-            'SELECT id, evento_id, nombre, valor, orden
+            'SELECT id, evento_id, nombre, valor, orden, visible_publico
              FROM eventos_tipos_entrada
              WHERE id = ? AND evento_id = ?
              LIMIT 1'
@@ -144,7 +144,7 @@ function obtenerTipoEntradaPorId(int $id, ?int $eventoId = null): ?array
         $stmt->execute([$id, $eventoId]);
     } else {
         $stmt = $pdo->prepare(
-            'SELECT id, evento_id, nombre, valor, orden
+            'SELECT id, evento_id, nombre, valor, orden, visible_publico
              FROM eventos_tipos_entrada
              WHERE id = ?
              LIMIT 1'
@@ -159,7 +159,7 @@ function obtenerTipoEntradaPorId(int $id, ?int $eventoId = null): ?array
 
 /**
  * @param array<int, array<string, mixed>>|array<string, mixed> $tiposEntrada
- * @return array<int, array{nombre: string, valor: float}>
+ * @return array<int, array{nombre: string, valor: float, visible_publico: int}>
  */
 function normalizarTiposEntradaCatalogo($tiposEntrada, string $tipoCobro): array
 {
@@ -173,6 +173,7 @@ function normalizarTiposEntradaCatalogo($tiposEntrada, string $tipoCobro): array
     if (isset($tiposEntrada['nombre']) || isset($tiposEntrada['valor'])) {
         $nombres = $tiposEntrada['nombre'] ?? [];
         $valores = $tiposEntrada['valor'] ?? [];
+        $visiblesPublico = $tiposEntrada['visible_publico'] ?? [];
         $tiposEntrada = [];
 
         if (!is_array($nombres)) {
@@ -181,12 +182,16 @@ function normalizarTiposEntradaCatalogo($tiposEntrada, string $tipoCobro): array
         if (!is_array($valores)) {
             $valores = [$valores];
         }
+        if (!is_array($visiblesPublico)) {
+            $visiblesPublico = [$visiblesPublico];
+        }
 
-        $total = max(count($nombres), count($valores));
+        $total = max(count($nombres), count($valores), count($visiblesPublico));
         for ($i = 0; $i < $total; $i++) {
             $tiposEntrada[] = [
-                'nombre' => $nombres[$i] ?? '',
-                'valor'  => $valores[$i] ?? 0,
+                'nombre'          => $nombres[$i] ?? '',
+                'valor'           => $valores[$i] ?? 0,
+                'visible_publico' => $visiblesPublico[$i] ?? 1,
             ];
         }
     }
@@ -210,8 +215,9 @@ function normalizarTiposEntradaCatalogo($tiposEntrada, string $tipoCobro): array
         }
 
         $normalizados[] = [
-            'nombre' => $nombre,
-            'valor'  => $valor,
+            'nombre'          => $nombre,
+            'valor'           => $valor,
+            'visible_publico' => !empty($tipo['visible_publico']) ? 1 : 0,
         ];
     }
 
@@ -223,7 +229,7 @@ function normalizarTiposEntradaCatalogo($tiposEntrada, string $tipoCobro): array
 }
 
 /**
- * @param array<int, array{nombre: string, valor: float}> $tiposEntrada
+ * @param array<int, array{nombre: string, valor: float, visible_publico: int}> $tiposEntrada
  */
 function guardarTiposEntradaEvento(int $eventoId, array $tiposEntrada): void
 {
@@ -238,8 +244,8 @@ function guardarTiposEntradaEvento(int $eventoId, array $tiposEntrada): void
     $pdo->prepare('DELETE FROM eventos_tipos_entrada WHERE evento_id = ?')->execute([$eventoId]);
 
     $stmt = $pdo->prepare(
-        'INSERT INTO eventos_tipos_entrada (evento_id, nombre, valor, orden, creado_en)
-         VALUES (?, ?, ?, ?, NOW())'
+        'INSERT INTO eventos_tipos_entrada (evento_id, nombre, valor, orden, visible_publico, creado_en)
+         VALUES (?, ?, ?, ?, ?, NOW())'
     );
 
     foreach ($tiposEntrada as $orden => $tipo) {
@@ -248,6 +254,7 @@ function guardarTiposEntradaEvento(int $eventoId, array $tiposEntrada): void
             $tipo['nombre'],
             $tipo['valor'],
             (int) $orden,
+            (int) ($tipo['visible_publico'] ?? 1),
         ]);
     }
 }
@@ -274,12 +281,51 @@ function valorCatalogoDesdeTiposEntrada(array $tiposEntrada): float
     return $pagos === [] ? 0.0 : min($pagos);
 }
 
-function formatearTiposEntradaEvento(array $evento): string
+function eventoEsGratuitoCatalogo(array $evento): bool
 {
     $tipos = $evento['tipos_entrada'] ?? [];
 
     if (!is_array($tipos) || $tipos === []) {
+        return (float) ($evento['valor'] ?? 0) <= 0;
+    }
+
+    foreach ($tipos as $tipo) {
+        if ((float) ($tipo['valor'] ?? 0) > 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function tipoEntradaEsVisiblePublico(array $tipo): bool
+{
+    return (int) ($tipo['visible_publico'] ?? 1) === 1;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $tipos
+ * @return array<int, array<string, mixed>>
+ */
+function filtrarTiposEntradaEventoPorRol(array $tipos, string $rol): array
+{
+    require_once __DIR__ . '/roles.php';
+
+    if (esRolConControlTotal($rol)) {
+        return array_values($tipos);
+    }
+
+    return array_values(array_filter($tipos, 'tipoEntradaEsVisiblePublico'));
+}
+
+function formatearTiposEntradaEvento(array $evento): string
+{
+    $tipos = $evento['tipos_entrada'] ?? [];
+    $esGratuito = eventoEsGratuitoCatalogo($evento);
+
+    if (!is_array($tipos) || $tipos === []) {
         $valor = (float) ($evento['valor'] ?? 0);
+
         return $valor <= 0 ? 'Gratuito' : formatearMonto($valor);
     }
 
@@ -290,7 +336,19 @@ function formatearTiposEntradaEvento(array $evento): string
         if ($nombre === '') {
             continue;
         }
-        $partes[] = $nombre . ': ' . ($valor <= 0 ? 'Gratuito' : formatearMonto($valor));
+
+        if ($valor <= 0) {
+            $etiquetaValor = $esGratuito ? 'Gratuito' : 'Pendiente de pago';
+        } else {
+            $etiquetaValor = formatearMonto($valor);
+        }
+
+        $texto = $nombre . ': ' . $etiquetaValor;
+        if (!tipoEntradaEsVisiblePublico($tipo)) {
+            $texto .= ' (solo admin)';
+        }
+
+        $partes[] = $texto;
     }
 
     return $partes === [] ? '—' : implode(' · ', $partes);
@@ -315,6 +373,7 @@ function obtenerFormasPagoEvento(): array
     return [
         'pago'          => 'Pago',
         'gratuito'      => 'Gratuito',
+        'pendiente'     => 'Pendiente',
         'efectivo'      => 'Efectivo',
         'transferencia' => 'Transferencia',
     ];
@@ -514,9 +573,15 @@ function normalizarDatosEventoCatalogo(array $datos): array
  * @param array<string, mixed> $entrada
  * @return array<string, mixed>
  */
-function validarDatosRegistroEvento(array $entrada, ?array $evento = null): array
+function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?string $rol = null): array
 {
     require_once __DIR__ . '/texto.php';
+    require_once __DIR__ . '/roles.php';
+
+    if ($rol === null) {
+        require_once __DIR__ . '/auth.php';
+        $rol = (string) (obtenerUsuarioActual()['rol'] ?? '');
+    }
 
     $eventoId = isset($entrada['evento_id']) ? (int) $entrada['evento_id'] : 0;
     $nombre = normalizarTextoOrdenado($entrada['nombre'] ?? '');
@@ -553,6 +618,10 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
             throw new InvalidArgumentException('Tipo de entrada no válido para este evento.');
         }
 
+        if (!tipoEntradaEsVisiblePublico($tipoEntrada) && !esRolConControlTotal($rol)) {
+            throw new InvalidArgumentException('No tienes permiso para usar este tipo de entrada.');
+        }
+
         $tipoEntradaNombre = (string) $tipoEntrada['nombre'];
         $valorTipoCatalogo = (float) $tipoEntrada['valor'];
 
@@ -566,7 +635,7 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
         throw new InvalidArgumentException('El valor no puede ser negativo.');
     }
 
-    $eventoEsGratuito = $valor <= 0;
+    $eventoEsGratuito = eventoEsGratuitoCatalogo($evento);
 
     if ($eventoEsGratuito) {
         $formaPago = 'gratuito';
@@ -574,6 +643,10 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
         if ($estadoPago === '') {
             $estadoPago = 'pagado';
         }
+    } elseif ($valor <= 0) {
+        $formaPago = 'pendiente';
+        $valor = 0;
+        $estadoPago = 'por_cancelar';
     } elseif (!in_array($formaPago, ['efectivo', 'transferencia'], true)) {
         throw new InvalidArgumentException('Selecciona Efectivo o Transferencia.');
     }

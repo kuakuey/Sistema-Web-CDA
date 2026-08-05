@@ -209,9 +209,12 @@ $fila = $filaEditar;
             $tiposEntradaSeleccionados = $eventoSeleccionado['tipos_entrada'] ?? [];
             $tipoEntradaActualId = (int) ($fila['tipo_entrada_id'] ?? 0);
             $valorRegistroActual = (float) ($fila['valor'] ?? 0);
-            $esGratuitoRegistro = $valorRegistroActual <= 0;
-            $formaPagoActual = in_array($fila['forma_pago'] ?? '', ['efectivo', 'transferencia'], true) ? $fila['forma_pago'] : 'efectivo';
+            $formaPagoRegistro = normalizarFormaPagoEvento((string) ($fila['forma_pago'] ?? ''));
+            $esGratuitoRegistro = $formaPagoRegistro === 'gratuito';
+            $esPendienteRegistro = $formaPagoRegistro === 'pendiente';
+            $formaPagoActual = in_array($formaPagoRegistro, ['efectivo', 'transferencia'], true) ? $formaPagoRegistro : 'efectivo';
             $estadoPagoActual = normalizarEstadoPagoEvento((string) ($fila['estado_pago'] ?? 'por_cancelar')) ?: 'por_cancelar';
+            $ocultarBloquesPago = $esGratuitoRegistro || $esPendienteRegistro;
             ?>
             <div class="col-md-6">
               <label class="form-label">Nombre evento <span class="text-danger">*</span></label>
@@ -224,11 +227,13 @@ $fila = $filaEditar;
                           'valor'  => (float) ($tipo['valor'] ?? 0),
                       ];
                   }, $eventoItem['tipos_entrada'] ?? []);
+                  $esGratuitoEventoItem = eventoEsGratuitoCatalogo($eventoItem);
                 ?>
                 <option
                   value="<?= (int) $eventoItem['id'] ?>"
                   data-requiere-numeracion="<?= (int) ($eventoItem['requiere_numeracion'] ?? 0) ?>"
                   data-valor="<?= htmlspecialchars((string) ($eventoItem['valor'] ?? '0')) ?>"
+                  data-evento-gratuito="<?= $esGratuitoEventoItem ? '1' : '0' ?>"
                   data-tipos-entrada="<?= htmlspecialchars(json_encode($tiposJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
                   <?= (int) ($fila['evento_id'] ?? 0) === (int) $eventoItem['id'] ? 'selected' : '' ?>
                 >
@@ -275,7 +280,7 @@ $fila = $filaEditar;
               <label class="form-label">Numeración</label>
               <input type="text" class="form-control" name="numeracion" maxlength="30" value="<?= htmlspecialchars($fila['numeracion'] ?? '') ?>" <?= empty($fila['requiere_numeracion']) && empty($fila['numeracion']) ? 'disabled' : '' ?>>
             </div>
-            <div class="col-md-4 js-bloque-estado-pago-evento"<?= $esGratuitoRegistro ? ' style="display:none"' : '' ?>>
+            <div class="col-md-4 js-bloque-estado-pago-evento"<?= $ocultarBloquesPago ? ' style="display:none"' : '' ?>>
               <label class="form-label d-block">Estado <span class="text-danger">*</span></label>
               <div class="form-check form-check-inline">
                 <input
@@ -285,7 +290,7 @@ $fila = $filaEditar;
                   id="<?= htmlspecialchars($modalEditarId . '-estado-por-cancelar') ?>"
                   value="por_cancelar"
                   <?= $estadoPagoActual === 'por_cancelar' ? 'checked' : '' ?>
-                  <?= $esGratuitoRegistro ? 'disabled' : '' ?>
+                  <?= $ocultarBloquesPago ? 'disabled' : '' ?>
                 >
                 <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-estado-por-cancelar') ?>">Por cancelar</label>
               </div>
@@ -297,12 +302,12 @@ $fila = $filaEditar;
                   id="<?= htmlspecialchars($modalEditarId . '-estado-pagado') ?>"
                   value="pagado"
                   <?= $estadoPagoActual === 'pagado' ? 'checked' : '' ?>
-                  <?= $esGratuitoRegistro ? 'disabled' : '' ?>
+                  <?= $ocultarBloquesPago ? 'disabled' : '' ?>
                 >
                 <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-estado-pagado') ?>">Pagado</label>
               </div>
             </div>
-            <div class="col-md-4 js-bloque-forma-pago-evento"<?= $esGratuitoRegistro ? ' style="display:none"' : '' ?>>
+            <div class="col-md-4 js-bloque-forma-pago-evento"<?= $ocultarBloquesPago ? ' style="display:none"' : '' ?>>
               <label class="form-label d-block">Forma de pago <span class="text-danger">*</span></label>
               <div class="form-check form-check-inline">
                 <input
@@ -312,7 +317,7 @@ $fila = $filaEditar;
                   id="<?= htmlspecialchars($modalEditarId . '-pago-efectivo') ?>"
                   value="efectivo"
                   <?= $formaPagoActual === 'efectivo' ? 'checked' : '' ?>
-                  <?= $esGratuitoRegistro ? 'disabled' : '' ?>
+                  <?= $ocultarBloquesPago ? 'disabled' : '' ?>
                 >
                 <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-pago-efectivo') ?>">Efectivo</label>
               </div>
@@ -324,7 +329,7 @@ $fila = $filaEditar;
                   id="<?= htmlspecialchars($modalEditarId . '-pago-transferencia') ?>"
                   value="transferencia"
                   <?= $formaPagoActual === 'transferencia' ? 'checked' : '' ?>
-                  <?= $esGratuitoRegistro ? 'disabled' : '' ?>
+                  <?= $ocultarBloquesPago ? 'disabled' : '' ?>
                 >
                 <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-pago-transferencia') ?>">Transferencia</label>
               </div>
@@ -334,8 +339,10 @@ $fila = $filaEditar;
               <input type="date" class="form-control js-paso-despues-tipo" name="fecha" required value="<?= htmlspecialchars($fila['fecha'] ?? '') ?>">
             </div>
             <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
+            <input type="hidden" name="forma_pago" class="js-forma-pago-pendiente" value="pendiente" <?= !$esPendienteRegistro ? 'disabled' : '' ?>>
             <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
             <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
+            <input type="hidden" name="estado_pago" class="js-estado-pago-pendiente" value="por_cancelar" <?= !$esPendienteRegistro ? 'disabled' : '' ?>>
             <div class="col-12">
               <label class="form-label">Observación</label>
               <textarea class="form-control js-paso-despues-tipo" name="observacion" rows="2" maxlength="500"><?= htmlspecialchars($fila['observacion'] ?? '') ?></textarea>

@@ -86,7 +86,7 @@ if ($accion === 'registrar_evento') {
     $sep = strpos($redireccionBase, '?') !== false ? '&' : '?';
 
     try {
-        $validados = validarDatosRegistroEvento($_POST);
+        $validados = validarDatosRegistroEvento($_POST, null, (string) ($usuario['rol'] ?? ''));
         insertarValorAdicional([
             'tipo'                  => TIPO_VALOR_EVENTOS_INTERNO,
             'nombre'                => $validados['nombre'],

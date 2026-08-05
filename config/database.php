@@ -338,10 +338,19 @@ function migrarTablaEventosTiposEntrada(PDO $pdo): void
                 nombre VARCHAR(100) NOT NULL,
                 valor DECIMAL(12,2) NOT NULL DEFAULT 0,
                 orden INT NOT NULL DEFAULT 0,
+                visible_publico TINYINT(1) NOT NULL DEFAULT 1,
                 creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_evento_id (evento_id),
                 INDEX idx_orden (orden)
             ) ENGINE=InnoDB'
+        );
+    }
+
+    $columnaVisiblePublico = $pdo->query("SHOW COLUMNS FROM eventos_tipos_entrada LIKE 'visible_publico'")->fetch();
+    if (!$columnaVisiblePublico) {
+        $pdo->exec(
+            'ALTER TABLE eventos_tipos_entrada
+             ADD COLUMN visible_publico TINYINT(1) NOT NULL DEFAULT 1 AFTER orden'
         );
     }
 

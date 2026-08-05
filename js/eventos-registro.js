@@ -56,6 +56,32 @@
     return opcion ? parseFloat(opcion.getAttribute('data-valor') || '0') : 0;
   }
 
+  function eventoEsGratuitoTotal(contenedor) {
+    var opcion = obtenerOpcionEvento(contenedor);
+    return !!(opcion && opcion.getAttribute('data-evento-gratuito') === '1');
+  }
+
+  function sincronizarVisiblePublicoFila(fila) {
+    var hidden = fila.querySelector('.js-visible-publico-valor');
+    var check = fila.querySelector('.js-visible-publico-check');
+    if (hidden && check) {
+      hidden.value = check.checked ? '1' : '0';
+    }
+  }
+
+  function enlazarVisiblePublicoFila(fila) {
+    var check = fila.querySelector('.js-visible-publico-check');
+    if (!check || check.dataset.boundVisiblePublico) {
+      return;
+    }
+
+    check.dataset.boundVisiblePublico = '1';
+    check.addEventListener('change', function () {
+      sincronizarVisiblePublicoFila(fila);
+    });
+    sincronizarVisiblePublicoFila(fila);
+  }
+
   function leerValorNumerico(input, fallback) {
     if (!input || input.value === '') {
       return fallback;
@@ -168,8 +194,10 @@
     var bloqueEstado = contenedor.querySelector('.js-bloque-estado-pago-evento');
     var bloquePagoLegacy = contenedor.querySelector('.js-bloque-pago-evento');
     var hiddenFormaPago = contenedor.querySelector('.js-forma-pago-gratuito');
+    var hiddenFormaPagoPendiente = contenedor.querySelector('.js-forma-pago-pendiente');
     var hiddenValor = contenedor.querySelector('.js-valor-gratuito');
     var hiddenEstado = contenedor.querySelector('.js-estado-pago-gratuito');
+    var hiddenEstadoPendiente = contenedor.querySelector('.js-estado-pago-pendiente');
     var valorInput = contenedor.querySelector('.js-valor-evento');
     var metodosPago = contenedor.querySelectorAll('.js-metodo-pago-evento');
     var estadosPago = contenedor.querySelectorAll('.js-estado-pago-evento');
@@ -185,7 +213,8 @@
     var valorActual = tipoListo
       ? leerValorNumerico(valorInput, valorCatalogo != null ? valorCatalogo : 0)
       : null;
-    var esGratuito = tipoListo && valorActual !== null && valorActual <= 0;
+    var gratuitoTotal = tipoListo && eventoEsGratuitoTotal(contenedor);
+    var esPendiente = tipoListo && !gratuitoTotal && valorActual !== null && valorActual <= 0;
     var esDePago = tipoListo && valorActual !== null && valorActual > 0;
 
     // Valor y datos del participante: visibles siempre; habilitados tras elegir tipo.
@@ -199,19 +228,27 @@
       }
     });
 
-    // Forma de pago y estado: visibles solo si no es gratuito.
-    setVisible(bloqueFormaPago, !esGratuito);
-    setVisible(bloqueEstado, !esGratuito);
+    // Forma de pago y estado: solo cuando hay valor mayor a 0.
+    setVisible(bloqueFormaPago, esDePago);
+    setVisible(bloqueEstado, esDePago);
     if (bloquePagoLegacy) {
-      setVisible(bloquePagoLegacy, !esGratuito);
+      setVisible(bloquePagoLegacy, esDePago);
     }
 
     if (hiddenFormaPago) {
-      hiddenFormaPago.disabled = !esGratuito;
+      hiddenFormaPago.disabled = !gratuitoTotal;
+    }
+
+    if (hiddenFormaPagoPendiente) {
+      hiddenFormaPagoPendiente.disabled = !esPendiente;
     }
 
     if (hiddenEstado) {
-      hiddenEstado.disabled = !esGratuito;
+      hiddenEstado.disabled = !gratuitoTotal;
+    }
+
+    if (hiddenEstadoPendiente) {
+      hiddenEstadoPendiente.disabled = !esPendiente;
     }
 
     if (hiddenValor) {
@@ -290,12 +327,23 @@
       } else if (input.classList.contains('js-valor-tipo-entrada')) {
         input.value = '0';
         input.min = '0';
+      } else if (input.classList.contains('js-visible-publico-valor')) {
+        input.value = '1';
+      } else if (input.classList.contains('js-visible-publico-check')) {
+        input.checked = true;
+        input.removeAttribute('data-bound-visible-publico');
+        input.removeAttribute('id');
       } else {
         input.value = '';
       }
     });
 
+    nueva.querySelectorAll('label[for]').forEach(function (label) {
+      label.removeAttribute('for');
+    });
+
     lista.appendChild(nueva);
+    enlazarVisiblePublicoFila(nueva);
     actualizarBloqueValorCatalogo(contenedor);
   }
 
@@ -366,6 +414,10 @@
     }
 
     actualizarBloqueValorCatalogo(contenedor);
+
+    contenedor.querySelectorAll('.js-tipo-entrada-fila').forEach(function (fila) {
+      enlazarVisiblePublicoFila(fila);
+    });
   }
 
   document.querySelectorAll('#formRegistroEvento, .modal-editar-registro form').forEach(function (form) {

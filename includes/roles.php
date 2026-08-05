@@ -316,6 +316,10 @@ function puedeVerItemMenuSidebar(string $rol, string $clave): bool
         return $rol === ROL_SUPERADMIN;
     }
 
+    if ($clave === 'generar_informe') {
+        return puedeGenerarInforme($rol) || puedeVerInformeEventos($rol);
+    }
+
     return tienePermisoSeccion($rol, $clave);
 }
 

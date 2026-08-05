@@ -81,7 +81,7 @@
         <input type="hidden" name="pestaña" value="tabla">
         <div class="col-md-4">
           <label class="form-label small" for="buscar">Buscar</label>
-          <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono, evento…">
+          <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono, numeración, evento…">
         </div>
         <div class="col-md-2">
           <label class="form-label small" for="fecha_desde">Desde</label>
@@ -140,7 +140,7 @@
         <input type="hidden" name="evento_id" value="<?= (int) $eventoParticipantes['id'] ?>">
         <div class="col-md-4">
           <label class="form-label small" for="buscar">Buscar</label>
-          <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono…">
+          <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono, numeración…">
         </div>
         <div class="col-md-2">
           <label class="form-label small" for="fecha_desde">Desde</label>
@@ -173,7 +173,7 @@
     <div class="d-flex flex-wrap gap-2">
       <?php if (!empty($puedeVerInformeEventos)): ?>
       <a
-        href="generar-informe.php?generar=1&amp;seccion=eventos&amp;evento_id=<?= (int) $eventoParticipantes['id'] ?>&amp;formato=pdf"
+        href="generar-informe-evento.php?evento_id=<?= (int) $eventoParticipantes['id'] ?>&amp;formato=pdf"
         class="btn btn-sm btn-success"
         target="_blank"
         rel="noopener"
@@ -421,7 +421,7 @@
             <td class="text-end">
               <?php if (!empty($puedeVerInformeEventos) && (int) ($evento['total_registros'] ?? 0) > 0): ?>
               <a
-                href="generar-informe.php?generar=1&amp;seccion=eventos&amp;evento_id=<?= (int) $evento['id'] ?>&amp;formato=pdf"
+                href="generar-informe-evento.php?evento_id=<?= (int) $evento['id'] ?>&amp;formato=pdf"
                 class="btn btn-sm btn-outline-success"
                 title="Informe PDF"
                 target="_blank"

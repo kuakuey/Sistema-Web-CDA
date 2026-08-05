@@ -77,6 +77,10 @@
 
         <div class="col-md-4">
           <label class="form-label" for="seccion">Informe</label>
+          <?php if (!empty($soloInformeEventos)): ?>
+          <input type="hidden" name="seccion" value="eventos">
+          <input type="text" class="form-control" id="seccion" value="Eventos" readonly>
+          <?php else: ?>
           <select class="form-select" id="seccion" name="seccion">
             <?php foreach ($etiquetasSeccionInforme as $clave => $etiqueta): ?>
             <option value="<?= htmlspecialchars($clave) ?>" <?= $seccion === $clave ? 'selected' : '' ?>>
@@ -84,22 +88,23 @@
             </option>
             <?php endforeach; ?>
           </select>
+          <?php endif; ?>
         </div>
 
         <div class="col-md-4 js-campo-evento" style="<?= $seccion === 'eventos' ? '' : 'display:none' ?>">
           <label class="form-label" for="evento_id">Evento <span class="text-danger">*</span></label>
-          <select class="form-select" id="evento_id" name="evento_id" required>
-            <option value="" disabled <?= (int) ($eventoId ?? 0) <= 0 ? 'selected' : '' ?>>Selecciona un evento</option>
+          <select class="form-select" id="evento_id" name="evento_id">
+            <option value="" <?= (int) ($eventoId ?? 0) <= 0 ? 'selected' : '' ?>>Selecciona un evento</option>
             <?php foreach ($eventos ?? [] as $evento): ?>
             <option
               value="<?= (int) $evento['id'] ?>"
               <?= (int) ($eventoId ?? 0) === (int) $evento['id'] ? 'selected' : '' ?>
             >
-              <?= htmlspecialchars($evento['nombre']) ?> (<?= (int) ($evento['total_registros'] ?? 0) ?> registro(s))
+              <?= htmlspecialchars($evento['nombre']) ?><?= (int) ($evento['habilitado'] ?? 0) !== 1 ? ' (Deshabilitado)' : '' ?> (<?= (int) ($evento['total_registros'] ?? 0) ?> registro(s))
             </option>
             <?php endforeach; ?>
           </select>
-          <p class="form-text mb-0">Obligatorio para el informe de eventos.</p>
+          <p class="form-text mb-0">Obligatorio para el informe de eventos. Incluye eventos deshabilitados.</p>
         </div>
 
         <div class="col-12 js-campo-presentaciones-estados" style="<?= $seccion === 'presentaciones' ? '' : 'display:none' ?>">
@@ -159,6 +164,7 @@
   var formulario = document.getElementById('formInformeFiltros');
   var campoFormato = document.getElementById('informeFormato');
   var selectorSeccion = document.getElementById('seccion');
+  var seccionInformeEventos = <?= !empty($soloInformeEventos) ? 'true' : 'false' ?>;
   var campoEvento = document.querySelector('.js-campo-evento');
   var campoSinEntregar = document.querySelector('.js-campo-sin-entregar');
   var campoPresentacionesEstados = document.querySelector('.js-campo-presentaciones-estados');
@@ -168,12 +174,20 @@
 
   var selectorEvento = document.getElementById('evento_id');
 
-  if (!formulario || !campoFormato || !selectorSeccion) {
+  if (!formulario || !campoFormato || (!selectorSeccion && !seccionInformeEventos)) {
     return;
   }
 
+  function obtenerSeccionActual() {
+    if (seccionInformeEventos) {
+      return 'eventos';
+    }
+
+    return selectorSeccion ? selectorSeccion.value : 'completo';
+  }
+
   function actualizarCamposDependientes() {
-    var seccion = selectorSeccion.value;
+    var seccion = obtenerSeccionActual();
 
     if (campoEvento) {
       campoEvento.style.display = seccion === 'eventos' ? '' : 'none';
@@ -201,12 +215,16 @@
     }
   }
 
-  selectorSeccion.addEventListener('change', actualizarCamposDependientes);
+  if (selectorSeccion) {
+    selectorSeccion.addEventListener('change', actualizarCamposDependientes);
+  }
   actualizarCamposDependientes();
 
   document.querySelectorAll('.js-descargar-informe').forEach(function (boton) {
     boton.addEventListener('click', function () {
-      if (selectorSeccion.value === 'presentaciones') {
+      var seccionActual = obtenerSeccionActual();
+
+      if (seccionActual === 'presentaciones') {
         var algunoMarcado = false;
 
         checkboxesEstadosPresentacion.forEach(function (checkbox) {
@@ -221,7 +239,7 @@
         }
       }
 
-      if (selectorSeccion.value === 'eventos' && selectorEvento && !selectorEvento.value) {
+      if (seccionActual === 'eventos' && selectorEvento && !selectorEvento.value) {
         window.alert('Selecciona un evento para generar el informe.');
         return;
       }

@@ -28,10 +28,17 @@ $estadosPresentacionInforme = isset($_GET['estados_presentacion']) && is_array($
 $estadoBautismoInforme = isset($_GET['estado_bautismo']) ? trim((string) $_GET['estado_bautismo']) : 'todos';
 $generar = isset($_GET['generar']);
 
+$puedeGenerarInformesGenerales = puedeGenerarInforme($rol);
+$puedeInformeEventos = puedeVerInformeEventos($rol);
 $seccionSolicitada = normalizarSeccionInforme($seccion);
-$descargaInformeEvento = $generar && $seccionSolicitada === 'eventos' && puedeVerInformeEventos($rol);
+$descargaInformeEvento = $generar && $seccionSolicitada === 'eventos' && $puedeInformeEventos;
 
-if (!puedeGenerarInforme($rol) && !$descargaInformeEvento) {
+if (!$puedeGenerarInformesGenerales && !$puedeInformeEventos) {
+    header('Location: ' . obtenerUrlInicioPorRol($rol));
+    exit;
+}
+
+if ($generar && $seccionSolicitada !== 'eventos' && !$puedeGenerarInformesGenerales) {
     header('Location: ' . obtenerUrlInicioPorRol($rol));
     exit;
 }
@@ -42,6 +49,14 @@ $etiquetasRoles = obtenerEtiquetasRoles();
 
 $error = isset($_GET['error']) ? trim((string) $_GET['error']) : null;
 $errorBd = null;
+
+$etiquetasSeccionInforme = obtenerEtiquetasSeccionInforme();
+$soloInformeEventos = !$puedeGenerarInformesGenerales && $puedeInformeEventos;
+
+if ($soloInformeEventos) {
+    $etiquetasSeccionInforme = ['eventos' => 'Eventos'];
+    $seccion = 'eventos';
+}
 
 try {
     $estadisticas = obtenerEstadisticasPorRol($rol);
@@ -74,6 +89,10 @@ try {
                 $estadoBautismoInforme
             );
         } elseif ($seccion === 'eventos') {
+            if (!$puedeInformeEventos && !$puedeGenerarInformesGenerales) {
+                throw new InvalidArgumentException('No tienes permiso para generar informes de eventos.');
+            }
+
             if ($eventoId <= 0) {
                 throw new InvalidArgumentException('Selecciona un evento para generar el informe.');
             }
@@ -135,7 +154,8 @@ view('informes/generar', [
     'eventoId'               => $eventoId,
     'eventos'                => obtenerEventos(),
     'etiquetasTurno'         => obtenerEtiquetasTurnoInforme(),
-    'etiquetasSeccionInforme'=> obtenerEtiquetasSeccionInforme(),
+    'etiquetasSeccionInforme'=> $etiquetasSeccionInforme,
+    'soloInformeEventos'     => $soloInformeEventos,
     'etiquetasEstadosPresentacion' => obtenerEtiquetasEstadosPresentacion(),
     'estadosPresentacionInforme' => normalizarEstadosPresentacionInforme($estadosPresentacionInforme),
     'etiquetasEstadoBautismoInforme' => obtenerEtiquetasEstadoBautismoInforme(),

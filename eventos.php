@@ -91,7 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $eventoId = crearEvento([
                     'nombre'               => $_POST['nombre'] ?? '',
                     'fecha'                => $_POST['fecha'] ?? '',
-                    'tipo_cobro'           => $_POST['tipo_cobro'] ?? 'pago',
                     'tipos_entrada'        => $_POST['tipo_entrada'] ?? [],
                     'habilitado'           => isset($_POST['habilitado']) ? 1 : 0,
                     'requiere_numeracion'  => isset($_POST['requiere_numeracion']) ? 1 : 0,
@@ -107,7 +106,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 actualizarEventoCatalogo($eventoId, [
                     'nombre'               => $_POST['nombre'] ?? '',
                     'fecha'                => $_POST['fecha'] ?? '',
-                    'tipo_cobro'           => $_POST['tipo_cobro'] ?? 'pago',
                     'tipos_entrada'        => $_POST['tipo_entrada'] ?? [],
                     'habilitado'           => isset($_POST['habilitado']) ? 1 : 0,
                     'requiere_numeracion'  => isset($_POST['requiere_numeracion']) ? 1 : 0,

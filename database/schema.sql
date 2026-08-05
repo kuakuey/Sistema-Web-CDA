@@ -154,6 +154,7 @@ CREATE TABLE IF NOT EXISTS eventos_tipos_entrada (
     valor DECIMAL(12,2) NOT NULL DEFAULT 0,
     orden INT NOT NULL DEFAULT 0,
     visible_publico TINYINT(1) NOT NULL DEFAULT 1,
+    es_gratis TINYINT(1) NOT NULL DEFAULT 0,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_evento_id (evento_id),
     INDEX idx_orden (orden)

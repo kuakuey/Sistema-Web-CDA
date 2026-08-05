@@ -1,11 +1,6 @@
 (function () {
   'use strict';
 
-  function tipoCobroSeleccionado(contenedor, selector) {
-    var marcado = contenedor.querySelector(selector + ':checked');
-    return marcado ? marcado.value : 'pago';
-  }
-
   function obtenerOpcionEvento(contenedor) {
     var eventoSelect = contenedor.querySelector('select[name="evento_id"]');
     if (!eventoSelect || !eventoSelect.value) {
@@ -56,9 +51,14 @@
     return opcion ? parseFloat(opcion.getAttribute('data-valor') || '0') : 0;
   }
 
-  function eventoEsGratuitoTotal(contenedor) {
-    var opcion = obtenerOpcionEvento(contenedor);
-    return !!(opcion && opcion.getAttribute('data-evento-gratuito') === '1');
+  function tipoEntradaEsGratis(contenedor) {
+    var tipoSelect = contenedor.querySelector('.js-tipo-entrada-evento');
+    if (!tipoSelect || !tipoSelect.value) {
+      return false;
+    }
+
+    var opcionTipo = tipoSelect.options[tipoSelect.selectedIndex];
+    return !!(opcionTipo && opcionTipo.getAttribute('data-es-gratis') === '1');
   }
 
   function sincronizarVisiblePublicoFila(fila) {
@@ -66,6 +66,24 @@
     var check = fila.querySelector('.js-visible-publico-check');
     if (hidden && check) {
       hidden.value = check.checked ? '1' : '0';
+    }
+  }
+
+  function sincronizarEsGratisFila(fila) {
+    var hidden = fila.querySelector('.js-es-gratis-valor');
+    var check = fila.querySelector('.js-es-gratis-check');
+    var valorInput = fila.querySelector('.js-valor-tipo-entrada');
+
+    if (hidden && check) {
+      hidden.value = check.checked ? '1' : '0';
+    }
+
+    if (valorInput && check) {
+      valorInput.disabled = check.checked;
+      valorInput.required = !check.checked;
+      if (check.checked) {
+        valorInput.value = '0';
+      }
     }
   }
 
@@ -80,6 +98,19 @@
       sincronizarVisiblePublicoFila(fila);
     });
     sincronizarVisiblePublicoFila(fila);
+  }
+
+  function enlazarEsGratisFila(fila) {
+    var check = fila.querySelector('.js-es-gratis-check');
+    if (!check || check.dataset.boundEsGratis) {
+      return;
+    }
+
+    check.dataset.boundEsGratis = '1';
+    check.addEventListener('change', function () {
+      sincronizarEsGratisFila(fila);
+    });
+    sincronizarEsGratisFila(fila);
   }
 
   function leerValorNumerico(input, fallback) {
@@ -107,7 +138,6 @@
       return;
     }
 
-    // Siempre visible; solo se habilita con evento.
     setVisible(campoTipo, true);
 
     var sinEvento = tipos === null;
@@ -124,6 +154,7 @@
         option.value = String(tipo.id || '');
         option.textContent = tipo.nombre || '';
         option.setAttribute('data-valor', String(tipo.valor != null ? tipo.valor : 0));
+        option.setAttribute('data-es-gratis', String(tipo.es_gratis ? 1 : 0));
         if (String(tipo.id) === String(valorActual)) {
           option.selected = true;
         }
@@ -148,7 +179,6 @@
       return;
     }
 
-    // Siempre visible; se habilita solo si el evento lo requiere.
     setVisible(campoNumeracion, true);
 
     var hayEvento = !!(eventoSelect && eventoSelect.value);
@@ -213,11 +243,10 @@
     var valorActual = tipoListo
       ? leerValorNumerico(valorInput, valorCatalogo != null ? valorCatalogo : 0)
       : null;
-    var gratuitoTotal = tipoListo && eventoEsGratuitoTotal(contenedor);
-    var esPendiente = tipoListo && !gratuitoTotal && valorActual !== null && valorActual <= 0;
+    var esGratisTipo = tipoListo && tipoEntradaEsGratis(contenedor);
+    var esPendiente = tipoListo && !esGratisTipo && valorActual !== null && valorActual <= 0;
     var esDePago = tipoListo && valorActual !== null && valorActual > 0;
 
-    // Valor y datos del participante: visibles siempre; habilitados tras elegir tipo.
     setVisible(campoValor, true);
     pasosDespuesTipo.forEach(function (campo) {
       campo.disabled = !tipoListo;
@@ -228,7 +257,6 @@
       }
     });
 
-    // Forma de pago y estado: solo cuando hay valor mayor a 0.
     setVisible(bloqueFormaPago, esDePago);
     setVisible(bloqueEstado, esDePago);
     if (bloquePagoLegacy) {
@@ -236,7 +264,7 @@
     }
 
     if (hiddenFormaPago) {
-      hiddenFormaPago.disabled = !gratuitoTotal;
+      hiddenFormaPago.disabled = !esGratisTipo;
     }
 
     if (hiddenFormaPagoPendiente) {
@@ -244,7 +272,7 @@
     }
 
     if (hiddenEstado) {
-      hiddenEstado.disabled = !gratuitoTotal;
+      hiddenEstado.disabled = !esGratisTipo;
     }
 
     if (hiddenEstadoPendiente) {
@@ -252,7 +280,6 @@
     }
 
     if (hiddenValor) {
-      // El valor visible se envía cuando está habilitado.
       hiddenValor.disabled = true;
     }
 
@@ -281,35 +308,11 @@
     });
   }
 
-  function actualizarBloqueValorCatalogo(contenedor) {
-    var esGratuito = tipoCobroSeleccionado(contenedor, '.js-tipo-cobro-catalogo') === 'gratuito';
-
+  function actualizarFilasTipoEntrada(contenedor) {
     contenedor.querySelectorAll('.js-tipo-entrada-fila').forEach(function (fila) {
-      var campoValor = fila.querySelector('.js-campo-valor-tipo-entrada');
-      var valorInput = fila.querySelector('.js-valor-tipo-entrada');
-      var hiddenValor = fila.querySelector('.js-valor-tipo-entrada-gratuito');
-
-      if (campoValor) {
-        campoValor.style.display = '';
-      }
-
-      if (valorInput) {
-        valorInput.min = '0';
-        valorInput.disabled = esGratuito;
-        valorInput.required = !esGratuito;
-        if (esGratuito) {
-          valorInput.value = '0';
-          valorInput.removeAttribute('required');
-        } else if (valorInput.value === '') {
-          valorInput.value = '0';
-        }
-      }
-
-      if (hiddenValor) {
-        hiddenValor.disabled = !esGratuito;
-      }
+      sincronizarVisiblePublicoFila(fila);
+      sincronizarEsGratisFila(fila);
     });
-
     actualizarBotonesQuitarTipos(contenedor);
   }
 
@@ -322,18 +325,24 @@
 
     var nueva = plantilla.cloneNode(true);
     nueva.querySelectorAll('input').forEach(function (input) {
-      if (input.classList.contains('js-valor-tipo-entrada-gratuito')) {
-        input.value = '0';
-      } else if (input.classList.contains('js-valor-tipo-entrada')) {
+      if (input.classList.contains('js-valor-tipo-entrada')) {
         input.value = '0';
         input.min = '0';
+        input.disabled = false;
+        input.required = true;
       } else if (input.classList.contains('js-visible-publico-valor')) {
         input.value = '1';
+      } else if (input.classList.contains('js-es-gratis-valor')) {
+        input.value = '0';
       } else if (input.classList.contains('js-visible-publico-check')) {
         input.checked = true;
         input.removeAttribute('data-bound-visible-publico');
         input.removeAttribute('id');
-      } else {
+      } else if (input.classList.contains('js-es-gratis-check')) {
+        input.checked = false;
+        input.removeAttribute('data-bound-es-gratis');
+        input.removeAttribute('id');
+      } else if (input.type === 'text') {
         input.value = '';
       }
     });
@@ -344,7 +353,8 @@
 
     lista.appendChild(nueva);
     enlazarVisiblePublicoFila(nueva);
-    actualizarBloqueValorCatalogo(contenedor);
+    enlazarEsGratisFila(nueva);
+    actualizarFilasTipoEntrada(contenedor);
   }
 
   function refrescarFormularioRegistro(contenedor, opciones) {
@@ -382,12 +392,6 @@
   }
 
   function inicializarContenedorCatalogo(contenedor) {
-    contenedor.querySelectorAll('.js-tipo-cobro-catalogo').forEach(function (radio) {
-      radio.addEventListener('change', function () {
-        actualizarBloqueValorCatalogo(contenedor);
-      });
-    });
-
     var botonAgregar = contenedor.querySelector('.js-agregar-tipo-entrada');
     if (botonAgregar && !botonAgregar.dataset.boundTipos) {
       botonAgregar.dataset.boundTipos = '1';
@@ -413,11 +417,11 @@
       });
     }
 
-    actualizarBloqueValorCatalogo(contenedor);
-
     contenedor.querySelectorAll('.js-tipo-entrada-fila').forEach(function (fila) {
       enlazarVisiblePublicoFila(fila);
+      enlazarEsGratisFila(fila);
     });
+    actualizarFilasTipoEntrada(contenedor);
   }
 
   document.querySelectorAll('#formRegistroEvento, .modal-editar-registro form').forEach(function (form) {
@@ -435,7 +439,7 @@
   });
 
   document.querySelectorAll('#formAgregarEvento, .modal').forEach(function (contenedor) {
-    if (contenedor.querySelector('.js-tipo-cobro-catalogo') || contenedor.querySelector('.js-tipos-entrada-lista')) {
+    if (contenedor.querySelector('.js-tipos-entrada-lista')) {
       inicializarContenedorCatalogo(contenedor);
     }
   });

@@ -339,6 +339,7 @@ function migrarTablaEventosTiposEntrada(PDO $pdo): void
                 valor DECIMAL(12,2) NOT NULL DEFAULT 0,
                 orden INT NOT NULL DEFAULT 0,
                 visible_publico TINYINT(1) NOT NULL DEFAULT 1,
+                es_gratis TINYINT(1) NOT NULL DEFAULT 0,
                 creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_evento_id (evento_id),
                 INDEX idx_orden (orden)
@@ -351,6 +352,26 @@ function migrarTablaEventosTiposEntrada(PDO $pdo): void
         $pdo->exec(
             'ALTER TABLE eventos_tipos_entrada
              ADD COLUMN visible_publico TINYINT(1) NOT NULL DEFAULT 1 AFTER orden'
+        );
+    }
+
+    $columnaEsGratis = $pdo->query("SHOW COLUMNS FROM eventos_tipos_entrada LIKE 'es_gratis'")->fetch();
+    if (!$columnaEsGratis) {
+        $pdo->exec(
+            'ALTER TABLE eventos_tipos_entrada
+             ADD COLUMN es_gratis TINYINT(1) NOT NULL DEFAULT 0 AFTER visible_publico'
+        );
+
+        // Eventos donde todos los tipos tienen valor 0 → marcar como gratuitos.
+        $pdo->exec(
+            'UPDATE eventos_tipos_entrada t
+             INNER JOIN (
+                 SELECT evento_id
+                 FROM eventos_tipos_entrada
+                 GROUP BY evento_id
+                 HAVING MAX(valor) <= 0
+             ) eg ON eg.evento_id = t.evento_id
+             SET t.es_gratis = 1'
         );
     }
 

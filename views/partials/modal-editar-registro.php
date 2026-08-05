@@ -222,18 +222,17 @@ $fila = $filaEditar;
                 <?php foreach ($eventos ?? [] as $eventoItem):
                   $tiposJson = array_map(static function (array $tipo): array {
                       return [
-                          'id'     => (int) ($tipo['id'] ?? 0),
-                          'nombre' => (string) ($tipo['nombre'] ?? ''),
-                          'valor'  => (float) ($tipo['valor'] ?? 0),
+                          'id'        => (int) ($tipo['id'] ?? 0),
+                          'nombre'    => (string) ($tipo['nombre'] ?? ''),
+                          'valor'     => (float) ($tipo['valor'] ?? 0),
+                          'es_gratis' => (int) ($tipo['es_gratis'] ?? 0),
                       ];
                   }, $eventoItem['tipos_entrada'] ?? []);
-                  $esGratuitoEventoItem = eventoEsGratuitoCatalogo($eventoItem);
                 ?>
                 <option
                   value="<?= (int) $eventoItem['id'] ?>"
                   data-requiere-numeracion="<?= (int) ($eventoItem['requiere_numeracion'] ?? 0) ?>"
                   data-valor="<?= htmlspecialchars((string) ($eventoItem['valor'] ?? '0')) ?>"
-                  data-evento-gratuito="<?= $esGratuitoEventoItem ? '1' : '0' ?>"
                   data-tipos-entrada="<?= htmlspecialchars(json_encode($tiposJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
                   <?= (int) ($fila['evento_id'] ?? 0) === (int) $eventoItem['id'] ? 'selected' : '' ?>
                 >
@@ -250,6 +249,7 @@ $fila = $filaEditar;
                 <option
                   value="<?= (int) ($tipoItem['id'] ?? 0) ?>"
                   data-valor="<?= htmlspecialchars((string) ($tipoItem['valor'] ?? '0')) ?>"
+                  data-es-gratis="<?= (int) ($tipoItem['es_gratis'] ?? 0) ?>"
                   <?= $tipoEntradaActualId === (int) ($tipoItem['id'] ?? 0) ? 'selected' : '' ?>
                 >
                   <?= htmlspecialchars((string) ($tipoItem['nombre'] ?? '')) ?>

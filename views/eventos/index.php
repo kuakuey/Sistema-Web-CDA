@@ -207,18 +207,17 @@
             $tiposVisibles = filtrarTiposEntradaEventoPorRol($evento['tipos_entrada'] ?? [], (string) ($usuario['rol'] ?? ''));
             $tiposJson = array_map(static function (array $tipo): array {
                 return [
-                    'id'     => (int) ($tipo['id'] ?? 0),
-                    'nombre' => (string) ($tipo['nombre'] ?? ''),
-                    'valor'  => (float) ($tipo['valor'] ?? 0),
+                    'id'       => (int) ($tipo['id'] ?? 0),
+                    'nombre'   => (string) ($tipo['nombre'] ?? ''),
+                    'valor'    => (float) ($tipo['valor'] ?? 0),
+                    'es_gratis' => (int) ($tipo['es_gratis'] ?? 0),
                 ];
             }, $tiposVisibles);
-            $esGratuitoEvento = eventoEsGratuitoCatalogo($evento);
           ?>
           <option
             value="<?= (int) $evento['id'] ?>"
             data-valor="<?= htmlspecialchars((string) $evento['valor']) ?>"
             data-requiere-numeracion="<?= (int) ($evento['requiere_numeracion'] ?? 0) ?>"
-            data-evento-gratuito="<?= $esGratuitoEvento ? '1' : '0' ?>"
             data-tipos-entrada="<?= htmlspecialchars(json_encode($tiposJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
           >
             <?= htmlspecialchars($evento['nombre']) ?>
@@ -320,50 +319,11 @@
         <input type="date" class="form-control" id="fecha_evento" name="fecha" required value="<?= htmlspecialchars(date('Y-m-d')) ?>">
       </div>
       <div class="col-12">
-        <label class="form-label d-block">Tipo de cobro <span class="text-danger">*</span></label>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input js-tipo-cobro-catalogo" type="radio" name="tipo_cobro" id="catalogo-gratuito" value="gratuito">
-          <label class="form-check-label" for="catalogo-gratuito">Gratuito</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input js-tipo-cobro-catalogo" type="radio" name="tipo_cobro" id="catalogo-pago" value="pago" checked>
-          <label class="form-check-label" for="catalogo-pago">Pago</label>
-        </div>
-      </div>
-      <div class="col-12">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <label class="form-label mb-0">Tipos de entrada <span class="text-danger">*</span></label>
-          <button type="button" class="btn btn-sm btn-outline-primary js-agregar-tipo-entrada">
-            <i class="bi bi-plus-lg me-1"></i>Agregar tipo
-          </button>
-        </div>
-        <div class="js-tipos-entrada-lista">
-          <div class="row g-2 align-items-end mb-2 js-tipo-entrada-fila">
-            <div class="col-md-5">
-              <label class="form-label">Tipo de entrada <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" name="tipo_entrada[nombre][]" required maxlength="100" placeholder="Ej. General, VIP…">
-            </div>
-            <div class="col-md-3 js-campo-valor-tipo-entrada">
-              <label class="form-label">Valor <span class="text-danger">*</span></label>
-              <input type="number" class="form-control js-valor-tipo-entrada" name="tipo_entrada[valor][]" min="0" step="0.01" value="0" required>
-            </div>
-            <input type="hidden" class="js-valor-tipo-entrada-gratuito" name="tipo_entrada[valor][]" value="0" disabled>
-            <div class="col-md-2">
-              <button type="button" class="btn btn-outline-danger w-100 js-quitar-tipo-entrada" title="Quitar" disabled>
-                <i class="bi bi-trash"></i>
-              </button>
-            </div>
-            <div class="col-12">
-              <input type="hidden" class="js-visible-publico-valor" name="tipo_entrada[visible_publico][]" value="1">
-              <div class="form-check">
-                <input class="form-check-input js-visible-publico-check" type="checkbox" id="visible_publico_nuevo_0" checked>
-                <label class="form-check-label" for="visible_publico_nuevo_0">Visible al público</label>
-              </div>
-              <p class="text-muted small mb-0">Si no está marcado, solo admin y superadmin podrán usar este tipo al registrar.</p>
-            </div>
-          </div>
-        </div>
-        <p class="text-muted small mb-0">Puedes agregar varios tipos de entrada con su valor. Valor 0 en eventos de pago significa pendiente de pago.</p>
+        <?php
+        $tiposEntradaEvento = [];
+        $prefijoId = 'nuevo';
+        include __DIR__ . '/../partials/tipos-entrada-evento-catalogo.php';
+        ?>
       </div>
       <div class="col-12">
         <div class="form-check mb-2">
@@ -490,75 +450,19 @@
             <input type="date" class="form-control" name="fecha" required value="<?= htmlspecialchars($evento['fecha'] ?? '') ?>">
           </div>
           <div class="mb-3">
-            <label class="form-label d-block">Tipo de cobro <span class="text-danger">*</span></label>
             <?php
             $tiposEntradaEvento = $evento['tipos_entrada'] ?? [];
             if (!is_array($tiposEntradaEvento) || $tiposEntradaEvento === []) {
                 $tiposEntradaEvento = [[
-                    'nombre' => 'General',
-                    'valor'  => (float) ($evento['valor'] ?? 0),
+                    'nombre'          => 'General',
+                    'valor'           => (float) ($evento['valor'] ?? 0),
+                    'visible_publico' => 1,
+                    'es_gratis'       => (float) ($evento['valor'] ?? 0) <= 0 ? 1 : 0,
                 ]];
             }
-            $esGratuitoCatalogo = (float) ($evento['valor'] ?? 0) <= 0;
+            $prefijoId = 'editar' . (int) $evento['id'];
+            include __DIR__ . '/../partials/tipos-entrada-evento-catalogo.php';
             ?>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input js-tipo-cobro-catalogo" type="radio" name="tipo_cobro" id="catalogo-gratuito<?= (int) $evento['id'] ?>" value="gratuito" <?= $esGratuitoCatalogo ? 'checked' : '' ?>>
-              <label class="form-check-label" for="catalogo-gratuito<?= (int) $evento['id'] ?>">Gratuito</label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input js-tipo-cobro-catalogo" type="radio" name="tipo_cobro" id="catalogo-pago<?= (int) $evento['id'] ?>" value="pago" <?= !$esGratuitoCatalogo ? 'checked' : '' ?>>
-              <label class="form-check-label" for="catalogo-pago<?= (int) $evento['id'] ?>">Pago</label>
-            </div>
-          </div>
-          <div class="mb-3">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <label class="form-label mb-0">Tipos de entrada <span class="text-danger">*</span></label>
-              <button type="button" class="btn btn-sm btn-outline-primary js-agregar-tipo-entrada">
-                <i class="bi bi-plus-lg me-1"></i>Agregar tipo
-              </button>
-            </div>
-            <div class="js-tipos-entrada-lista">
-              <?php foreach ($tiposEntradaEvento as $indiceTipo => $tipoEntrada):
-                $visiblePublico = (int) ($tipoEntrada['visible_publico'] ?? 1) === 1;
-              ?>
-              <div class="row g-2 align-items-end mb-2 js-tipo-entrada-fila">
-                <div class="col-md-5">
-                  <label class="form-label">Tipo de entrada <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" name="tipo_entrada[nombre][]" required maxlength="100" value="<?= htmlspecialchars((string) ($tipoEntrada['nombre'] ?? '')) ?>">
-                </div>
-                <div class="col-md-3 js-campo-valor-tipo-entrada" style="<?= $esGratuitoCatalogo ? 'display:none' : '' ?>">
-                  <label class="form-label">Valor <span class="text-danger">*</span></label>
-                  <input
-                    type="number"
-                    class="form-control js-valor-tipo-entrada"
-                    name="tipo_entrada[valor][]"
-                    min="0"
-                    step="0.01"
-                    value="<?= htmlspecialchars((string) ((float) ($tipoEntrada['valor'] ?? 0))) ?>"
-                    <?= $esGratuitoCatalogo ? 'disabled' : 'required' ?>
-                  >
-                </div>
-                <input type="hidden" class="js-valor-tipo-entrada-gratuito" name="tipo_entrada[valor][]" value="0" <?= !$esGratuitoCatalogo ? 'disabled' : '' ?>>
-                <div class="col-md-2">
-                  <button type="button" class="btn btn-outline-danger w-100 js-quitar-tipo-entrada" title="Quitar" <?= count($tiposEntradaEvento) <= 1 ? 'disabled' : '' ?>>
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-                <div class="col-12">
-                  <input type="hidden" class="js-visible-publico-valor" name="tipo_entrada[visible_publico][]" value="<?= $visiblePublico ? '1' : '0' ?>">
-                  <div class="form-check">
-                    <input
-                      class="form-check-input js-visible-publico-check"
-                      type="checkbox"
-                      id="visible_publico<?= (int) $evento['id'] ?>_<?= (int) $indiceTipo ?>"
-                      <?= $visiblePublico ? 'checked' : '' ?>
-                    >
-                    <label class="form-check-label" for="visible_publico<?= (int) $evento['id'] ?>_<?= (int) $indiceTipo ?>">Visible al público</label>
-                  </div>
-                </div>
-              </div>
-              <?php endforeach; ?>
-            </div>
           </div>
           <div class="form-check mb-2">
             <input class="form-check-input" type="checkbox" name="habilitado" id="habilitado<?= (int) $evento['id'] ?>" value="1" <?= (int) ($evento['habilitado'] ?? 0) === 1 ? 'checked' : '' ?>>

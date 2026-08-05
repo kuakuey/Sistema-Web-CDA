@@ -62,7 +62,8 @@ $redireccionRegistros = construirUrlRegistros($archivoPagina, $filtros, $paginaA
         <td>
           <?php
           $rolUsuario = (string) ($usuario['rol'] ?? '');
-          $mostrarComboboxEstadoPago = puedeMostrarComboboxEstadoPagoEvento($rolUsuario, $estadoPagoFila);
+          $estadoPagoMostrar = registroEventoEsEntradaGratis($fila) ? 'pagado' : $estadoPagoFila;
+          $mostrarComboboxEstadoPago = puedeCambiarEstadoPagoRegistroEvento($fila, $rolUsuario);
           ?>
           <?php if ($mostrarComboboxEstadoPago): ?>
           <form method="POST" action="acciones.php" class="m-0">
@@ -83,8 +84,8 @@ $redireccionRegistros = construirUrlRegistros($archivoPagina, $filtros, $paginaA
             </select>
           </form>
           <?php else: ?>
-          <span class="badge <?= htmlspecialchars(claseBadgeEstadoPagoEvento($estadoPagoFila)) ?>">
-            <?= htmlspecialchars(etiquetaEstadoPagoEvento($estadoPagoFila)) ?>
+          <span class="badge <?= htmlspecialchars(claseBadgeEstadoPagoEvento($estadoPagoMostrar)) ?>">
+            <?= htmlspecialchars(etiquetaEstadoPagoEvento($estadoPagoMostrar)) ?>
           </span>
           <?php endif; ?>
         </td>

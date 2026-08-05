@@ -2,6 +2,14 @@
 /** @var array<string, mixed> $estadoBd */
 /** @var string|null $mensaje */
 /** @var string|null $error */
+
+$bdConectada = !empty($estadoBd['bd_conectada']);
+$sistemaListo = !empty($estadoBd['sistema_listo']);
+$hayPendientes = !$sistemaListo
+    || (int) ($estadoBd['migraciones_aplicadas'] ?? 0) < (int) ($estadoBd['total_migraciones'] ?? 0);
+$mostrarAccionesInstalacion = !$bdConectada;
+$mostrarActualizarTablas = !$sistemaListo || $hayPendientes;
+$mostrarPanelAcciones = $mostrarAccionesInstalacion || $mostrarActualizarTablas;
 ?>
 <?php if (!empty($estadoBd['sistema_listo'])): ?>
 <div class="alert alert-success mb-4" role="alert">
@@ -58,34 +66,42 @@
 </div>
 
 <div class="row g-4">
-  <div class="col-lg-4">
+  <div class="col-lg-<?= $mostrarPanelAcciones ? '4' : '12' ?>">
+    <?php if ($mostrarPanelAcciones): ?>
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-header bg-white py-3">
         <h3 class="h6 mb-0"><i class="bi bi-lightning-charge me-2"></i>Acciones</h3>
       </div>
       <div class="card-body d-grid gap-2">
+        <?php if ($mostrarAccionesInstalacion): ?>
         <form method="POST" action="avanzado.php?pestaña=bd" class="js-form-confirmar" data-confirm-title="Crear base de datos" data-confirm="¿Crear la base de datos si no existe?">
           <input type="hidden" name="accion" value="bd_crear">
           <button type="submit" class="btn btn-outline-primary w-100">
             <i class="bi bi-database-add me-1"></i>Crear base de datos
           </button>
         </form>
+        <?php endif; ?>
+        <?php if ($mostrarActualizarTablas): ?>
         <form method="POST" action="avanzado.php?pestaña=bd" class="js-form-confirmar" data-confirm-title="Actualizar tablas" data-confirm="¿Ejecutar migraciones y actualizar tablas pendientes?">
           <input type="hidden" name="accion" value="bd_actualizar">
           <button type="submit" class="btn btn-primary w-100">
             <i class="bi bi-arrow-repeat me-1"></i>Actualizar tablas
           </button>
         </form>
+        <?php endif; ?>
+        <?php if ($mostrarAccionesInstalacion): ?>
         <form method="POST" action="avanzado.php?pestaña=bd" class="js-form-confirmar" data-confirm-title="Instalación completa" data-confirm="¿Ejecutar instalación completa (BD + tablas + usuario admin)?">
           <input type="hidden" name="accion" value="bd_instalacion_completa">
           <button type="submit" class="btn btn-success w-100">
             <i class="bi bi-stars me-1"></i>Instalación completa (BD + tablas + admin)
           </button>
         </form>
+        <?php endif; ?>
       </div>
     </div>
+    <?php endif; ?>
 
-    <div class="card border-0 shadow-sm">
+    <div class="card border-0 shadow-sm <?= !$mostrarPanelAcciones ? 'mb-4' : '' ?>">
       <div class="card-header bg-white py-3">
         <h3 class="h6 mb-0"><i class="bi bi-plug me-2"></i>Conexión</h3>
       </div>
@@ -118,7 +134,11 @@
     </div>
   </div>
 
+  <?php if ($mostrarPanelAcciones): ?>
   <div class="col-lg-8">
+  <?php else: ?>
+  <div class="col-12">
+  <?php endif; ?>
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h3 class="h6 mb-0"><i class="bi bi-file-earmark-code me-2"></i>Migraciones</h3>

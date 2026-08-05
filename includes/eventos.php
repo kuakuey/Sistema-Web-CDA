@@ -311,6 +311,33 @@ function tipoEntradaEsGratis(array $tipo): bool
     return (int) ($tipo['es_gratis'] ?? 0) === 1;
 }
 
+function registroEventoEsEntradaGratis(array $registro): bool
+{
+    if (normalizarFormaPagoEvento((string) ($registro['forma_pago'] ?? '')) === 'gratuito') {
+        return true;
+    }
+
+    $tipoEntradaId = (int) ($registro['tipo_entrada_id'] ?? 0);
+    if ($tipoEntradaId <= 0) {
+        return false;
+    }
+
+    $tipoEntrada = obtenerTipoEntradaPorId($tipoEntradaId);
+
+    return $tipoEntrada !== null && tipoEntradaEsGratis($tipoEntrada);
+}
+
+function puedeCambiarEstadoPagoRegistroEvento(array $registro, string $rol): bool
+{
+    if (registroEventoEsEntradaGratis($registro)) {
+        return false;
+    }
+
+    $estadoActual = normalizarEstadoPagoEvento((string) ($registro['estado_pago'] ?? '')) ?: 'por_cancelar';
+
+    return puedeMostrarComboboxEstadoPagoEvento($rol, $estadoActual);
+}
+
 function tipoEntradaEsVisiblePublico(array $tipo): bool
 {
     return (int) ($tipo['visible_publico'] ?? 1) === 1;
@@ -654,9 +681,7 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?stri
     if ($tipoEsGratis) {
         $formaPago = 'gratuito';
         $valor = 0;
-        if ($estadoPago === '') {
-            $estadoPago = 'pagado';
-        }
+        $estadoPago = 'pagado';
     } elseif ($valor <= 0) {
         $formaPago = 'pendiente';
         $valor = 0;
@@ -716,6 +741,10 @@ function actualizarEstadoPagoRegistroEvento(int $id, string $estadoPago, string 
     }
 
     validarAccesoRegistroEventoPorEstadoEvento($registro, $rol);
+
+    if (registroEventoEsEntradaGratis($registro)) {
+        throw new InvalidArgumentException('Las entradas gratuitas siempre tienen estado Pagado.');
+    }
 
     $estadoActual = normalizarEstadoPagoEvento((string) ($registro['estado_pago'] ?? '')) ?: 'por_cancelar';
     validarCambioEstadoPagoEvento($estadoActual, $estadoPago, $rol);

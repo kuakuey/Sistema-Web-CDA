@@ -148,7 +148,28 @@ function migrarPresentacionesFechaNacimiento(PDO $pdo): void
     }
 }
 
-function setupDatabase(): array
+function crearBaseDatosSistema(): array
+{
+    try {
+        $pdo = getServerConnection();
+        $pdo->exec(
+            'CREATE DATABASE IF NOT EXISTS `' . DB_NAME . '` '
+            . 'CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+        );
+
+        return [
+            'exito'   => true,
+            'mensaje' => 'Base de datos creada o verificada correctamente.',
+        ];
+    } catch (Throwable $e) {
+        return [
+            'exito'   => false,
+            'mensaje' => $e->getMessage(),
+        ];
+    }
+}
+
+function sincronizarTablasSistema(bool $asegurarAdmin = true): array
 {
     try {
         $pdo = getServerConnection();
@@ -249,25 +270,29 @@ function setupDatabase(): array
         asegurarColumnasBautismoInscripciones($pdo);
         asegurarColumnasPresentacionesNinos($pdo);
 
-        $adminHash = '$2y$12$IAeuaVZ.DxfMzkDongA4ouBkTyb5fVAp0gSsKiqu2EuTJAFBT7TZW';
-        $stmt = $pdo->prepare('SELECT id FROM usuarios WHERE usuario = ?');
-        $stmt->execute(['admin']);
+        if ($asegurarAdmin) {
+            $adminHash = '$2y$12$IAeuaVZ.DxfMzkDongA4ouBkTyb5fVAp0gSsKiqu2EuTJAFBT7TZW';
+            $stmt = $pdo->prepare('SELECT id FROM usuarios WHERE usuario = ?');
+            $stmt->execute(['admin']);
 
-        if ($stmt->fetch()) {
-            $update = $pdo->prepare(
-                'UPDATE usuarios SET clave = ?, nombre = ?, rol = ? WHERE usuario = ?'
-            );
-            $update->execute([$adminHash, 'Administrador', 'superadmin', 'admin']);
-        } else {
-            $insert = $pdo->prepare(
-                'INSERT INTO usuarios (usuario, clave, nombre, rol) VALUES (?, ?, ?, ?)'
-            );
-            $insert->execute(['admin', $adminHash, 'Administrador', 'superadmin']);
+            if ($stmt->fetch()) {
+                $update = $pdo->prepare(
+                    'UPDATE usuarios SET clave = ?, nombre = ?, rol = ? WHERE usuario = ?'
+                );
+                $update->execute([$adminHash, 'Administrador', 'superadmin', 'admin']);
+            } else {
+                $insert = $pdo->prepare(
+                    'INSERT INTO usuarios (usuario, clave, nombre, rol) VALUES (?, ?, ?, ?)'
+                );
+                $insert->execute(['admin', $adminHash, 'Administrador', 'superadmin']);
+            }
         }
 
         return [
             'exito'   => true,
-            'mensaje' => 'Base de datos y tablas creadas correctamente.',
+            'mensaje' => $asegurarAdmin
+                ? 'Instalación completa: tablas sincronizadas y usuario admin verificado.'
+                : 'Tablas y migraciones actualizadas correctamente.',
         ];
     } catch (Throwable $e) {
         return [
@@ -275,6 +300,11 @@ function setupDatabase(): array
             'mensaje' => $e->getMessage(),
         ];
     }
+}
+
+function setupDatabase(): array
+{
+    return sincronizarTablasSistema(true);
 }
 
 function asegurarColumnasEventos(PDO $pdo): void

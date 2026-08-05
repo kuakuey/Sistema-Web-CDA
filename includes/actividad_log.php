@@ -50,6 +50,7 @@ function mapaMetadatosActividad(): array
         'eliminar_consejeria'              => ['seccion' => 'consejeria', 'entidad' => 'consejeria', 'etiqueta' => 'Eliminar consejería'],
         'eliminar_transporte_aniversario'  => ['seccion' => 'transporte_aniversario', 'entidad' => 'transporte', 'etiqueta' => 'Eliminar transporte aniversario'],
         'eliminar_usuario'                 => ['seccion' => 'usuarios', 'entidad' => 'usuario', 'etiqueta' => 'Eliminar usuario'],
+        'sincronizar_bd'                   => ['seccion' => 'avanzado', 'entidad' => 'base_datos', 'etiqueta' => 'Sincronizar base de datos'],
         'eliminar_territorio'              => ['seccion' => 'estructura', 'entidad' => 'territorio', 'etiqueta' => 'Eliminar territorio'],
         'eliminar_lider'                   => ['seccion' => 'estructura', 'entidad' => 'lider', 'etiqueta' => 'Eliminar líder'],
         'eliminar_casa'                    => ['seccion' => 'estructura', 'entidad' => 'casa', 'etiqueta' => 'Eliminar casa de vida'],
@@ -106,6 +107,7 @@ function obtenerEtiquetasSeccionesActividad(): array
 
     $etiquetas = obtenerEtiquetasSecciones();
     $etiquetas['auth'] = 'Autenticación';
+    $etiquetas['avanzado'] = 'Avanzado';
     $etiquetas['generales'] = $etiquetas['generales'] ?? 'Registros generales';
     asort($etiquetas, SORT_NATURAL | SORT_FLAG_CASE);
 

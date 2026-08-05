@@ -7,14 +7,6 @@
 
   <?= $content ?>
 
-  <a
-    href="<?= htmlspecialchars(obtenerUrlMantenimientoBd()) ?>"
-    class="login-maint-link"
-    tabindex="-1"
-    aria-hidden="true"
-    title=""
-  ></a>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/login.js"></script>
 </body>

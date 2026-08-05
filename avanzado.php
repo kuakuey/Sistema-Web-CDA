@@ -7,6 +7,7 @@ require_once 'includes/users.php';
 require_once 'includes/permisos.php';
 require_once 'includes/actividad_log.php';
 require_once 'includes/paginacion.php';
+require_once 'includes/instalacion_bd.php';
 
 requerirSuperadmin();
 
@@ -16,7 +17,7 @@ $mensaje = null;
 $error = isset($_GET['error']) ? (string) $_GET['error'] : null;
 
 $pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : 'usuarios';
-$pestañasPermitidas = ['usuarios', 'permisos', 'logs'];
+$pestañasPermitidas = ['usuarios', 'permisos', 'logs', 'bd'];
 
 if (!in_array($pestaña, $pestañasPermitidas, true)) {
     $pestaña = 'usuarios';
@@ -24,6 +25,33 @@ if (!in_array($pestaña, $pestañasPermitidas, true)) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = trim((string) ($_POST['accion'] ?? ''));
+
+    if (in_array($accion, ['bd_crear', 'bd_actualizar', 'bd_instalacion_completa'], true)) {
+        $resultadoBd = ejecutarAccionInstalacionBd($accion);
+        $detalleBd = match ($accion) {
+            'bd_crear'                => 'Crear base de datos',
+            'bd_actualizar'           => 'Actualizar tablas BD',
+            'bd_instalacion_completa' => 'Instalación completa BD',
+            default                   => 'Acción BD',
+        };
+
+        if ($resultadoBd['exito']) {
+            registrarActividad(
+                'sincronizar_bd',
+                'avanzado',
+                'base_datos',
+                null,
+                $detalleBd . ' · OK',
+                $usuario,
+                ['accion' => $accion]
+            );
+            header('Location: avanzado.php?pestaña=bd&ok=1&bd_msg=' . urlencode($resultadoBd['mensaje']));
+            exit;
+        }
+
+        header('Location: avanzado.php?pestaña=bd&error=' . urlencode($resultadoBd['mensaje']));
+        exit;
+    }
 
     if ($accion === 'crear_usuario') {
         $resultado = crearUsuario(
@@ -91,6 +119,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (isset($_GET['ok'])) {
     if ($pestaña === 'permisos') {
         $mensaje = 'Permisos actualizados correctamente.';
+    } elseif ($pestaña === 'bd') {
+        $mensaje = isset($_GET['bd_msg']) ? (string) $_GET['bd_msg'] : 'Operación de base de datos realizada correctamente.';
     } elseif ($pestaña === 'logs') {
         $mensaje = isset($_GET['limpiados'])
             ? ('Se eliminaron ' . (int) $_GET['limpiados'] . ' registro(s) del log.')
@@ -138,9 +168,11 @@ try {
 } catch (PDOException $e) {
     $estadisticas = [];
     if ($pestaña === 'logs') {
-        $errorBdLog = 'No se pudo cargar el log de actividad. Usa «Crear tablas» en el login si aún no existen.';
+        $errorBdLog = 'No se pudo cargar el log de actividad. Usa la pestaña Base de datos en Avanzado si aún no existen las tablas.';
     }
 }
+
+$estadoBd = $pestaña === 'bd' ? obtenerEstadoInstalacionBd() : null;
 
 view('avanzado/index', [
     'tituloPagina'           => 'Avanzado',
@@ -171,4 +203,5 @@ view('avanzado/index', [
     'etiquetasAcciones'      => obtenerEtiquetasAccionesActividad(),
     'etiquetasSeccionesLog'  => obtenerEtiquetasSeccionesActividad(),
     'archivoPagina'          => 'avanzado.php',
+    'estadoBd'               => $estadoBd,
 ], 'app');

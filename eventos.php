@@ -44,11 +44,16 @@ if ($pestañasPermitidas === []) {
     exit;
 }
 
-if (!in_array($pestaña, $pestañasPermitidas, true)) {
+if ($pestaña === 'participantes') {
+    if (!esRolConControlTotal($rol)) {
+        header('Location: ' . obtenerUrlInicioPorRol($rol));
+        exit;
+    }
+} elseif (!in_array($pestaña, $pestañasPermitidas, true)) {
     $pestaña = $pestañasPermitidas[0];
 }
 
-$filtros = parsearFiltrosRegistros($_GET);
+$filtros = parsearFiltrosRegistrosEventos($_GET);
 $pagina = parsearPaginaRegistros($_GET);
 
 $mensaje = null;
@@ -67,6 +72,7 @@ $error = isset($_GET['error']) ? (string) $_GET['error'] : null;
 $errorBd = null;
 $eventos = [];
 $eventosHabilitados = [];
+$eventoParticipantes = null;
 $registros = [];
 $totalRegistros = 0;
 $totalPaginas = 1;
@@ -119,7 +125,27 @@ try {
     $eventos = obtenerEventos();
     $eventosHabilitados = obtenerEventosHabilitados();
 
-    if ($pestaña === 'tabla') {
+    if ($pestaña === 'tabla' || $pestaña === 'participantes') {
+        if ($pestaña === 'participantes') {
+            $eventoIdParticipantes = max(0, (int) ($_GET['evento_id'] ?? 0));
+
+            if ($eventoIdParticipantes <= 0) {
+                header('Location: eventos.php?pestaña=catalogo&error=' . urlencode('Evento no válido.'));
+                exit;
+            }
+
+            $eventoParticipantes = obtenerEvento($eventoIdParticipantes);
+
+            if (!$eventoParticipantes) {
+                header('Location: eventos.php?pestaña=catalogo&error=' . urlencode('Evento no encontrado.'));
+                exit;
+            }
+
+            $filtros['evento_id'] = $eventoIdParticipantes;
+        } else {
+            $filtros['evento_id'] = 0;
+        }
+
         $totalRegistros = contarRegistrosEventos($filtros);
         $pagina = ajustarPaginaRegistros($pagina, $totalRegistros);
         $offsetRegistros = calcularOffsetRegistros($pagina);
@@ -156,8 +182,10 @@ view('eventos/index', [
     'puedeRegistrar'         => puedeRegistrarEventos($rol),
     'puedeVerTabla'          => puedeVerTablaEventos($rol),
     'puedeVerCatalogo'       => puedeVerCatalogoEventos($rol),
+    'puedeVerParticipantes'  => esRolConControlTotal($rol),
     'eventos'                => $eventos,
     'eventosHabilitados'     => $eventosHabilitados,
+    'eventoParticipantes'    => $eventoParticipantes,
     'registros'              => $registros,
     'totalRegistros'         => $totalRegistros,
     'filtros'                => $filtros,

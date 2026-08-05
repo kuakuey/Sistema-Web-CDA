@@ -799,7 +799,7 @@ if ($accion === 'actualizar_estado_pago_evento') {
     $sepRedireccion = strpos($redireccion, '?') !== false ? '&' : '?';
 
     try {
-        actualizarEstadoPagoRegistroEvento($id, (string) ($_POST['estado_pago'] ?? ''));
+        actualizarEstadoPagoRegistroEvento($id, (string) ($_POST['estado_pago'] ?? ''), obtenerUsuarioActual()['rol']);
         salirConActividad($redireccion . $sepRedireccion . 'actualizado=1', 'actualizar_estado_pago_evento', $id);
     } catch (InvalidArgumentException $e) {
         header('Location: ' . $redireccion . $sepRedireccion . 'error=' . urlencode($e->getMessage()));

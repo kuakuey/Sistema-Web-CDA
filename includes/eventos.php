@@ -356,6 +356,88 @@ function claseBadgeEstadoPagoEvento(?string $estado): string
         : 'bg-warning text-dark';
 }
 
+function puedeRevertirEstadoPagoEvento(string $rol): bool
+{
+    require_once __DIR__ . '/roles.php';
+
+    return esRolConControlTotal($rol);
+}
+
+function puedeMostrarComboboxEstadoPagoEvento(string $rol, string $estadoActual): bool
+{
+    require_once __DIR__ . '/roles.php';
+
+    $estadoActual = normalizarEstadoPagoEvento($estadoActual) ?: 'por_cancelar';
+
+    if ($estadoActual === 'pagado') {
+        return puedeRevertirEstadoPagoEvento($rol);
+    }
+
+    return esRolConControlTotal($rol) || puedeRegistrarEventos($rol);
+}
+
+function validarAccesoRegistroEventoPorEstadoEvento(array $registro, string $rol): void
+{
+    require_once __DIR__ . '/roles.php';
+
+    $eventoId = (int) ($registro['evento_id'] ?? 0);
+
+    if ($eventoId <= 0) {
+        return;
+    }
+
+    $evento = obtenerEvento($eventoId);
+
+    if (!$evento || (int) ($evento['habilitado'] ?? 0) === 1) {
+        return;
+    }
+
+    if (!esRolConControlTotal($rol)) {
+        throw new InvalidArgumentException('No tienes acceso a registros de eventos deshabilitados.');
+    }
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function parsearFiltrosRegistrosEventos(array $entrada): array
+{
+    require_once __DIR__ . '/filters.php';
+
+    $filtros = parsearFiltrosRegistros($entrada);
+    $filtros['evento_id'] = max(0, (int) ($entrada['evento_id'] ?? 0));
+
+    return $filtros;
+}
+
+function validarCambioEstadoPagoEvento(string $estadoActual, string $estadoNuevo, string $rol): void
+{
+    require_once __DIR__ . '/roles.php';
+
+    $estadoActual = normalizarEstadoPagoEvento($estadoActual) ?: 'por_cancelar';
+    $estadoNuevo = normalizarEstadoPagoEvento($estadoNuevo);
+
+    if ($estadoNuevo === '') {
+        throw new InvalidArgumentException('Estado de pago no válido.');
+    }
+
+    if ($estadoActual === $estadoNuevo) {
+        return;
+    }
+
+    if ($estadoActual === 'pagado') {
+        if (!puedeRevertirEstadoPagoEvento($rol)) {
+            throw new InvalidArgumentException('No puedes modificar un registro ya pagado.');
+        }
+
+        return;
+    }
+
+    if (!esRolConControlTotal($rol) && !puedeRegistrarEventos($rol)) {
+        throw new InvalidArgumentException('No tienes permiso para cambiar el estado de pago.');
+    }
+}
+
 function normalizarFormaPagoEvento(string $formaPago): string
 {
     $formaPago = trim(mb_strtolower($formaPago));
@@ -532,7 +614,7 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null): arra
     ];
 }
 
-function actualizarEstadoPagoRegistroEvento(int $id, string $estadoPago): bool
+function actualizarEstadoPagoRegistroEvento(int $id, string $estadoPago, string $rol): bool
 {
     $estadoPago = normalizarEstadoPagoEvento($estadoPago);
 
@@ -544,6 +626,15 @@ function actualizarEstadoPagoRegistroEvento(int $id, string $estadoPago): bool
 
     if (!$registro) {
         throw new InvalidArgumentException('Registro de evento no encontrado.');
+    }
+
+    validarAccesoRegistroEventoPorEstadoEvento($registro, $rol);
+
+    $estadoActual = normalizarEstadoPagoEvento((string) ($registro['estado_pago'] ?? '')) ?: 'por_cancelar';
+    validarCambioEstadoPagoEvento($estadoActual, $estadoPago, $rol);
+
+    if ($estadoActual === $estadoPago) {
+        return true;
     }
 
     $pdo = getConnection();
@@ -710,6 +801,13 @@ function construirSqlRegistrosEventos(array $filtros): array
 {
     $condiciones = ['v.tipo = ?'];
     $parametros = [TIPO_VALOR_EVENTOS_INTERNO];
+
+    if (($filtros['evento_id'] ?? 0) > 0) {
+        $condiciones[] = 'v.evento_id = ?';
+        $parametros[] = (int) $filtros['evento_id'];
+    } else {
+        $condiciones[] = 'e.habilitado = 1';
+    }
 
     if ($filtros['buscar'] !== '') {
         $busqueda = '%' . $filtros['buscar'] . '%';

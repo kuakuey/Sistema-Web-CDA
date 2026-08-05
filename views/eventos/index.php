@@ -3,7 +3,7 @@
     <h2 class="h4 mb-1">Eventos</h2>
     <p class="text-muted small mb-0">Gestiona eventos y registra participantes</p>
   </div>
-  <?php if ($pestaña === 'tabla'): ?>
+  <?php if ($pestaña === 'tabla' || $pestaña === 'participantes'): ?>
   <span class="badge bg-primary fs-6"><?= (int) $totalRegistros ?> registro(s)</span>
   <?php else: ?>
   <span class="badge bg-primary fs-6"><?= count($eventos) ?> evento(s)</span>
@@ -54,7 +54,7 @@
   <?php endif; ?>
   <?php if (!empty($puedeVerCatalogo)): ?>
   <li class="nav-item" role="presentation">
-    <a class="nav-link <?= $pestaña === 'catalogo' ? 'active' : '' ?>" href="eventos.php?pestaña=catalogo" role="tab">
+    <a class="nav-link <?= in_array($pestaña, ['catalogo', 'participantes'], true) ? 'active' : '' ?>" href="eventos.php?pestaña=catalogo" role="tab">
       <i class="bi bi-calendar-event me-1"></i>Eventos registrados
     </a>
   </li>
@@ -106,107 +106,79 @@
   </div>
   <div class="card-body p-0">
     <?php
-    $modalesDetalle = [];
-    $modalesEditar = [];
-    $redireccionRegistros = construirUrlRegistros('eventos.php', $filtros, $paginaActual, 'tabla');
+    $pestañaPaginacion = 'tabla';
+    include __DIR__ . '/../partials/tabla-registros-eventos.php';
     ?>
-    <div class="table-responsive">
-      <table class="table table-hover table-dashboard mb-0 align-middle">
-        <thead class="table-light">
-          <tr>
-            <th>Nombre</th>
-            <th>Evento</th>
-            <th>Numeración</th>
-            <th>Tipo entrada</th>
-            <th>Valor</th>
-            <th>Forma de pago</th>
-            <th>Estado</th>
-            <th class="text-end">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php if (empty($registros)): ?>
-          <tr>
-            <td colspan="8" class="text-center text-muted py-5">
-              <i class="bi bi-inbox display-6 d-block mb-2"></i>
-              No hay registros de eventos.
-            </td>
-          </tr>
-          <?php else: ?>
-          <?php foreach ($registros as $fila):
-            $modalId = 'detalle-evento-' . (int) $fila['id'];
-            $estadoPagoFila = normalizarEstadoPagoEvento((string) ($fila['estado_pago'] ?? 'por_cancelar')) ?: 'por_cancelar';
-            $modalesDetalle[] = [
-                'id'     => $modalId,
-                'titulo' => 'Registro de evento #' . (int) $fila['id'],
-                'filas'  => construirDetalleRegistroEvento($fila),
-                'extra'  => '',
-            ];
-            if (!empty($puedeEditar)) {
-                $modalesEditar[] = [
-                    'id'         => 'editar-' . $modalId,
-                    'tipo'       => 'registro_evento',
-                    'fila'       => $fila,
-                    'redireccion'=> $redireccionRegistros,
-                ];
-            }
-          ?>
-          <tr>
-            <td><?= htmlspecialchars($fila['nombre']) ?></td>
-            <td><span class="badge bg-secondary"><?= htmlspecialchars($fila['evento_nombre'] ?? '—') ?></span></td>
-            <td><?= htmlspecialchars($fila['numeracion'] ?? '—') ?></td>
-            <td><?= htmlspecialchars(trim((string) ($fila['tipo_entrada'] ?? '')) !== '' ? $fila['tipo_entrada'] : '—') ?></td>
-            <td><strong><?= htmlspecialchars(formatearMonto((float) $fila['valor'])) ?></strong></td>
-            <td><?= htmlspecialchars(etiquetaFormaPagoEvento($fila['forma_pago'] ?? null)) ?></td>
-            <td>
-              <?php if (!empty($puedeEditar)): ?>
-              <form method="POST" action="acciones.php" class="m-0">
-                <input type="hidden" name="accion" value="actualizar_estado_pago_evento">
-                <input type="hidden" name="id" value="<?= (int) $fila['id'] ?>">
-                <input type="hidden" name="redireccion" value="<?= htmlspecialchars($redireccionRegistros) ?>">
-                <select
-                  class="form-select form-select-sm"
-                  name="estado_pago"
-                  onchange="this.form.submit()"
-                  aria-label="Estado de pago"
-                >
-                  <?php foreach (obtenerEstadosPagoEvento() as $claveEstado => $etiquetaEstado): ?>
-                  <option value="<?= htmlspecialchars($claveEstado) ?>" <?= $estadoPagoFila === $claveEstado ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($etiquetaEstado) ?>
-                  </option>
-                  <?php endforeach; ?>
-                </select>
-              </form>
-              <?php else: ?>
-              <span class="badge <?= htmlspecialchars(claseBadgeEstadoPagoEvento($estadoPagoFila)) ?>">
-                <?= htmlspecialchars(etiquetaEstadoPagoEvento($estadoPagoFila)) ?>
-              </span>
-              <?php endif; ?>
-            </td>
-            <td class="text-end">
-              <?php
-              $eliminarAccion = 'eliminar_registro_evento';
-              $eliminarId = (int) $fila['id'];
-              $eliminarRedireccion = $redireccionRegistros;
-              $modalEditarId = !empty($puedeEditar) ? 'editar-' . $modalId : '';
-              include __DIR__ . '/../partials/tabla-acciones-registro.php';
-              ?>
-            </td>
-          </tr>
-          <?php endforeach; ?>
-          <?php endif; ?>
-        </tbody>
-      </table>
+  </div>
+</div>
+
+<?php elseif ($pestaña === 'participantes' && !empty($eventoParticipantes)): ?>
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="eventos.php?pestaña=catalogo">Eventos registrados</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Participantes</li>
+  </ol>
+</nav>
+
+<div class="card border-0 shadow-sm mb-4 filters-panel">
+  <button
+    class="filters-panel__toggle d-md-none"
+    type="button"
+    data-bs-toggle="collapse"
+    data-bs-target="#filtersParticipantesPanel"
+    aria-expanded="false"
+    aria-controls="filtersParticipantesPanel"
+  >
+    <i class="bi bi-funnel me-2"></i>Filtros
+    <i class="bi bi-chevron-down filters-panel__chevron"></i>
+  </button>
+  <div class="collapse" id="filtersParticipantesPanel">
+    <div class="card-body">
+      <form method="GET" action="eventos.php" class="row g-3 align-items-end">
+        <input type="hidden" name="pestaña" value="participantes">
+        <input type="hidden" name="evento_id" value="<?= (int) $eventoParticipantes['id'] ?>">
+        <div class="col-md-4">
+          <label class="form-label small" for="buscar">Buscar</label>
+          <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono…">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small" for="fecha_desde">Desde</label>
+          <input type="date" class="form-control form-control-sm" id="fecha_desde" name="fecha_desde" value="<?= htmlspecialchars($filtros['fecha_desde']) ?>">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small" for="fecha_hasta">Hasta</label>
+          <input type="date" class="form-control form-control-sm" id="fecha_hasta" name="fecha_hasta" value="<?= htmlspecialchars($filtros['fecha_hasta']) ?>">
+        </div>
+        <div class="col-md-auto d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+          <a href="eventos.php?pestaña=participantes&evento_id=<?= (int) $eventoParticipantes['id'] ?>" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+        </div>
+      </form>
     </div>
-    <?php $pestañaPaginacion = 'tabla'; include __DIR__ . '/../partials/paginacion-registros.php'; ?>
-    <?php foreach ($modalesDetalle as $modal):
-        $modalId = $modal['id'];
-        $tituloModal = $modal['titulo'];
-        $filasDetalle = $modal['filas'];
-        $contenidoExtra = $modal['extra'];
-        include __DIR__ . '/../partials/modal-detalle-registro.php';
-    endforeach;
-    include __DIR__ . '/../partials/modales-editar-registro.php';
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <h3 class="h6 mb-1"><i class="bi bi-people me-2"></i>Participantes — <?= htmlspecialchars($eventoParticipantes['nombre']) ?></h3>
+      <p class="text-muted small mb-0">
+        <?= htmlspecialchars(formatearFechaTabla($eventoParticipantes['fecha'] ?? '')) ?>
+        <?php if ((int) ($eventoParticipantes['habilitado'] ?? 0) !== 1): ?>
+        · <span class="badge bg-secondary">Evento deshabilitado</span>
+        <?php endif; ?>
+      </p>
+    </div>
+    <a href="eventos.php?pestaña=catalogo" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Volver al catálogo
+    </a>
+  </div>
+  <div class="card-body p-0">
+    <?php
+    $pestañaPaginacion = 'participantes';
+    $mensajeVacio = 'No hay participantes registrados en este evento.';
+    include __DIR__ . '/../partials/tabla-registros-eventos.php';
     ?>
   </div>
 </div>
@@ -445,6 +417,15 @@
             </td>
             <td><span class="badge bg-secondary"><?= (int) ($evento['total_registros'] ?? 0) ?></span></td>
             <td class="text-end">
+              <?php if (!empty($puedeVerParticipantes) && (int) ($evento['total_registros'] ?? 0) > 0): ?>
+              <a
+                href="eventos.php?pestaña=participantes&evento_id=<?= (int) $evento['id'] ?>"
+                class="btn btn-sm btn-outline-secondary"
+                title="Ver participantes"
+              >
+                <i class="bi bi-people"></i>
+              </a>
+              <?php endif; ?>
               <?php if ($puedeAgregar): ?>
               <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalEditarEvento<?= (int) $evento['id'] ?>" title="Editar">
                 <i class="bi bi-pencil"></i>

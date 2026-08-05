@@ -155,8 +155,13 @@
     fetch(actionUrl, {
       method: 'POST',
       body: new FormData(form),
-      credentials: 'same-origin'
+      credentials: 'same-origin',
+      redirect: 'follow'
     }).then(function (response) {
+      if (!response.ok) {
+        throw new Error('Respuesta no válida del servidor.');
+      }
+
       var destino = response.url || '';
 
       if (!destino) {

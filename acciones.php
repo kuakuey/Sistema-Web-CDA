@@ -615,6 +615,16 @@ if ($id <= 0 && $accion !== '' && !in_array($accion, [
     'actualizar_estado_bautismo',
     'restablecer_estado_bautismo',
     'restablecer_estado_presentacion',
+    'registrar_evento',
+    'crear_valor_adicional',
+    'crear_consejeria',
+    'crear_transporte_aniversario',
+    'crear_inscripcion',
+    'crear_presentacion',
+    'crear_ofrenda',
+    'crear_evento',
+    'guardar_permisos_rol',
+    'cambiar_clave_usuario',
 ], true)) {
     header('Location: ' . $redireccion);
     exit;
@@ -662,10 +672,6 @@ if (in_array($accion, $accionesEliminar, true)) {
             eliminarValorAdicional($id);
             break;
         case 'eliminar_registro_evento':
-            if (!puedeGestionarEventos(obtenerUsuarioActual()['rol'])) {
-                header('Location: ' . $urlInicio);
-                exit;
-            }
             if (!$registroEliminado) {
                 header('Location: ' . ($redireccion ?: 'eventos.php'));
                 exit;
@@ -708,10 +714,17 @@ if (in_array($accion, $accionesEliminar, true)) {
             break;
     }
 
-    $detalleEliminacion = $registroEliminado
-        ? formatearDetalleEliminacion($accion, $registroEliminado)
-        : '';
-    $datosExtraEliminacion = armarDatosExtraEliminacion($accion, $registroEliminado);
+    $detalleEliminacion = '';
+    $datosExtraEliminacion = null;
+
+    try {
+        $detalleEliminacion = $registroEliminado
+            ? formatearDetalleEliminacion($accion, $registroEliminado)
+            : '';
+        $datosExtraEliminacion = armarDatosExtraEliminacion($accion, $registroEliminado);
+    } catch (Throwable $e) {
+        // Si falla el armado del detalle, igual se elimina y se redirige.
+    }
 
     salirConActividad($redireccion, $accion, $id, $detalleEliminacion, $datosExtraEliminacion);
 }

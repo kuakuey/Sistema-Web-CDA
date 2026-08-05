@@ -126,6 +126,34 @@ function obtenerAgenteUsuarioActividad(): ?string
     return $agente !== '' ? mb_substr($agente, 0, 255) : null;
 }
 
+function formatearFechaActividadLog(?string $fecha): string
+{
+    if ($fecha === null || trim($fecha) === '') {
+        return '—';
+    }
+
+    $fecha = trim($fecha);
+
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+        $dt = DateTime::createFromFormat('Y-m-d', $fecha);
+
+        return $dt ? $dt->format('d/m/Y') : $fecha;
+    }
+
+    require_once __DIR__ . '/submissions.php';
+
+    return formatearFechaHora($fecha);
+}
+
+function terminaConSufijoActividad(string $texto, string $sufijo): bool
+{
+    if ($sufijo === '') {
+        return true;
+    }
+
+    return substr($texto, -strlen($sufijo)) === $sufijo;
+}
+
 /**
  * @param array<string, mixed> $origen
  * @return array<string, mixed>
@@ -406,7 +434,7 @@ function construirDetalleActividadRegistroEvento(array $datos): string
         $lineas[] = 'Teléfono: ' . trim((string) $datos['telefono']);
     }
     if (!empty($datos['fecha'])) {
-        $lineas[] = 'Fecha: ' . formatearFechaTabla($datos['fecha']);
+        $lineas[] = 'Fecha: ' . formatearFechaActividadLog((string) $datos['fecha']);
     }
     if (isset($datos['valor']) && $datos['valor'] !== '') {
         $lineas[] = 'Valor: ' . formatearMonto((float) $datos['valor']);
@@ -495,7 +523,12 @@ function construirDetalleActividadEstadoPagoEvento(int $registroId, string $esta
  */
 function salirConActividad(string $url, string $accion, int $entidadId = 0, string $detalle = '', ?array $datosExtra = null): void
 {
-    registrarActividadPorAccion($accion, $entidadId, $detalle, $datosExtra);
+    try {
+        registrarActividadPorAccion($accion, $entidadId, $detalle, $datosExtra);
+    } catch (Throwable $e) {
+        // El log nunca debe impedir la redirección principal.
+    }
+
     header('Location: ' . $url);
     exit;
 }
@@ -744,7 +777,7 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
         require_once __DIR__ . '/eventos.php';
         $campos['ID'] = '#' . (int) ($registro['id'] ?? 0);
         $campos['Nombre'] = $valorTexto($registro['nombre'] ?? '');
-        $campos['Fecha'] = formatearFechaTabla($registro['fecha'] ?? null);
+        $campos['Fecha'] = formatearFechaActividadLog($registro['fecha'] ?? null);
         $campos['Valor'] = formatearMonto((float) ($registro['valor'] ?? 0));
         $campos['Tipo'] = etiquetaTipoEventoCatalogo($registro);
         $campos['Estado'] = etiquetaEstadoEvento((int) ($registro['habilitado'] ?? 0));
@@ -777,7 +810,7 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
         $campos['Tipo de entrada'] = $nombres['tipo_entrada'] !== '' ? $nombres['tipo_entrada'] : $valorTexto($registro['tipo_entrada'] ?? '');
         $campos['Nombre completo'] = $valorTexto($registro['nombre'] ?? '');
         $campos['Teléfono'] = $valorTexto($registro['telefono'] ?? '');
-        $campos['Fecha'] = formatearFechaTabla($registro['fecha'] ?? null);
+        $campos['Fecha'] = formatearFechaActividadLog($registro['fecha'] ?? null);
         $campos['Valor'] = formatearMonto((float) ($registro['valor'] ?? 0));
         $campos['Forma de pago'] = etiquetaFormaPagoEvento($registro['forma_pago'] ?? null);
         $campos['Estado'] = etiquetaEstadoPagoEvento($registro['estado_pago'] ?? null);
@@ -856,7 +889,7 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
             $campos[$etiqueta] = formatearMonto((float) $valor);
             continue;
         }
-        if ($clave === 'id' || str_ends_with($clave, '_id')) {
+        if ($clave === 'id' || terminaConSufijoActividad($clave, '_id')) {
             continue;
         }
         $campos[$etiqueta] = $valorTexto($valor);

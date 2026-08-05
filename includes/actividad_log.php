@@ -356,6 +356,11 @@ function registrarActividadPorAccion(string $accion, int $entidadId = 0, string 
         if ($detalleEvento !== '') {
             $detalle = $detalleEvento;
         }
+    } elseif (in_array($accion, ['crear_ofrenda', 'actualizar_ofrenda'], true)) {
+        $detalleOfrenda = formatearDetalleOfrenda($_POST);
+        if ($detalleOfrenda !== '') {
+            $detalle = $detalleOfrenda;
+        }
     }
 
     if ($detalle === '') {
@@ -450,6 +455,77 @@ function construirDetalleActividadRegistroEvento(array $datos): string
     }
     if (!empty($datos['observacion'])) {
         $lineas[] = 'Observación: ' . trim((string) $datos['observacion']);
+    }
+
+    return implode("\n", $lineas);
+}
+
+/**
+ * @param array<string, mixed> $datos
+ * @return array<string, string>
+ */
+function construirCamposDetalleOfrenda(array $datos): array
+{
+    require_once __DIR__ . '/submissions.php';
+    require_once __DIR__ . '/estructura.php';
+
+    $campos = [];
+    $casaNombre = trim((string) ($datos['casa_vida'] ?? ''));
+    $lider = trim((string) ($datos['lider'] ?? ''));
+    $casaId = isset($datos['casa_id']) ? (int) $datos['casa_id'] : 0;
+
+    if (($casaNombre === '' || $lider === '') && $casaId > 0) {
+        $casa = obtenerCasaVida($casaId);
+        if ($casa) {
+            if ($casaNombre === '') {
+                $casaNombre = trim((string) ($casa['nombre'] ?? ''));
+            }
+            if ($lider === '') {
+                $lider = nombreCompletoLider([
+                    'nombre'   => $casa['lider_nombre'] ?? '',
+                    'apellido' => $casa['lider_apellido'] ?? '',
+                ]);
+            }
+        }
+    }
+
+    if ($casaNombre !== '') {
+        $campos['Casa de vida'] = $casaNombre;
+    }
+    if ($lider !== '') {
+        $campos['Líder'] = $lider;
+    }
+
+    $fechaOfrenda = trim((string) ($datos['fecha_ofrenda'] ?? ''));
+    if ($fechaOfrenda !== '') {
+        $campos['Fecha de ofrenda'] = formatearFechaActividadLog($fechaOfrenda);
+    }
+
+    if (isset($datos['monto']) && $datos['monto'] !== '') {
+        $campos['Monto'] = formatearMonto((float) $datos['monto']);
+    }
+
+    $registradoPor = trim((string) ($datos['registrado_por_nombre'] ?? ''));
+    if ($registradoPor !== '') {
+        $campos['Registrado por'] = $registradoPor;
+    }
+
+    return $campos;
+}
+
+/**
+ * @param array<string, mixed> $datos
+ */
+function formatearDetalleOfrenda(array $datos): string
+{
+    $campos = construirCamposDetalleOfrenda($datos);
+    if ($campos === []) {
+        return '';
+    }
+
+    $lineas = [];
+    foreach ($campos as $etiqueta => $valor) {
+        $lineas[] = $etiqueta . ': ' . $valor;
     }
 
     return implode("\n", $lineas);
@@ -824,6 +900,10 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
         }
 
         return $campos;
+    }
+
+    if ($accion === 'eliminar_ofrenda') {
+        return construirCamposDetalleOfrenda($registro);
     }
 
     $mapaEtiquetas = [

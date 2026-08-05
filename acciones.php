@@ -409,7 +409,7 @@ if ($accion === 'crear_ofrenda') {
     }
 
     try {
-        insertarOfrendaDesdeApi([
+        $ofrendaId = insertarOfrendaDesdeApi([
             'casa_id'               => $casaId,
             'fecha_ofrenda'         => $fecha,
             'monto'                 => $monto,
@@ -424,7 +424,15 @@ if ($accion === 'crear_ofrenda') {
         exit;
     }
 
-    salirConActividad($redireccionBase . '?pestaña=nuevo&ok=1', 'crear_ofrenda', $casaId);
+    $registroOfrenda = obtenerFilaSimplePorId('ofrendas', $ofrendaId);
+    $detalleOfrenda = $registroOfrenda ? formatearDetalleOfrenda($registroOfrenda) : formatearDetalleOfrenda([
+        'casa_id'               => $casaId,
+        'fecha_ofrenda'         => $fecha,
+        'monto'                 => $monto,
+        'registrado_por_nombre' => $usuario['nombre'] ?? $usuario['usuario'],
+    ]);
+
+    salirConActividad($redireccionBase . '?pestaña=nuevo&ok=1', 'crear_ofrenda', $ofrendaId, $detalleOfrenda);
 }
 
 $accionesActualizar = [

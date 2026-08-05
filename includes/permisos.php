@@ -8,6 +8,21 @@ const SECCION_PERMISOS_COUNTER = 'counter';
 const SECCION_PERMISOS_CONEXION = 'conexion';
 
 /**
+ * Módulos retirados: sin menú, sin permisos configurables y sin acceso.
+ *
+ * @return array<int, string>
+ */
+function obtenerSeccionesOcultas(): array
+{
+    return ['transporte_aniversario'];
+}
+
+function seccionEstaOculta(string $seccion): bool
+{
+    return in_array($seccion, obtenerSeccionesOcultas(), true);
+}
+
+/**
  * Catálogo de permisos detallados por módulo (pestañas / acciones).
  *
  * @return array<string, array{etiqueta: string, icono: string, permisos: array<string, string>}>
@@ -96,15 +111,6 @@ function obtenerCatalogoPermisosDetallados(): array
             'permisos'  => [
                 'registros' => 'Registros',
                 'nuevo'     => 'Nueva solicitud',
-            ],
-        ],
-        'transporte_aniversario' => [
-            'etiqueta'  => 'Transporte Aniversario',
-            'icono'     => 'bi-bus-front',
-            'permisos'  => [
-                'registros' => 'Registros',
-                'nuevo'     => 'Nuevo registro',
-                'reporte'   => 'Reporte',
             ],
         ],
         'generar_informe' => [
@@ -229,7 +235,6 @@ function obtenerSeccionesConfigurablesPermisos(): array
         'valores_adicionales' => 'Valores adicionales',
         'eventos'             => 'Eventos',
         'consejeria'          => "Consejer\u{00ED}a",
-        'transporte_aniversario' => 'Transporte Aniversario',
         'generar_informe'     => 'Generar informe',
         'estructura'          => 'Estructura CDV',
         'usuarios'            => 'Usuarios',
@@ -266,7 +271,6 @@ function obtenerPermisosPorDefectoRol(string $rol): array
                 'valores_adicionales',
                 'eventos',
                 'consejeria',
-                'transporte_aniversario',
                 'generar_informe',
                 'estructura',
             ], $rol);
@@ -281,7 +285,6 @@ function obtenerPermisosPorDefectoRol(string $rol): array
                 'ofrendas',
                 'valores_adicionales',
                 'consejeria',
-                'transporte_aniversario',
                 'generar_informe',
             ], $rol);
 
@@ -404,6 +407,10 @@ function obtenerPermisosRol(string $rol): array
 
 function tienePermisoSeccion(string $rol, string $seccion): bool
 {
+    if (seccionEstaOculta($seccion)) {
+        return false;
+    }
+
     if ($rol === SECCION_PERMISOS_SUPERADMIN) {
         return true;
     }
@@ -427,6 +434,10 @@ function tienePermisoSeccion(string $rol, string $seccion): bool
 
 function tienePermisoDetalle(string $rol, string $modulo, string $detalle): bool
 {
+    if (seccionEstaOculta($modulo)) {
+        return false;
+    }
+
     if ($rol === SECCION_PERMISOS_SUPERADMIN) {
         return true;
     }

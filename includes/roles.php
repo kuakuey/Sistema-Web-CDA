@@ -109,7 +109,6 @@ function puedeRegistrarEnSeccion(string $rol, string $seccion): bool
         'ofrendas'            => 'nuevo',
         'valores_adicionales' => 'nuevo',
         'consejeria'          => 'nuevo',
-        'transporte_aniversario' => 'nuevo',
     ];
 
     if (isset($mapaNuevo[$seccion])) {
@@ -257,7 +256,6 @@ function obtenerEtiquetasSecciones(): array
         'valores_adicionales' => 'Valores adicionales',
         'eventos'             => 'Eventos',
         'consejeria'          => "Consejer\u{00ED}a",
-        'transporte_aniversario' => 'Transporte Aniversario',
         'generar_informe'     => 'Generar informe',
         'estructura'          => 'Estructura CDV',
         'usuarios'            => 'Usuarios',
@@ -278,7 +276,6 @@ function obtenerIconosSecciones(): array
         'valores_adicionales' => 'bi-wallet2',
         'eventos'             => 'bi-calendar-event',
         'consejeria'          => 'bi-chat-heart',
-        'transporte_aniversario' => 'bi-bus-front',
         'generar_informe'     => 'bi-file-earmark-bar-graph',
         'estructura'          => 'bi-diagram-3',
         'usuarios'            => 'bi-person-gear',
@@ -304,7 +301,6 @@ function obtenerOrdenMenuSidebar(): array
         'eventos',
         'valores_adicionales',
         'consejeria',
-        'transporte_aniversario',
         'generar_informe',
         'estructura',
         'usuarios',
@@ -356,7 +352,6 @@ function obtenerUrlMenuSidebar(string $clave): string
         'valores_adicionales' => 'valores-adicionales.php',
         'eventos'             => 'eventos.php',
         'consejeria'          => 'consejeria.php',
-        'transporte_aniversario' => 'transporte-aniversario.php',
         'generar_informe'     => 'generar-informe.php',
         'estructura'          => 'estructura.php',
         'usuarios'            => 'usuarios.php',

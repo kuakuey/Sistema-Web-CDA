@@ -5,6 +5,7 @@ require_once __DIR__ . '/filters.php';
 require_once __DIR__ . '/rutas.php';
 require_once __DIR__ . '/paginacion.php';
 require_once __DIR__ . '/detalle_registro.php';
+require_once __DIR__ . '/registros_generales.php';
 
 function renderizarPaginaRegistros(string $seccion): void
 {
@@ -77,6 +78,7 @@ function renderizarPaginaRegistros(string $seccion): void
     $errorBd = null;
     $estadisticas = [];
     $registros = [];
+    $registrosCompletos = [];
     $totalRegistros = 0;
     $tipoRegistro = 'inscripciones';
     $totalPaginas = 1;
@@ -87,8 +89,9 @@ function renderizarPaginaRegistros(string $seccion): void
 
         switch ($seccion) {
             case 'generales':
-                $totalRegistros = contarInscripcionesFiltradas($tiposPermitidos, null, $filtros);
-                $tipoRegistro = 'inscripciones';
+                $registrosCompletos = buscarRegistrosGeneralesDelDia($rol);
+                $totalRegistros = count($registrosCompletos);
+                $tipoRegistro = 'registros_generales';
                 break;
 
             case 'presentaciones':
@@ -110,7 +113,7 @@ function renderizarPaginaRegistros(string $seccion): void
 
         switch ($seccion) {
             case 'generales':
-                $registros = buscarInscripciones($tiposPermitidos, null, $filtros, REGISTROS_POR_PAGINA, $offsetRegistros);
+                $registros = paginarRegistrosGenerales($registrosCompletos ?? [], REGISTROS_POR_PAGINA, $offsetRegistros);
                 break;
 
             case 'presentaciones':

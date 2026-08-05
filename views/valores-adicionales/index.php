@@ -99,11 +99,6 @@
       </div>
 
       <div class="col-md-6 col-lg-3">
-        <label class="form-label" for="telefono">Teléfono <span class="text-danger">*</span></label>
-        <input type="tel" class="form-control" id="telefono" name="telefono" required maxlength="30">
-      </div>
-
-      <div class="col-md-6 col-lg-3">
         <label class="form-label" for="valor">Valor <span class="text-danger">*</span></label>
         <input type="number" class="form-control" id="valor" name="valor" step="0.01" min="0.01" required placeholder="0.00">
       </div>
@@ -247,7 +242,7 @@
             id="buscar"
             name="buscar"
             value="<?= htmlspecialchars($filtros['buscar']) ?>"
-            placeholder="Nombre, teléfono, observación…"
+            placeholder="Nombre, observación…"
           >
         </div>
 
@@ -317,6 +312,7 @@
           $mostrarTipo = true;
           $mostrarValor = true;
           $mostrarObservacion = true;
+          $mostrarTelefono = false;
           include __DIR__ . '/../partials/tabla-registros-cabecera.php';
           ?>
         </thead>
@@ -347,7 +343,6 @@
             </td>
             <td><?= htmlspecialchars($fila['nombre']) ?></td>
             <td><?= htmlspecialchars(formatearFechaTabla($fila['fecha'])) ?></td>
-            <td><?php $telefono = $fila['telefono']; include __DIR__ . '/../partials/celda-telefono-whatsapp.php'; ?></td>
             <td><strong><?= htmlspecialchars(formatearMonto((float) $fila['valor'])) ?></strong></td>
             <td><?php include __DIR__ . '/../partials/celda-observacion.php'; ?></td>
             <td class="text-end">

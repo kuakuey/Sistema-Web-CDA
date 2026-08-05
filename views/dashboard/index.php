@@ -3,7 +3,7 @@
     <h2 class="h4 mb-1"><?= htmlspecialchars($etiquetasSecciones[$seccion] ?? 'Registros') ?></h2>
     <p class="text-muted small mb-0">
       <?php if ($seccion === 'generales'): ?>
-      Registros ingresados hoy, <?= htmlspecialchars(formatearFechaTabla(date('Y-m-d'))) ?>
+      Registros ingresados hoy en todas las secciones a las que tienes acceso, <?= htmlspecialchars(formatearFechaTabla(date('Y-m-d'))) ?>
       <?php elseif (!empty($usaFlujoPestanas)): ?>
       <?php if ($pestaña === 'nuevos'): ?>
       Pendientes de completar su proceso
@@ -230,9 +230,75 @@
       <i class="bi bi-inbox display-6 d-block mb-2"></i>
       No hay registros<?= $seccion === 'generales' ? ' ingresados hoy' : ' con los filtros seleccionados' ?>.
     </div>
+    <?php elseif ($tipoRegistro === 'registros_generales'): ?>
+    <?php
+    $modalesDetalle = [];
+    ?>
+    <div class="table-responsive">
+      <table class="table table-hover table-dashboard mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="text-center col-numero">#</th>
+            <th style="width: 9rem;">Hora</th>
+            <th>Sección</th>
+            <th>Registrado por</th>
+            <th>Nombre / registro</th>
+            <th>Detalle</th>
+            <th class="text-end" style="width: 4rem;">Ver</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($registros as $indice => $registro):
+              $numeroRegistro = $offsetRegistros + $indice + 1;
+              $modalId = 'detalle-general-' . htmlspecialchars((string) ($registro['origen'] ?? '')) . '-' . (int) ($registro['id'] ?? 0);
+              $modalesDetalle[] = [
+                  'id'     => $modalId,
+                  'titulo' => tituloDetalleRegistroGeneral($registro),
+                  'filas'  => construirDetalleRegistroGeneral($registro, $etiquetasFormulario, $etiquetasEstadosPresentacion),
+                  'extra'  => '',
+              ];
+          ?>
+          <tr>
+            <td class="text-center text-muted"><?= $numeroRegistro ?></td>
+            <td class="text-nowrap small"><?= htmlspecialchars(formatearFechaHora($registro['creado_en'] ?? null)) ?></td>
+            <td>
+              <span class="badge bg-secondary"><?= htmlspecialchars($registro['seccion_etiqueta'] ?? '—') ?></span>
+            </td>
+            <td><?= htmlspecialchars($registro['registrado_por'] ?? '—') ?></td>
+            <td><?= htmlspecialchars($registro['titulo'] ?? '—') ?></td>
+            <td class="small text-muted"><?= htmlspecialchars($registro['resumen'] ?? '—') ?></td>
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                data-bs-toggle="modal"
+                data-bs-target="#<?= htmlspecialchars($modalId) ?>"
+                title="Ver detalle"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+    <?php
+    $pestañaPaginacion = 'registros';
+    $filtros = $filtrosNavegacion ?? $filtros;
+    include __DIR__ . '/../partials/paginacion-registros.php';
+    ?>
+    <?php foreach ($modalesDetalle as $modal):
+        $modalId = $modal['id'];
+        $tituloModal = $modal['titulo'];
+        $filasDetalle = $modal['filas'];
+        $contenidoExtra = $modal['extra'];
+        include __DIR__ . '/../partials/modal-detalle-registro.php';
+    endforeach; ?>
+
     <?php elseif ($tipoRegistro === 'inscripciones'): ?>
     <?php
-    $mostrarTipo = ($seccion === 'generales');
+    $mostrarTipo = false;
     $mostrarEstado = ($seccion === 'conexion' || $seccion === 'bautismo');
     $mostrarNumero = ($seccion !== 'bautismo');
     $layoutBautismo = ($seccion === 'bautismo');

@@ -196,7 +196,6 @@ function construirDetalleValorAdicional(array $fila): array
 
     $filas = array_merge($filas, [
         ['etiqueta' => 'Fecha', 'valor' => (string) ($fila['fecha'] ?? '—')],
-        filaDetalleHtml('Teléfono', enlaceWhatsApp($fila['telefono'] ?? null)),
         ['etiqueta' => 'Valor', 'valor' => formatearMonto((float) ($fila['valor'] ?? 0))],
         [
             'etiqueta' => 'Observación',

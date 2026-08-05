@@ -181,15 +181,11 @@ $fila = $filaEditar;
               <label class="form-label">Nombre <span class="text-danger">*</span></label>
               <input type="text" class="form-control" name="nombre" required maxlength="100" value="<?= htmlspecialchars($fila['nombre'] ?? '') ?>">
             </div>
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-4">
               <label class="form-label">Fecha <span class="text-danger">*</span></label>
               <input type="date" class="form-control" name="fecha" required value="<?= htmlspecialchars($fila['fecha'] ?? '') ?>">
             </div>
-            <div class="col-md-6 col-lg-3">
-              <label class="form-label">Teléfono <span class="text-danger">*</span></label>
-              <input type="tel" class="form-control" name="telefono" required maxlength="30" value="<?= htmlspecialchars($fila['telefono'] ?? '') ?>">
-            </div>
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-4">
               <label class="form-label">Valor <span class="text-danger">*</span></label>
               <input type="number" class="form-control" name="valor" step="0.01" min="0.01" required value="<?= htmlspecialchars((string) ($fila['valor'] ?? '')) ?>">
             </div>

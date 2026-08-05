@@ -226,10 +226,9 @@ function puedeGestionarEstadoBautismo(string $rol): bool
 function puedeVerSeccion(string $rol, string $seccion): bool
 {
     if ($seccion === 'generales') {
-        return tienePermisoDetalle($rol, 'generales', 'ver')
-            || tienePermisoSeccion($rol, 'generales')
-            || obtenerTiposInscripcionPermitidos($rol) !== []
-            || puedeVerPresentaciones($rol);
+        require_once __DIR__ . '/registros_generales.php';
+
+        return puedeVerRegistrosGenerales($rol);
     }
 
     if ($seccion === 'ofrendas') {
@@ -308,9 +307,9 @@ function obtenerOrdenMenuSidebar(): array
 function puedeVerItemMenuSidebar(string $rol, string $clave): bool
 {
     if ($clave === 'generales') {
-        return tienePermisoDetalle($rol, 'generales', 'ver')
-            || tienePermisoSeccion($rol, 'generales')
-            || obtenerTiposInscripcionPermitidos($rol) !== [];
+        require_once __DIR__ . '/registros_generales.php';
+
+        return puedeVerRegistrosGenerales($rol);
     }
 
     if ($clave === 'avanzado') {

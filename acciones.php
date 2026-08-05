@@ -33,14 +33,13 @@ if ($accion === 'crear_valor_adicional') {
     $tipo = trim((string) ($_POST['tipo'] ?? ''));
     $nombre = trim((string) ($_POST['nombre'] ?? ''));
     $fecha = trim((string) ($_POST['fecha'] ?? ''));
-    $telefono = trim((string) ($_POST['telefono'] ?? ''));
     $valor = isset($_POST['valor']) ? (float) $_POST['valor'] : 0;
     $observacion = trim((string) ($_POST['observacion'] ?? ''));
     $usuario = obtenerUsuarioActual();
 
     $redireccionBase = 'valores-adicionales.php';
 
-    if (!esTipoValorAdicionalValido($tipo) || $fecha === '' || $telefono === '' || $valor <= 0) {
+    if (!esTipoValorAdicionalValido($tipo) || $fecha === '' || $valor <= 0) {
         header('Location: ' . $redireccionBase . '?pestaña=nuevo&error=' . urlencode('Completa todos los campos obligatorios con un valor mayor a cero.'));
         exit;
     }
@@ -61,7 +60,7 @@ if ($accion === 'crear_valor_adicional') {
             'tipo'                  => $tipo,
             'nombre'                => $nombre,
             'fecha'                 => $fecha,
-            'telefono'              => $telefono,
+            'telefono'              => '',
             'valor'                 => $valor,
             'observacion'           => $observacion,
             'evento_id'             => null,
@@ -538,11 +537,10 @@ if (in_array($accion, $accionesActualizar, true)) {
                 $tipo = trim((string) ($_POST['tipo'] ?? ''));
                 $nombre = trim((string) ($_POST['nombre'] ?? ''));
                 $fecha = trim((string) ($_POST['fecha'] ?? ''));
-                $telefono = trim((string) ($_POST['telefono'] ?? ''));
                 $valor = isset($_POST['valor']) ? (float) $_POST['valor'] : 0;
                 $observacion = trim((string) ($_POST['observacion'] ?? ''));
 
-                if (!esTipoValorAdicionalValido($tipo) || $fecha === '' || $telefono === '' || $valor <= 0) {
+                if (!esTipoValorAdicionalValido($tipo) || $fecha === '' || $valor <= 0) {
                     throw new InvalidArgumentException('Completa todos los campos obligatorios con un valor mayor a cero.');
                 }
 
@@ -559,7 +557,7 @@ if (in_array($accion, $accionesActualizar, true)) {
                     'tipo'        => $tipo,
                     'nombre'      => $nombre,
                     'fecha'       => $fecha,
-                    'telefono'    => $telefono,
+                    'telefono'    => '',
                     'valor'       => $valor,
                     'observacion' => $observacion,
                     'evento_id'   => null,

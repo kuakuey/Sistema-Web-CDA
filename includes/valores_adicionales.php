@@ -381,8 +381,8 @@ function construirSqlValoresAdicionales(array $filtros): array
 
     if ($filtros['buscar'] !== '') {
         $busqueda = '%' . $filtros['buscar'] . '%';
-        $condiciones[] = '(v.nombre LIKE ? OR v.telefono LIKE ? OR v.observacion LIKE ? OR v.registrado_por_nombre LIKE ?)';
-        $parametros = array_merge($parametros, [$busqueda, $busqueda, $busqueda, $busqueda]);
+        $condiciones[] = '(v.nombre LIKE ? OR v.observacion LIKE ? OR v.registrado_por_nombre LIKE ?)';
+        $parametros = array_merge($parametros, [$busqueda, $busqueda, $busqueda]);
     }
 
     if ($filtros['tipo_valor'] !== '') {

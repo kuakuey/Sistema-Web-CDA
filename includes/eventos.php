@@ -950,9 +950,10 @@ function construirSqlRegistrosEventos(array $filtros): array
     }
 
     if ($filtros['buscar'] !== '') {
-        $busqueda = '%' . $filtros['buscar'] . '%';
-        $condiciones[] = '(v.nombre LIKE ? OR v.telefono LIKE ? OR v.observacion LIKE ? OR v.numeracion LIKE ? OR e.nombre LIKE ?)';
-        $parametros = array_merge($parametros, [$busqueda, $busqueda, $busqueda, $busqueda, $busqueda]);
+        $termino = trim((string) $filtros['buscar']);
+        $busqueda = '%' . $termino . '%';
+        $condiciones[] = '(v.nombre LIKE ? OR v.telefono LIKE ? OR v.observacion LIKE ? OR v.numeracion = ? OR e.nombre LIKE ?)';
+        $parametros = array_merge($parametros, [$busqueda, $busqueda, $busqueda, $termino, $busqueda]);
     }
 
     if ($filtros['fecha_desde'] !== '') {

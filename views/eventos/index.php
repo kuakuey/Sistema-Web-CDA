@@ -81,7 +81,7 @@
         <input type="hidden" name="pestaña" value="tabla">
         <div class="col-md-4">
           <label class="form-label small" for="buscar">Buscar</label>
-          <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono, numeración, evento…">
+          <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono, evento… · numeración exacta">
         </div>
         <div class="col-md-2">
           <label class="form-label small" for="fecha_desde">Desde</label>
@@ -140,7 +140,7 @@
         <input type="hidden" name="evento_id" value="<?= (int) $eventoParticipantes['id'] ?>">
         <div class="col-md-4">
           <label class="form-label small" for="buscar">Buscar</label>
-          <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono, numeración…">
+          <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono… · numeración exacta">
         </div>
         <div class="col-md-2">
           <label class="form-label small" for="fecha_desde">Desde</label>

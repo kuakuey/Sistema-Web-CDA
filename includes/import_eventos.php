@@ -28,6 +28,8 @@ function enviarPlantillaImportEventos(): void
 {
     $columnas = columnasPlantillaImportEventos();
     $eventos = obtenerEventos();
+    $ejemplos = obtenerFilasEjemploPlantillaImportEventos($eventos);
+    $fechaHoy = date('Y-m-d');
 
     header('Content-Type: application/vnd.ms-excel; charset=utf-8');
     header('Content-Disposition: attachment; filename="plantilla-registros-eventos.xls"');
@@ -36,55 +38,73 @@ function enviarPlantillaImportEventos(): void
     echo "\xEF\xBB\xBF";
     echo '<html><head><meta charset="UTF-8"></head><body>';
     echo '<h2>Plantilla · Registros de eventos</h2>';
-    echo '<p><strong>Instrucciones:</strong></p>';
+
+    echo '<h3>Instrucciones generales</h3>';
     echo '<ol>';
-    echo '<li>Complete una fila por participante en la tabla «Datos» (no modifique los encabezados).</li>';
-    echo '<li><strong>Evento</strong> y <strong>Tipo entrada</strong> deben coincidir exactamente con la hoja de referencia.</li>';
-    echo '<li><strong>Fecha</strong> en formato AAAA-MM-DD (ej. ' . htmlspecialchars(date('Y-m-d')) . ').</li>';
-    echo '<li><strong>Estado:</strong> por_cancelar o pagado. Si es por_cancelar, deje forma de pago en pendiente.</li>';
-    echo '<li><strong>Forma de pago:</strong> pendiente, efectivo, transferencia o gratuito (entradas gratis).</li>';
-    echo '<li>Guarde el archivo y súbalo en Avanzado → Importar registros.</li>';
+    echo '<li>Use la tabla <strong>Datos</strong>: una fila por participante. <strong>No modifique los encabezados</strong> de la primera fila.</li>';
+    echo '<li>Las filas que empiezan con <strong>EJEMPLO:</strong> en Observación son solo referencia; <strong>el sistema las omite al importar</strong>. Puede borrarlas o dejarlas.</li>';
+    echo '<li>Agregue sus registros reales debajo de los ejemplos o reemplace los ejemplos por sus datos.</li>';
+    echo '<li>Consulte la tabla <strong>Referencia</strong> al final para copiar nombres exactos de evento y tipo de entrada.</li>';
+    echo '<li>Guarde el archivo y súbalo en <strong>Avanzado → Importar registros</strong>.</li>';
     echo '</ol>';
 
-    echo '<h3>Datos</h3>';
+    echo '<h3>Descripción de columnas</h3>';
+    echo '<table border="1" cellpadding="4" cellspacing="0">';
+    echo '<tr><th>Columna</th><th>Obligatorio</th><th>Valores permitidos / Notas</th></tr>';
+    echo '<tr><td>Evento</td><td>Sí</td><td>Nombre exacto del evento (ver Referencia).</td></tr>';
+    echo '<tr><td>Tipo entrada</td><td>Sí</td><td>Nombre exacto del tipo dentro del evento (ver Referencia).</td></tr>';
+    echo '<tr><td>Nombre</td><td>Sí</td><td>Nombre completo del participante.</td></tr>';
+    echo '<tr><td>Teléfono</td><td>Sí</td><td>Número de contacto.</td></tr>';
+    echo '<tr><td>Fecha</td><td>Sí</td><td>Formato AAAA-MM-DD (ej. ' . htmlspecialchars($fechaHoy) . ').</td></tr>';
+    echo '<tr><td>Valor</td><td>Sí*</td><td>Monto numérico. En entradas gratis use 0. Puede diferir del catálogo (promociones).</td></tr>';
+    echo '<tr><td>Numeración</td><td>Condicional</td><td>Obligatoria si el evento requiere numeración (ver Referencia).</td></tr>';
+    echo '<tr><td>Estado</td><td>Sí</td><td><code>por_cancelar</code> o <code>pagado</code>. Entradas gratis: use <code>pagado</code>.</td></tr>';
+    echo '<tr><td>Forma de pago</td><td>Sí</td><td><code>pendiente</code>, <code>efectivo</code>, <code>transferencia</code> o <code>gratuito</code>.</td></tr>';
+    echo '<tr><td>Observación</td><td>No</td><td>Texto libre. No use el prefijo EJEMPLO: en registros reales.</td></tr>';
+    echo '</table>';
+
+    echo '<h3>Reglas de estado y forma de pago</h3>';
+    echo '<table border="1" cellpadding="4" cellspacing="0">';
+    echo '<tr><th>Situación</th><th>Estado</th><th>Forma de pago</th><th>Notas</th></tr>';
+    echo '<tr><td>Aún no ha pagado</td><td>por_cancelar</td><td>pendiente</td><td>Caso más común para inscripciones pendientes.</td></tr>';
+    echo '<tr><td>Pagó en efectivo</td><td>pagado</td><td>efectivo</td><td>Indique el valor cobrado.</td></tr>';
+    echo '<tr><td>Pagó por transferencia</td><td>pagado</td><td>transferencia</td><td>Indique el valor recibido.</td></tr>';
+    echo '<tr><td>Entrada gratuita</td><td>pagado</td><td>gratuito</td><td>Valor 0. El sistema marca el registro como completado.</td></tr>';
+    echo '<tr><td>Promoción / descuento</td><td>pagado o por_cancelar</td><td>según corresponda</td><td>Valor puede ser menor al del catálogo.</td></tr>';
+    echo '</table>';
+
+    echo '<h3>Datos (encabezados + ejemplos)</h3>';
+    echo '<p><em>Copie una fila de ejemplo como base o agregue filas nuevas con el mismo formato.</em></p>';
     echo '<table border="1" cellpadding="4" cellspacing="0">';
     echo '<tr>';
     foreach ($columnas as $etiqueta) {
         echo '<th>' . htmlspecialchars($etiqueta) . '</th>';
     }
     echo '</tr>';
-    echo '<tr>';
-    foreach (array_keys($columnas) as $clave) {
-        $ejemplo = match ($clave) {
-            'evento'       => 'Nombre del evento',
-            'tipo_entrada' => 'General',
-            'nombre'       => 'Juan Pérez',
-            'telefono'     => '3001234567',
-            'fecha'        => date('Y-m-d'),
-            'valor'        => '50000',
-            'numeracion'   => '',
-            'estado_pago'  => 'por_cancelar',
-            'forma_pago'   => 'pendiente',
-            'observacion'  => '',
-            default        => '',
-        };
-        echo '<td>' . htmlspecialchars($ejemplo) . '</td>';
+
+    foreach ($ejemplos as $ejemplo) {
+        echo '<tr>';
+        foreach (array_keys($columnas) as $clave) {
+            echo '<td>' . htmlspecialchars((string) ($ejemplo[$clave] ?? '')) . '</td>';
+        }
+        echo '</tr>';
     }
-    echo '</tr>';
+
     echo '</table>';
 
-    echo '<h3>Referencia · Eventos y tipos de entrada</h3>';
+    echo '<h3>Referencia · Eventos y tipos de entrada del sistema</h3>';
+    echo '<p><em>Copie estos nombres tal cual aparecen en las columnas Evento y Tipo entrada.</em></p>';
     echo '<table border="1" cellpadding="4" cellspacing="0">';
-    echo '<tr><th>Evento</th><th>Tipo entrada</th><th>Valor catálogo</th><th>Gratis</th><th>Requiere numeración</th></tr>';
+    echo '<tr><th>Evento</th><th>Tipo entrada</th><th>Valor catálogo</th><th>Gratis</th><th>Requiere numeración</th><th>Habilitado</th></tr>';
     if ($eventos === []) {
-        echo '<tr><td colspan="5">No hay eventos registrados.</td></tr>';
+        echo '<tr><td colspan="6">No hay eventos registrados. Cree eventos en el módulo Eventos antes de importar.</td></tr>';
     } else {
         foreach ($eventos as $evento) {
             $tipos = $evento['tipos_entrada'] ?? [];
             if ($tipos === []) {
                 echo '<tr>';
                 echo '<td>' . htmlspecialchars((string) ($evento['nombre'] ?? '')) . '</td>';
-                echo '<td colspan="4">Sin tipos de entrada</td>';
+                echo '<td colspan="5">Sin tipos de entrada configurados</td>';
                 echo '</tr>';
                 continue;
             }
@@ -95,12 +115,218 @@ function enviarPlantillaImportEventos(): void
                 echo '<td>' . htmlspecialchars(formatearMonto((float) ($tipo['valor'] ?? 0))) . '</td>';
                 echo '<td>' . ((int) ($tipo['es_gratis'] ?? 0) === 1 ? 'Sí' : 'No') . '</td>';
                 echo '<td>' . ((int) ($evento['requiere_numeracion'] ?? 0) === 1 ? 'Sí' : 'No') . '</td>';
+                echo '<td>' . ((int) ($evento['habilitado'] ?? 0) === 1 ? 'Sí' : 'No') . '</td>';
                 echo '</tr>';
             }
         }
     }
     echo '</table>';
     echo '</body></html>';
+}
+
+/**
+ * @param array<int, array<string, mixed>> $eventos
+ * @return array{
+ *   evento_pago: string,
+ *   tipo_pago: string,
+ *   valor_pago: string,
+ *   evento_gratis: string,
+ *   tipo_gratis: string,
+ *   evento_numeracion: string,
+ *   tipo_numeracion: string,
+ *   requiere_numeracion: bool
+ * }
+ */
+function obtenerContextoEjemplosPlantillaImportEventos(array $eventos): array
+{
+    $contexto = [
+        'evento_pago'         => 'Conferencia Anual',
+        'tipo_pago'           => 'General',
+        'valor_pago'          => '50000',
+        'evento_gratis'       => 'Conferencia Anual',
+        'tipo_gratis'         => 'Invitado',
+        'evento_numeracion'   => 'Concierto',
+        'tipo_numeracion'     => 'General',
+        'requiere_numeracion' => true,
+    ];
+
+    $eventoPago = null;
+    $tipoPago = null;
+    $eventoGratis = null;
+    $tipoGratis = null;
+    $eventoNumeracion = null;
+    $tipoNumeracion = null;
+
+    foreach ($eventos as $evento) {
+        foreach ($evento['tipos_entrada'] ?? [] as $tipo) {
+            $esGratis = (int) ($tipo['es_gratis'] ?? 0) === 1;
+
+            if (!$tipoPago && !$esGratis) {
+                $eventoPago = $evento;
+                $tipoPago = $tipo;
+            }
+
+            if (!$tipoGratis && $esGratis) {
+                $eventoGratis = $evento;
+                $tipoGratis = $tipo;
+            }
+
+            if (!$eventoNumeracion && (int) ($evento['requiere_numeracion'] ?? 0) === 1) {
+                $eventoNumeracion = $evento;
+                $tipoNumeracion = $tipo;
+            }
+        }
+    }
+
+    if ($eventoPago !== null && $tipoPago !== null) {
+        $contexto['evento_pago'] = (string) ($eventoPago['nombre'] ?? $contexto['evento_pago']);
+        $contexto['tipo_pago'] = (string) ($tipoPago['nombre'] ?? $contexto['tipo_pago']);
+        $contexto['valor_pago'] = (string) ((float) ($tipoPago['valor'] ?? 50000));
+    }
+
+    if ($eventoGratis !== null && $tipoGratis !== null) {
+        $contexto['evento_gratis'] = (string) ($eventoGratis['nombre'] ?? $contexto['evento_gratis']);
+        $contexto['tipo_gratis'] = (string) ($tipoGratis['nombre'] ?? $contexto['tipo_gratis']);
+    } elseif ($eventoPago !== null) {
+        $contexto['evento_gratis'] = (string) ($eventoPago['nombre'] ?? $contexto['evento_gratis']);
+    }
+
+    if ($eventoNumeracion !== null && $tipoNumeracion !== null) {
+        $contexto['evento_numeracion'] = (string) ($eventoNumeracion['nombre'] ?? $contexto['evento_numeracion']);
+        $contexto['tipo_numeracion'] = (string) ($tipoNumeracion['nombre'] ?? $contexto['tipo_numeracion']);
+        $contexto['requiere_numeracion'] = true;
+    } else {
+        $contexto['requiere_numeracion'] = false;
+        $contexto['evento_numeracion'] = $contexto['evento_pago'];
+        $contexto['tipo_numeracion'] = $contexto['tipo_pago'];
+    }
+
+    return $contexto;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $eventos
+ * @return array<int, array<string, string>>
+ */
+function obtenerFilasEjemploPlantillaImportEventos(array $eventos): array
+{
+    $ctx = obtenerContextoEjemplosPlantillaImportEventos($eventos);
+    $fecha = date('Y-m-d');
+    $valorPago = $ctx['valor_pago'];
+    $valorPromo = (string) max(0, (float) $valorPago - 10000);
+
+    $filas = [
+        [
+            'evento'       => $ctx['evento_pago'],
+            'tipo_entrada' => $ctx['tipo_pago'],
+            'nombre'       => 'María González',
+            'telefono'     => '3001112233',
+            'fecha'        => $fecha,
+            'valor'        => $valorPago,
+            'numeracion'   => '',
+            'estado_pago'  => 'por_cancelar',
+            'forma_pago'   => 'pendiente',
+            'observacion'  => 'EJEMPLO: Caso 1 — Inscripción pendiente de pago (estado por_cancelar + forma pendiente).',
+        ],
+        [
+            'evento'       => $ctx['evento_pago'],
+            'tipo_entrada' => $ctx['tipo_pago'],
+            'nombre'       => 'Carlos Rodríguez',
+            'telefono'     => '3104445566',
+            'fecha'        => $fecha,
+            'valor'        => $valorPago,
+            'numeracion'   => '',
+            'estado_pago'  => 'pagado',
+            'forma_pago'   => 'efectivo',
+            'observacion'  => 'EJEMPLO: Caso 2 — Pagado en efectivo (estado pagado + forma efectivo).',
+        ],
+        [
+            'evento'       => $ctx['evento_pago'],
+            'tipo_entrada' => $ctx['tipo_pago'],
+            'nombre'       => 'Ana Lucía Vargas',
+            'telefono'     => '3207778899',
+            'fecha'        => $fecha,
+            'valor'        => $valorPago,
+            'numeracion'   => '',
+            'estado_pago'  => 'pagado',
+            'forma_pago'   => 'transferencia',
+            'observacion'  => 'EJEMPLO: Caso 3 — Pagado por transferencia (estado pagado + forma transferencia).',
+        ],
+        [
+            'evento'       => $ctx['evento_gratis'],
+            'tipo_entrada' => $ctx['tipo_gratis'],
+            'nombre'       => 'Pedro Martínez',
+            'telefono'     => '3156667788',
+            'fecha'        => $fecha,
+            'valor'        => '0',
+            'numeracion'   => '',
+            'estado_pago'  => 'pagado',
+            'forma_pago'   => 'gratuito',
+            'observacion'  => 'EJEMPLO: Caso 4 — Entrada gratuita (valor 0, forma gratuito). Estado interno: completado.',
+        ],
+        [
+            'evento'       => $ctx['evento_pago'],
+            'tipo_entrada' => $ctx['tipo_pago'],
+            'nombre'       => 'Laura Sánchez',
+            'telefono'     => '3189990011',
+            'fecha'        => $fecha,
+            'valor'        => $valorPromo,
+            'numeracion'   => '',
+            'estado_pago'  => 'pagado',
+            'forma_pago'   => 'efectivo',
+            'observacion'  => 'EJEMPLO: Caso 5 — Valor con descuento/promoción (puede ser menor al catálogo).',
+        ],
+    ];
+
+    if ($ctx['requiere_numeracion']) {
+        $filas[] = [
+            'evento'       => $ctx['evento_numeracion'],
+            'tipo_entrada' => $ctx['tipo_numeracion'],
+            'nombre'       => 'Diego Herrera',
+            'telefono'     => '3012223344',
+            'fecha'        => $fecha,
+            'valor'        => $valorPago,
+            'numeracion'   => 'A-015',
+            'estado_pago'  => 'pagado',
+            'forma_pago'   => 'efectivo',
+            'observacion'  => 'EJEMPLO: Caso 6 — Evento con numeración obligatoria (llene la columna Numeración).',
+        ];
+    } else {
+        $filas[] = [
+            'evento'       => $ctx['evento_pago'],
+            'tipo_entrada' => $ctx['tipo_pago'],
+            'nombre'       => 'Sofía Ramírez',
+            'telefono'     => '3145556677',
+            'fecha'        => $fecha,
+            'valor'        => $valorPago,
+            'numeracion'   => 'B-042',
+            'estado_pago'  => 'pagado',
+            'forma_pago'   => 'transferencia',
+            'observacion'  => 'EJEMPLO: Caso 6 — Con numeración opcional (solo si el evento la requiere; si no, déjela vacía).',
+        ];
+    }
+
+    $filas[] = [
+        'evento'       => $ctx['evento_pago'],
+        'tipo_entrada' => $ctx['tipo_pago'],
+        'nombre'       => 'Jorge Castillo',
+        'telefono'     => '3178889900',
+        'fecha'        => $fecha,
+        'valor'        => $valorPago,
+        'numeracion'   => '',
+        'estado_pago'  => 'por_cancelar',
+        'forma_pago'   => 'pendiente',
+        'observacion'  => 'EJEMPLO: Caso 7 — Con observación personalizada para el equipo (texto libre).',
+    ];
+
+    return $filas;
+}
+
+function filaEsEjemploImportEvento(array $fila): bool
+{
+    $observacion = trim((string) ($fila['observacion'] ?? ''));
+
+    return str_starts_with(mb_strtoupper($observacion), 'EJEMPLO:');
 }
 
 function normalizarEncabezadoImportEvento(string $encabezado): string
@@ -315,6 +541,10 @@ function construirFilaImportEvento(array $mapa, array $valores): ?array
     }
 
     if (($fila['evento'] ?? '') === '' && ($fila['nombre'] ?? '') === '') {
+        return null;
+    }
+
+    if (filaEsEjemploImportEvento($fila)) {
         return null;
     }
 

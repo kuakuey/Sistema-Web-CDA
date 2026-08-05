@@ -14,10 +14,10 @@ $resultadoImportEventos = $resultadoImportEventos ?? null;
           y tipos de entrada disponibles en el sistema.
         </p>
         <ul class="small text-muted mb-4">
-          <li>Una fila por participante.</li>
-          <li>Fecha en formato <code>AAAA-MM-DD</code>.</li>
-          <li>Estado: <code>por_cancelar</code> o <code>pagado</code>.</li>
-          <li>Forma de pago: <code>pendiente</code>, <code>efectivo</code>, <code>transferencia</code> o <code>gratuito</code>.</li>
+          <li>La plantilla incluye <strong>7 casos de ejemplo</strong> (pendiente, efectivo, transferencia, gratis, promoción, numeración y observación).</li>
+          <li>Las filas con <code>EJEMPLO:</code> en Observación se omiten al importar.</li>
+          <li>Una fila por participante; fecha en <code>AAAA-MM-DD</code>.</li>
+          <li>Consulte la tabla de referencia dentro del archivo para nombres exactos.</li>
         </ul>
         <a href="avanzado.php?pestaña=importar&amp;descargar=plantilla" class="btn btn-success">
           <i class="bi bi-download me-1"></i>Descargar plantilla Excel

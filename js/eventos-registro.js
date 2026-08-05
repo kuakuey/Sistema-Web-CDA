@@ -121,6 +121,21 @@
     return isNaN(n) ? fallback : n;
   }
 
+  function puedeGestionarEstadoPago(contenedor) {
+    var bloque = contenedor.querySelector('.js-form-registro-evento');
+    var fuente = bloque || contenedor;
+    return fuente.getAttribute('data-puede-estado-pago') === '1';
+  }
+
+  function obtenerEstadoPagoSeleccionado(contenedor) {
+    if (!puedeGestionarEstadoPago(contenedor)) {
+      return 'por_cancelar';
+    }
+
+    var marcado = contenedor.querySelector('.js-estado-pago-evento:checked');
+    return marcado ? marcado.value : 'por_cancelar';
+  }
+
   function setVisible(elemento, visible) {
     if (!elemento) {
       return;
@@ -213,6 +228,7 @@
   function actualizarBloquePagoEvento(contenedor, opciones) {
     opciones = opciones || {};
     var sugerirValor = !!opciones.sugerirValor;
+    var puedeEstado = puedeGestionarEstadoPago(contenedor);
     var valorCatalogo = obtenerValorEventoSeleccionado(contenedor);
     var tipos = obtenerTiposEntradaEvento(contenedor);
     var sinEvento = tipos === null;
@@ -223,11 +239,13 @@
     var bloqueFormaPago = contenedor.querySelector('.js-bloque-forma-pago-evento');
     var bloqueEstado = contenedor.querySelector('.js-bloque-estado-pago-evento');
     var bloquePagoLegacy = contenedor.querySelector('.js-bloque-pago-evento');
+    var bloquePendienteTexto = contenedor.querySelector('.js-bloque-forma-pago-pendiente');
+    var bloqueMetodos = contenedor.querySelector('.js-bloque-metodos-pago');
     var hiddenFormaPago = contenedor.querySelector('.js-forma-pago-gratuito');
     var hiddenFormaPagoPendiente = contenedor.querySelector('.js-forma-pago-pendiente');
     var hiddenValor = contenedor.querySelector('.js-valor-gratuito');
     var hiddenEstado = contenedor.querySelector('.js-estado-pago-gratuito');
-    var hiddenEstadoPendiente = contenedor.querySelector('.js-estado-pago-pendiente');
+    var hiddenEstadoOculto = contenedor.querySelector('.js-estado-pago-oculto');
     var valorInput = contenedor.querySelector('.js-valor-evento');
     var metodosPago = contenedor.querySelectorAll('.js-metodo-pago-evento');
     var estadosPago = contenedor.querySelectorAll('.js-estado-pago-evento');
@@ -240,12 +258,13 @@
       valorInput.value = '';
     }
 
-    var valorActual = tipoListo
-      ? leerValorNumerico(valorInput, valorCatalogo != null ? valorCatalogo : 0)
-      : null;
     var esGratisTipo = tipoListo && tipoEntradaEsGratis(contenedor);
-    var esPendiente = tipoListo && !esGratisTipo && valorActual !== null && valorActual <= 0;
-    var esDePago = tipoListo && !esGratisTipo && valorActual !== null && valorActual > 0;
+    var mostrarPago = tipoListo && !esGratisTipo;
+    var estadoActual = esGratisTipo ? 'pagado' : (tipoListo ? obtenerEstadoPagoSeleccionado(contenedor) : 'por_cancelar');
+    var esPagado = estadoActual === 'pagado';
+    var esPorCancelar = estadoActual === 'por_cancelar';
+    var usarPendiente = mostrarPago && (esPorCancelar || !puedeEstado);
+    var usarMetodos = mostrarPago && esPagado && puedeEstado;
 
     setVisible(campoValor, true);
     pasosDespuesTipo.forEach(function (campo) {
@@ -253,7 +272,7 @@
         campo.disabled = !tipoListo || esGratisTipo;
         campo.required = tipoListo && !esGratisTipo;
         campo.min = '0';
-        campo.placeholder = esGratisTipo ? 'Gratuito' : (esPendiente ? 'Pendiente de pago' : '0.00');
+        campo.placeholder = esGratisTipo ? 'Gratuito' : '0.00';
         if (esGratisTipo) {
           campo.value = '0';
         }
@@ -276,36 +295,39 @@
       }
     }
 
-    setVisible(bloqueFormaPago, esDePago);
-    setVisible(bloqueEstado, esDePago);
+    setVisible(bloqueEstado, mostrarPago && puedeEstado);
+    setVisible(bloqueFormaPago, mostrarPago);
     if (bloquePagoLegacy) {
-      setVisible(bloquePagoLegacy, esDePago);
+      setVisible(bloquePagoLegacy, mostrarPago);
     }
+
+    setVisible(bloquePendienteTexto, usarPendiente);
+    setVisible(bloqueMetodos, usarMetodos);
 
     if (hiddenFormaPago) {
       hiddenFormaPago.disabled = !esGratisTipo;
     }
 
     if (hiddenFormaPagoPendiente) {
-      hiddenFormaPagoPendiente.disabled = !esPendiente;
+      hiddenFormaPagoPendiente.disabled = !usarPendiente;
     }
 
     if (hiddenEstado) {
       hiddenEstado.disabled = !esGratisTipo;
     }
 
-    if (hiddenEstadoPendiente) {
-      hiddenEstadoPendiente.disabled = !esPendiente;
+    if (hiddenEstadoOculto) {
+      hiddenEstadoOculto.disabled = esGratisTipo || puedeEstado;
     }
 
     metodosPago.forEach(function (radio) {
-      radio.disabled = !esDePago;
-      radio.required = esDePago;
+      radio.disabled = !usarMetodos;
+      radio.required = usarMetodos;
     });
 
     estadosPago.forEach(function (radio) {
-      radio.disabled = !esDePago;
-      radio.required = esDePago;
+      radio.disabled = !mostrarPago || !puedeEstado;
+      radio.required = mostrarPago && puedeEstado;
     });
 
     if (botonSubmit) {
@@ -401,6 +423,16 @@
         actualizarBloquePagoEvento(contenedor, { sugerirValor: false });
       });
     }
+
+    contenedor.querySelectorAll('.js-estado-pago-evento').forEach(function (radio) {
+      if (radio.dataset.boundEstadoPagoEvento) {
+        return;
+      }
+      radio.dataset.boundEstadoPagoEvento = '1';
+      radio.addEventListener('change', function () {
+        actualizarBloquePagoEvento(contenedor, { sugerirValor: false });
+      });
+    });
 
     var sugerirAlInicio = !valorInput || valorInput.value === '';
     refrescarFormularioRegistro(contenedor, { sugerirValor: sugerirAlInicio });

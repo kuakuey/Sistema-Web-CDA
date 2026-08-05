@@ -194,8 +194,17 @@
       <i class="bi bi-exclamation-triangle me-1"></i>
       No hay eventos habilitados. Un superadmin debe agregar y habilitar eventos primero.
     </div>
-    <?php else: ?>
-    <form method="POST" action="acciones.php" class="row g-3 js-form-registro js-form-registro-evento" id="formRegistroEvento" data-mensaje-exito="Participante registrado correctamente.">
+    <?php else:
+      $puedeGestionarEstadoRegistro = esRolConControlTotal((string) ($usuario['rol'] ?? ''));
+    ?>
+    <form
+      method="POST"
+      action="acciones.php"
+      class="row g-3 js-form-registro js-form-registro-evento"
+      id="formRegistroEvento"
+      data-mensaje-exito="Participante registrado correctamente."
+      data-puede-estado-pago="<?= $puedeGestionarEstadoRegistro ? '1' : '0' ?>"
+    >
       <input type="hidden" name="accion" value="registrar_evento">
       <input type="hidden" name="redireccion" value="eventos.php?pestaña=registrar">
 
@@ -253,7 +262,8 @@
         <input type="text" class="form-control" id="numeracion" name="numeracion" maxlength="30" placeholder="Seleccione evento primero…" disabled>
       </div>
 
-      <div class="col-md-4 js-bloque-estado-pago-evento">
+      <?php if ($puedeGestionarEstadoRegistro): ?>
+      <div class="col-md-6 js-bloque-estado-pago-evento" style="display:none">
         <label class="form-label d-block">Estado <span class="text-danger">*</span></label>
         <div class="form-check form-check-inline">
           <input class="form-check-input js-estado-pago-evento" type="radio" name="estado_pago" id="estado-por-cancelar" value="por_cancelar" checked disabled>
@@ -264,20 +274,28 @@
           <label class="form-check-label" for="estado-pagado">Pagado</label>
         </div>
       </div>
+      <?php else: ?>
+      <input type="hidden" name="estado_pago" class="js-estado-pago-oculto" value="por_cancelar">
+      <?php endif; ?>
 
-      <div class="col-md-4 js-bloque-forma-pago-evento">
-        <label class="form-label d-block">Forma de pago <span class="text-danger">*</span></label>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-efectivo" value="efectivo" checked disabled>
-          <label class="form-check-label" for="pago-efectivo">Efectivo</label>
+      <div class="col-md-6 js-bloque-forma-pago-evento" style="display:none">
+        <label class="form-label d-block">Forma de pago</label>
+        <div class="js-bloque-forma-pago-pendiente" style="display:none">
+          <input type="text" class="form-control" value="Pendiente" readonly tabindex="-1" aria-readonly="true">
         </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-transferencia" value="transferencia" disabled>
-          <label class="form-check-label" for="pago-transferencia">Transferencia</label>
+        <div class="js-bloque-metodos-pago">
+          <div class="form-check form-check-inline">
+            <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-efectivo" value="efectivo" checked disabled>
+            <label class="form-check-label" for="pago-efectivo">Efectivo</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input js-metodo-pago-evento" type="radio" name="forma_pago" id="pago-transferencia" value="transferencia" disabled>
+            <label class="form-check-label" for="pago-transferencia">Transferencia</label>
+          </div>
         </div>
       </div>
 
-      <div class="col-md-4">
+      <div class="col-md-6">
         <label class="form-label" for="fecha">Fecha <span class="text-danger">*</span></label>
         <input type="date" class="form-control js-paso-despues-tipo" id="fecha" name="fecha" required value="<?= htmlspecialchars(date('Y-m-d')) ?>" disabled>
       </div>
@@ -286,7 +304,6 @@
       <input type="hidden" name="forma_pago" class="js-forma-pago-pendiente" value="pendiente" disabled>
       <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
       <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" disabled>
-      <input type="hidden" name="estado_pago" class="js-estado-pago-pendiente" value="por_cancelar" disabled>
 
       <div class="col-12">
         <label class="form-label" for="observacion">Observación</label>

@@ -682,20 +682,26 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?stri
         $formaPago = 'gratuito';
         $valor = 0;
         $estadoPago = 'pagado';
-    } elseif ($valor <= 0) {
+    } elseif (!esRolConControlTotal($rol)) {
+        $estadoPago = 'por_cancelar';
         $formaPago = 'pendiente';
-        $valor = 0;
-        $estadoPago = 'por_cancelar';
-    } elseif (!in_array($formaPago, ['efectivo', 'transferencia'], true)) {
-        throw new InvalidArgumentException('Selecciona Efectivo o Transferencia.');
-    }
+    } else {
+        if ($estadoPago === '') {
+            $estadoPago = 'por_cancelar';
+        }
 
-    if ($estadoPago === '') {
-        $estadoPago = 'por_cancelar';
-    }
+        if (!array_key_exists($estadoPago, obtenerEstadosPagoEvento())) {
+            throw new InvalidArgumentException('Selecciona un estado válido: Por cancelar o Pagado.');
+        }
 
-    if (!array_key_exists($estadoPago, obtenerEstadosPagoEvento())) {
-        throw new InvalidArgumentException('Selecciona un estado válido: Por cancelar o Pagado.');
+        if ($estadoPago === 'pagado') {
+            if (!in_array($formaPago, ['efectivo', 'transferencia'], true)) {
+                throw new InvalidArgumentException('Selecciona Efectivo o Transferencia.');
+            }
+        } else {
+            $estadoPago = 'por_cancelar';
+            $formaPago = 'pendiente';
+        }
     }
 
     if ($nombre === '' || $fecha === '' || $telefono === '') {

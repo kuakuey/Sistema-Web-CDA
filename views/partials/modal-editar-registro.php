@@ -197,7 +197,13 @@ $fila = $filaEditar;
 
           <?php elseif ($tipoEditar === 'registro_evento'): ?>
           <input type="hidden" name="accion" value="actualizar_registro_evento">
-          <div class="row g-3 js-form-registro-evento">
+          <?php
+          $puedeGestionarEstadoRegistro = esRolConControlTotal((string) ($usuario['rol'] ?? ''));
+          ?>
+          <div
+            class="row g-3 js-form-registro-evento"
+            data-puede-estado-pago="<?= $puedeGestionarEstadoRegistro ? '1' : '0' ?>"
+          >
             <?php
             $eventoSeleccionado = null;
             foreach ($eventos ?? [] as $eventoItem) {
@@ -208,13 +214,17 @@ $fila = $filaEditar;
             }
             $tiposEntradaSeleccionados = $eventoSeleccionado['tipos_entrada'] ?? [];
             $tipoEntradaActualId = (int) ($fila['tipo_entrada_id'] ?? 0);
-            $valorRegistroActual = (float) ($fila['valor'] ?? 0);
             $formaPagoRegistro = normalizarFormaPagoEvento((string) ($fila['forma_pago'] ?? ''));
             $esGratuitoRegistro = $formaPagoRegistro === 'gratuito';
             $esPendienteRegistro = $formaPagoRegistro === 'pendiente';
             $formaPagoActual = in_array($formaPagoRegistro, ['efectivo', 'transferencia'], true) ? $formaPagoRegistro : 'efectivo';
             $estadoPagoActual = normalizarEstadoPagoEvento((string) ($fila['estado_pago'] ?? 'por_cancelar')) ?: 'por_cancelar';
-            $ocultarBloquesPago = $esGratuitoRegistro || $esPendienteRegistro;
+            if ($esGratuitoRegistro) {
+                $estadoPagoActual = 'pagado';
+            } elseif ($esPendienteRegistro) {
+                $estadoPagoActual = 'por_cancelar';
+            }
+            $ocultarBloquesPago = $esGratuitoRegistro;
             ?>
             <div class="col-md-6">
               <label class="form-label">Nombre evento <span class="text-danger">*</span></label>
@@ -280,7 +290,8 @@ $fila = $filaEditar;
               <label class="form-label">Numeración</label>
               <input type="text" class="form-control" name="numeracion" maxlength="30" value="<?= htmlspecialchars($fila['numeracion'] ?? '') ?>" <?= empty($fila['requiere_numeracion']) && empty($fila['numeracion']) ? 'disabled' : '' ?>>
             </div>
-            <div class="col-md-4 js-bloque-estado-pago-evento"<?= $ocultarBloquesPago ? ' style="display:none"' : '' ?>>
+            <?php if ($puedeGestionarEstadoRegistro): ?>
+            <div class="col-md-6 js-bloque-estado-pago-evento"<?= $ocultarBloquesPago ? ' style="display:none"' : '' ?>>
               <label class="form-label d-block">Estado <span class="text-danger">*</span></label>
               <div class="form-check form-check-inline">
                 <input
@@ -307,42 +318,55 @@ $fila = $filaEditar;
                 <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-estado-pagado') ?>">Pagado</label>
               </div>
             </div>
-            <div class="col-md-4 js-bloque-forma-pago-evento"<?= $ocultarBloquesPago ? ' style="display:none"' : '' ?>>
-              <label class="form-label d-block">Forma de pago <span class="text-danger">*</span></label>
-              <div class="form-check form-check-inline">
-                <input
-                  class="form-check-input js-metodo-pago-evento"
-                  type="radio"
-                  name="forma_pago"
-                  id="<?= htmlspecialchars($modalEditarId . '-pago-efectivo') ?>"
-                  value="efectivo"
-                  <?= $formaPagoActual === 'efectivo' ? 'checked' : '' ?>
-                  <?= $ocultarBloquesPago ? 'disabled' : '' ?>
-                >
-                <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-pago-efectivo') ?>">Efectivo</label>
+            <?php else: ?>
+            <input type="hidden" name="estado_pago" class="js-estado-pago-oculto" value="por_cancelar">
+            <?php endif; ?>
+            <div class="col-md-6 js-bloque-forma-pago-evento"<?= $ocultarBloquesPago ? ' style="display:none"' : '' ?>>
+              <label class="form-label d-block">Forma de pago</label>
+              <div
+                class="js-bloque-forma-pago-pendiente"
+                style="display:<?= (!$puedeGestionarEstadoRegistro || $estadoPagoActual === 'por_cancelar') && !$ocultarBloquesPago ? 'block' : 'none' ?>"
+              >
+                <input type="text" class="form-control" value="Pendiente" readonly tabindex="-1" aria-readonly="true">
               </div>
-              <div class="form-check form-check-inline">
-                <input
-                  class="form-check-input js-metodo-pago-evento"
-                  type="radio"
-                  name="forma_pago"
-                  id="<?= htmlspecialchars($modalEditarId . '-pago-transferencia') ?>"
-                  value="transferencia"
-                  <?= $formaPagoActual === 'transferencia' ? 'checked' : '' ?>
-                  <?= $ocultarBloquesPago ? 'disabled' : '' ?>
-                >
-                <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-pago-transferencia') ?>">Transferencia</label>
+              <div
+                class="js-bloque-metodos-pago"
+                style="display:<?= $puedeGestionarEstadoRegistro && $estadoPagoActual === 'pagado' && !$ocultarBloquesPago ? 'block' : 'none' ?>"
+              >
+                <div class="form-check form-check-inline">
+                  <input
+                    class="form-check-input js-metodo-pago-evento"
+                    type="radio"
+                    name="forma_pago"
+                    id="<?= htmlspecialchars($modalEditarId . '-pago-efectivo') ?>"
+                    value="efectivo"
+                    <?= $formaPagoActual === 'efectivo' ? 'checked' : '' ?>
+                    <?= (!$puedeGestionarEstadoRegistro || $estadoPagoActual !== 'pagado' || $ocultarBloquesPago) ? 'disabled' : '' ?>
+                  >
+                  <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-pago-efectivo') ?>">Efectivo</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input
+                    class="form-check-input js-metodo-pago-evento"
+                    type="radio"
+                    name="forma_pago"
+                    id="<?= htmlspecialchars($modalEditarId . '-pago-transferencia') ?>"
+                    value="transferencia"
+                    <?= $formaPagoActual === 'transferencia' ? 'checked' : '' ?>
+                    <?= (!$puedeGestionarEstadoRegistro || $estadoPagoActual !== 'pagado' || $ocultarBloquesPago) ? 'disabled' : '' ?>
+                  >
+                  <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-pago-transferencia') ?>">Transferencia</label>
+                </div>
               </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label class="form-label">Fecha <span class="text-danger">*</span></label>
               <input type="date" class="form-control js-paso-despues-tipo" name="fecha" required value="<?= htmlspecialchars($fila['fecha'] ?? '') ?>">
             </div>
             <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
-            <input type="hidden" name="forma_pago" class="js-forma-pago-pendiente" value="pendiente" <?= !$esPendienteRegistro ? 'disabled' : '' ?>>
+            <input type="hidden" name="forma_pago" class="js-forma-pago-pendiente" value="pendiente" <?= $esGratuitoRegistro || ($puedeGestionarEstadoRegistro && $estadoPagoActual === 'pagado') ? 'disabled' : '' ?>>
             <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
             <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
-            <input type="hidden" name="estado_pago" class="js-estado-pago-pendiente" value="por_cancelar" <?= !$esPendienteRegistro ? 'disabled' : '' ?>>
             <div class="col-12">
               <label class="form-label">Observación</label>
               <textarea class="form-control js-paso-despues-tipo" name="observacion" rows="2" maxlength="500"><?= htmlspecialchars($fila['observacion'] ?? '') ?></textarea>

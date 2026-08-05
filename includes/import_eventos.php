@@ -26,7 +26,6 @@ function columnasPlantillaImportEventos(): array
 
 function enviarPlantillaImportEventos(): void
 {
-    $columnas = columnasPlantillaImportEventos();
     $eventos = obtenerEventos();
     $ejemplos = obtenerFilasEjemploPlantillaImportEventos($eventos);
     $fechaHoy = date('Y-m-d');
@@ -36,92 +35,172 @@ function enviarPlantillaImportEventos(): void
     header('Cache-Control: max-age=0');
 
     echo "\xEF\xBB\xBF";
-    echo '<html><head><meta charset="UTF-8"></head><body>';
-    echo '<h2>Plantilla · Registros de eventos</h2>';
+    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+    echo construirWorkbookXmlPlantillaImportEventos($eventos, $ejemplos, $fechaHoy);
+}
 
-    echo '<h3>Instrucciones generales</h3>';
-    echo '<ol>';
-    echo '<li>Use la tabla <strong>Datos</strong>: una fila por participante. <strong>No modifique los encabezados</strong> de la primera fila.</li>';
-    echo '<li>Las filas que empiezan con <strong>EJEMPLO:</strong> en Observación son solo referencia; <strong>el sistema las omite al importar</strong>. Puede borrarlas o dejarlas.</li>';
-    echo '<li>Agregue sus registros reales debajo de los ejemplos o reemplace los ejemplos por sus datos.</li>';
-    echo '<li>Consulte la tabla <strong>Referencia</strong> al final para copiar nombres exactos de evento y tipo de entrada.</li>';
-    echo '<li>Guarde el archivo y súbalo en <strong>Avanzado → Importar registros</strong>.</li>';
-    echo '</ol>';
+function construirWorkbookXmlPlantillaImportEventos(array $eventos, array $ejemplos, string $fechaHoy): string
+{
+    $xml = '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"'
+        . ' xmlns:o="urn:schemas-microsoft-com:office:office"'
+        . ' xmlns:x="urn:schemas-microsoft-com:office:excel"'
+        . ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"'
+        . ' xmlns:html="http://www.w3.org/TR/REC-html40">';
+    $xml .= '<Styles>';
+    $xml .= '<Style ss:ID="Header"><Font ss:Bold="1"/></Style>';
+    $xml .= '<Style ss:ID="Titulo"><Font ss:Bold="1" ss:Size="12"/></Style>';
+    $xml .= '<Style ss:ID="Subtitulo"><Font ss:Bold="1" ss:Size="10"/></Style>';
+    $xml .= '</Styles>';
+    $xml .= construirHojaDatosXmlPlantillaImportEventos();
+    $xml .= construirHojaGuiaXmlPlantillaImportEventos($eventos, $ejemplos, $fechaHoy);
+    $xml .= '</Workbook>';
 
-    echo '<h3>Descripción de columnas</h3>';
-    echo '<table border="1" cellpadding="4" cellspacing="0">';
-    echo '<tr><th>Columna</th><th>Obligatorio</th><th>Valores permitidos / Notas</th></tr>';
-    echo '<tr><td>Evento</td><td>Sí</td><td>Nombre exacto del evento (ver Referencia).</td></tr>';
-    echo '<tr><td>Tipo entrada</td><td>Sí</td><td>Nombre exacto del tipo dentro del evento (ver Referencia).</td></tr>';
-    echo '<tr><td>Nombre</td><td>Sí</td><td>Nombre completo del participante.</td></tr>';
-    echo '<tr><td>Teléfono</td><td>Sí</td><td>Número de contacto.</td></tr>';
-    echo '<tr><td>Fecha</td><td>Sí</td><td>Formato AAAA-MM-DD (ej. ' . htmlspecialchars($fechaHoy) . ').</td></tr>';
-    echo '<tr><td>Valor</td><td>Sí*</td><td>Monto numérico. En entradas gratis use 0. Puede diferir del catálogo (promociones).</td></tr>';
-    echo '<tr><td>Numeración</td><td>Condicional</td><td>Obligatoria si el evento requiere numeración (ver Referencia).</td></tr>';
-    echo '<tr><td>Estado</td><td>Sí</td><td><code>por_cancelar</code> o <code>pagado</code>. Entradas gratis: use <code>pagado</code>.</td></tr>';
-    echo '<tr><td>Forma de pago</td><td>Sí</td><td><code>pendiente</code>, <code>efectivo</code>, <code>transferencia</code> o <code>gratuito</code>.</td></tr>';
-    echo '<tr><td>Observación</td><td>No</td><td>Texto libre. No use el prefijo EJEMPLO: en registros reales.</td></tr>';
-    echo '</table>';
+    return $xml;
+}
 
-    echo '<h3>Reglas de estado y forma de pago</h3>';
-    echo '<table border="1" cellpadding="4" cellspacing="0">';
-    echo '<tr><th>Situación</th><th>Estado</th><th>Forma de pago</th><th>Notas</th></tr>';
-    echo '<tr><td>Aún no ha pagado</td><td>por_cancelar</td><td>pendiente</td><td>Caso más común para inscripciones pendientes.</td></tr>';
-    echo '<tr><td>Pagó en efectivo</td><td>pagado</td><td>efectivo</td><td>Indique el valor cobrado.</td></tr>';
-    echo '<tr><td>Pagó por transferencia</td><td>pagado</td><td>transferencia</td><td>Indique el valor recibido.</td></tr>';
-    echo '<tr><td>Entrada gratuita</td><td>pagado</td><td>gratuito</td><td>Valor 0. El sistema marca el registro como completado.</td></tr>';
-    echo '<tr><td>Promoción / descuento</td><td>pagado o por_cancelar</td><td>según corresponda</td><td>Valor puede ser menor al del catálogo.</td></tr>';
-    echo '</table>';
+function construirHojaDatosXmlPlantillaImportEventos(): string
+{
+    $columnas = columnasPlantillaImportEventos();
+    $xml = '<Worksheet ss:Name="Datos"><Table>';
+    $xml .= filaXmlExcel(array_values($columnas), 'Header');
+    $xml .= '</Table></Worksheet>';
 
-    echo '<h3>Datos (encabezados + ejemplos)</h3>';
-    echo '<p><em>Copie una fila de ejemplo como base o agregue filas nuevas con el mismo formato.</em></p>';
-    echo '<table border="1" cellpadding="4" cellspacing="0">';
-    echo '<tr>';
-    foreach ($columnas as $etiqueta) {
-        echo '<th>' . htmlspecialchars($etiqueta) . '</th>';
+    return $xml;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $eventos
+ * @param array<int, array<string, string>> $ejemplos
+ */
+function construirHojaGuiaXmlPlantillaImportEventos(array $eventos, array $ejemplos, string $fechaHoy): string
+{
+    $columnas = columnasPlantillaImportEventos();
+    $claves = array_keys($columnas);
+
+    $xml = '<Worksheet ss:Name="Guía y ejemplos"><Table>';
+
+    $xml .= filaXmlExcel(['PLANTILLA · REGISTROS DE EVENTOS'], 'Titulo');
+    $xml .= filaXmlExcel(['']);
+    $xml .= filaXmlExcel(['Use la pestaña «Datos» para registrar participantes. Esta pestaña es solo guía.'], 'Subtitulo');
+    $xml .= filaXmlExcel(['']);
+
+    $xml .= filaXmlExcel(['INSTRUCCIONES GENERALES'], 'Subtitulo');
+    foreach ([
+        '1. Vaya a la pestaña «Datos» (primera pestaña).',
+        '2. Complete una fila por participante debajo del encabezado.',
+        '3. No modifique los nombres de las columnas en la fila 1.',
+        '4. Copie nombres de Evento y Tipo entrada desde la tabla Referencia (abajo).',
+        '5. Guarde el archivo y súbalo en Avanzado → Importar registros.',
+        '6. El sistema importa únicamente la pestaña «Datos».',
+    ] as $linea) {
+        $xml .= filaXmlExcel([$linea]);
     }
-    echo '</tr>';
+    $xml .= filaXmlExcel(['']);
 
+    $xml .= filaXmlExcel(['DESCRIPCIÓN DE COLUMNAS'], 'Subtitulo');
+    $xml .= filaXmlExcel(['Columna', 'Obligatorio', 'Valores permitidos / Notas'], 'Header');
+    foreach ([
+        ['Evento', 'Sí', 'Nombre exacto del evento (ver Referencia).'],
+        ['Tipo entrada', 'Sí', 'Nombre exacto del tipo dentro del evento.'],
+        ['Nombre', 'Sí', 'Nombre completo del participante.'],
+        ['Teléfono', 'Sí', 'Número de contacto.'],
+        ['Fecha', 'Sí', 'Formato AAAA-MM-DD (ej. ' . $fechaHoy . ').'],
+        ['Valor', 'Sí*', 'Monto numérico. En entradas gratis use 0.'],
+        ['Numeración', 'Condicional', 'Obligatoria si el evento requiere numeración.'],
+        ['Estado', 'Sí', 'por_cancelar o pagado. Gratis: pagado.'],
+        ['Forma de pago', 'Sí', 'pendiente, efectivo, transferencia o gratuito.'],
+        ['Observación', 'No', 'Texto libre opcional.'],
+    ] as $fila) {
+        $xml .= filaXmlExcel($fila);
+    }
+    $xml .= filaXmlExcel(['']);
+
+    $xml .= filaXmlExcel(['REGLAS DE ESTADO Y FORMA DE PAGO'], 'Subtitulo');
+    $xml .= filaXmlExcel(['Situación', 'Estado', 'Forma de pago', 'Notas'], 'Header');
+    foreach ([
+        ['Aún no ha pagado', 'por_cancelar', 'pendiente', 'Inscripción pendiente.'],
+        ['Pagó en efectivo', 'pagado', 'efectivo', 'Indique el valor cobrado.'],
+        ['Pagó por transferencia', 'pagado', 'transferencia', 'Indique el valor recibido.'],
+        ['Entrada gratuita', 'pagado', 'gratuito', 'Valor 0. Estado: completado.'],
+        ['Promoción / descuento', 'pagado o por_cancelar', 'según caso', 'Valor puede ser menor al catálogo.'],
+    ] as $fila) {
+        $xml .= filaXmlExcel($fila);
+    }
+    $xml .= filaXmlExcel(['']);
+
+    $xml .= filaXmlExcel(['EJEMPLOS (copie el formato a la pestaña Datos)'], 'Subtitulo');
+    $xml .= filaXmlExcel(array_values($columnas), 'Header');
     foreach ($ejemplos as $ejemplo) {
-        echo '<tr>';
-        foreach (array_keys($columnas) as $clave) {
-            echo '<td>' . htmlspecialchars((string) ($ejemplo[$clave] ?? '')) . '</td>';
+        $valores = [];
+        foreach ($claves as $clave) {
+            $valores[] = (string) ($ejemplo[$clave] ?? '');
         }
-        echo '</tr>';
+        $xml .= filaXmlExcel($valores);
     }
+    $xml .= filaXmlExcel(['']);
 
-    echo '</table>';
-
-    echo '<h3>Referencia · Eventos y tipos de entrada del sistema</h3>';
-    echo '<p><em>Copie estos nombres tal cual aparecen en las columnas Evento y Tipo entrada.</em></p>';
-    echo '<table border="1" cellpadding="4" cellspacing="0">';
-    echo '<tr><th>Evento</th><th>Tipo entrada</th><th>Valor catálogo</th><th>Gratis</th><th>Requiere numeración</th><th>Habilitado</th></tr>';
+    $xml .= filaXmlExcel(['REFERENCIA · EVENTOS Y TIPOS DE ENTRADA'], 'Subtitulo');
+    $xml .= filaXmlExcel(['Evento', 'Tipo entrada', 'Valor catálogo', 'Gratis', 'Requiere numeración', 'Habilitado'], 'Header');
     if ($eventos === []) {
-        echo '<tr><td colspan="6">No hay eventos registrados. Cree eventos en el módulo Eventos antes de importar.</td></tr>';
+        $xml .= filaXmlExcel(['No hay eventos registrados. Cree eventos en el módulo Eventos antes de importar.']);
     } else {
         foreach ($eventos as $evento) {
             $tipos = $evento['tipos_entrada'] ?? [];
             if ($tipos === []) {
-                echo '<tr>';
-                echo '<td>' . htmlspecialchars((string) ($evento['nombre'] ?? '')) . '</td>';
-                echo '<td colspan="5">Sin tipos de entrada configurados</td>';
-                echo '</tr>';
+                $xml .= filaXmlExcel([
+                    (string) ($evento['nombre'] ?? ''),
+                    'Sin tipos de entrada',
+                    '',
+                    '',
+                    '',
+                    (int) ($evento['habilitado'] ?? 0) === 1 ? 'Sí' : 'No',
+                ]);
                 continue;
             }
             foreach ($tipos as $indice => $tipo) {
-                echo '<tr>';
-                echo '<td>' . ($indice === 0 ? htmlspecialchars((string) ($evento['nombre'] ?? '')) : '') . '</td>';
-                echo '<td>' . htmlspecialchars((string) ($tipo['nombre'] ?? '')) . '</td>';
-                echo '<td>' . htmlspecialchars(formatearMonto((float) ($tipo['valor'] ?? 0))) . '</td>';
-                echo '<td>' . ((int) ($tipo['es_gratis'] ?? 0) === 1 ? 'Sí' : 'No') . '</td>';
-                echo '<td>' . ((int) ($evento['requiere_numeracion'] ?? 0) === 1 ? 'Sí' : 'No') . '</td>';
-                echo '<td>' . ((int) ($evento['habilitado'] ?? 0) === 1 ? 'Sí' : 'No') . '</td>';
-                echo '</tr>';
+                $xml .= filaXmlExcel([
+                    $indice === 0 ? (string) ($evento['nombre'] ?? '') : '',
+                    (string) ($tipo['nombre'] ?? ''),
+                    formatearMonto((float) ($tipo['valor'] ?? 0)),
+                    (int) ($tipo['es_gratis'] ?? 0) === 1 ? 'Sí' : 'No',
+                    (int) ($evento['requiere_numeracion'] ?? 0) === 1 ? 'Sí' : 'No',
+                    (int) ($evento['habilitado'] ?? 0) === 1 ? 'Sí' : 'No',
+                ]);
             }
         }
     }
-    echo '</table>';
-    echo '</body></html>';
+
+    $xml .= '</Table></Worksheet>';
+
+    return $xml;
+}
+
+/**
+ * @param array<int, string|int|float> $valores
+ */
+function filaXmlExcel(array $valores, ?string $estiloId = null): string
+{
+    $attrs = $estiloId !== null ? ' ss:StyleID="' . escaparXmlExcel($estiloId) . '"' : '';
+    $xml = '<Row' . $attrs . '>';
+    foreach ($valores as $valor) {
+        $xml .= celdaXmlExcel((string) $valor);
+    }
+    $xml .= '</Row>';
+
+    return $xml;
+}
+
+function celdaXmlExcel(string $valor, string $tipo = 'String'): string
+{
+    return '<Cell><Data ss:Type="' . escaparXmlExcel($tipo) . '">'
+        . escaparXmlExcel($valor)
+        . '</Data></Cell>';
+}
+
+function escaparXmlExcel(string $texto): string
+{
+    return htmlspecialchars($texto, ENT_XML1 | ENT_QUOTES, 'UTF-8');
 }
 
 /**
@@ -365,11 +444,201 @@ function leerFilasArchivoImportEventos(string $rutaTemporal, string $nombreOrigi
         throw new InvalidArgumentException('El archivo está vacío.');
     }
 
+    if (esArchivoSpreadsheetMlImportEventos($muestra)) {
+        return leerFilasSpreadsheetMlImportEventos($rutaTemporal);
+    }
+
     if (stripos($muestra, '<html') !== false || stripos($muestra, '<table') !== false) {
         return leerFilasHtmlImportEventos($rutaTemporal);
     }
 
     return leerFilasCsvImportEventos($rutaTemporal);
+}
+
+function esArchivoSpreadsheetMlImportEventos(string $muestra): bool
+{
+    return stripos($muestra, 'urn:schemas-microsoft-com:office:spreadsheet') !== false
+        || stripos($muestra, '<?mso-application') !== false
+        || (stripos($muestra, '<Workbook') !== false && stripos($muestra, '<Worksheet') !== false);
+}
+
+/**
+ * @return array<int, array<string, string>>
+ */
+function leerFilasSpreadsheetMlImportEventos(string $ruta): array
+{
+    $xml = file_get_contents($ruta);
+    if ($xml === false) {
+        throw new InvalidArgumentException('No se pudo leer el archivo Excel.');
+    }
+
+    if (str_starts_with($xml, "\xEF\xBB\xBF")) {
+        $xml = substr($xml, 3);
+    }
+
+    libxml_use_internal_errors(true);
+    $dom = new DOMDocument();
+    if (!$dom->loadXML($xml, LIBXML_NOERROR | LIBXML_NOWARNING)) {
+        throw new InvalidArgumentException('El archivo Excel no tiene un formato válido.');
+    }
+
+    $xpath = new DOMXPath($dom);
+    /** @var DOMNodeList<DOMElement> $hojas */
+    $hojas = $xpath->query('//*[local-name()="Worksheet"]');
+    if ($hojas === false || $hojas->length === 0) {
+        throw new InvalidArgumentException('No se encontró ninguna hoja en el archivo Excel.');
+    }
+
+    $hojaDatos = null;
+    foreach ($hojas as $hoja) {
+        if (!$hoja instanceof DOMElement) {
+            continue;
+        }
+        $nombre = obtenerNombreHojaSpreadsheetMl($hoja);
+        if (strcasecmp($nombre, 'Datos') === 0) {
+            $hojaDatos = $hoja;
+            break;
+        }
+    }
+
+    if ($hojaDatos === null) {
+        $primera = $hojas->item(0);
+        $hojaDatos = $primera instanceof DOMElement ? $primera : null;
+    }
+
+    if ($hojaDatos === null) {
+        throw new InvalidArgumentException('No se encontró la hoja «Datos» en el archivo.');
+    }
+
+    $filas = extraerFilasDatosSpreadsheetMl($hojaDatos);
+    if ($filas === []) {
+        throw new InvalidArgumentException('La hoja «Datos» no contiene registros para importar.');
+    }
+
+    return $filas;
+}
+
+function obtenerNombreHojaSpreadsheetMl(DOMElement $hoja): string
+{
+    if ($hoja->hasAttribute('ss:Name')) {
+        return trim($hoja->getAttribute('ss:Name'));
+    }
+
+    if ($hoja->hasAttribute('Name')) {
+        return trim($hoja->getAttribute('Name'));
+    }
+
+    foreach ($hoja->attributes ?? [] as $attr) {
+        if (strcasecmp($attr->localName ?? '', 'Name') === 0) {
+            return trim($attr->nodeValue ?? '');
+        }
+    }
+
+    return '';
+}
+
+/**
+ * @return array<int, array<string, string>>
+ */
+function extraerFilasDatosSpreadsheetMl(DOMElement $hoja): array
+{
+    $filasDom = [];
+    foreach ($hoja->getElementsByTagName('*') as $nodo) {
+        if ($nodo instanceof DOMElement && strcasecmp($nodo->localName ?? $nodo->tagName, 'Row') === 0) {
+            $filasDom[] = $nodo;
+        }
+    }
+
+    if ($filasDom === []) {
+        return [];
+    }
+
+    $encabezados = [];
+    $indiceEncabezado = -1;
+
+    foreach ($filasDom as $indice => $fila) {
+        $celdas = extraerCeldasFilaSpreadsheetMl($fila);
+        $mapa = mapearEncabezadosImportEventos($celdas);
+        if (isset($mapa['evento'], $mapa['nombre'])) {
+            $encabezados = $mapa;
+            $indiceEncabezado = $indice;
+            break;
+        }
+    }
+
+    if ($encabezados === []) {
+        return [];
+    }
+
+    $filas = [];
+    for ($i = $indiceEncabezado + 1, $total = count($filasDom); $i < $total; $i++) {
+        $celdas = extraerCeldasFilaSpreadsheetMl($filasDom[$i]);
+        $datos = construirFilaImportEvento($encabezados, $celdas);
+        if ($datos !== null) {
+            $filas[] = $datos;
+        }
+    }
+
+    return $filas;
+}
+
+/**
+ * @return array<int, string>
+ */
+function extraerCeldasFilaSpreadsheetMl(DOMElement $fila): array
+{
+    $valores = [];
+    $columna = 0;
+
+    foreach ($fila->childNodes as $nodo) {
+        if (!$nodo instanceof DOMElement) {
+            continue;
+        }
+        if (strcasecmp($nodo->localName ?? $nodo->tagName, 'Cell') !== 0) {
+            continue;
+        }
+
+        $indiceAttr = '';
+        if ($nodo->hasAttribute('ss:Index')) {
+            $indiceAttr = $nodo->getAttribute('ss:Index');
+        } elseif ($nodo->hasAttribute('Index')) {
+            $indiceAttr = $nodo->getAttribute('Index');
+        } else {
+            foreach ($nodo->attributes ?? [] as $attr) {
+                if (strcasecmp($attr->localName ?? '', 'Index') === 0) {
+                    $indiceAttr = $attr->nodeValue ?? '';
+                    break;
+                }
+            }
+        }
+
+        if ($indiceAttr !== '') {
+            $columna = max(0, (int) $indiceAttr - 1);
+        }
+
+        $texto = '';
+        foreach ($nodo->getElementsByTagName('*') as $hijo) {
+            if ($hijo instanceof DOMElement && strcasecmp($hijo->localName ?? $hijo->tagName, 'Data') === 0) {
+                $texto = trim(preg_replace('/\s+/u', ' ', $hijo->textContent ?? '') ?? '');
+                break;
+            }
+        }
+
+        $valores[$columna] = $texto;
+        $columna++;
+    }
+
+    if ($valores === []) {
+        return [];
+    }
+
+    $maximo = max(array_keys($valores));
+    $densas = [];
+    for ($i = 0; $i <= $maximo; $i++) {
+        $densas[] = $valores[$i] ?? '';
+    }
+
+    return $densas;
 }
 
 /**

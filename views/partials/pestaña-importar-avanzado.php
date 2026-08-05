@@ -10,14 +10,14 @@ $resultadoImportEventos = $resultadoImportEventos ?? null;
       </div>
       <div class="card-body">
         <p class="text-muted small">
-          Descarga la plantilla con los encabezados correctos y una hoja de referencia con los eventos
-          y tipos de entrada disponibles en el sistema.
+          El archivo tiene <strong>dos pestañas</strong>: «Datos» (solo encabezados, para llenar) y
+          «Guía y ejemplos» (instrucciones, casos de uso y referencia de eventos).
         </p>
         <ul class="small text-muted mb-4">
-          <li>La plantilla incluye <strong>7 casos de ejemplo</strong> (pendiente, efectivo, transferencia, gratis, promoción, numeración y observación).</li>
-          <li>Las filas con <code>EJEMPLO:</code> en Observación se omiten al importar.</li>
-          <li>Una fila por participante; fecha en <code>AAAA-MM-DD</code>.</li>
-          <li>Consulte la tabla de referencia dentro del archivo para nombres exactos.</li>
+          <li>Complete sus registros en la pestaña <strong>Datos</strong>.</li>
+          <li>Consulte la pestaña <strong>Guía y ejemplos</strong> para ver 7 casos y la tabla de referencia.</li>
+          <li>Al importar, el sistema lee únicamente la pestaña «Datos».</li>
+          <li>También puede subir un archivo <code>.csv</code> con las mismas columnas.</li>
         </ul>
         <a href="avanzado.php?pestaña=importar&amp;descargar=plantilla" class="btn btn-success">
           <i class="bi bi-download me-1"></i>Descargar plantilla Excel

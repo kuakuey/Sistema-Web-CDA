@@ -245,17 +245,36 @@
       : null;
     var esGratisTipo = tipoListo && tipoEntradaEsGratis(contenedor);
     var esPendiente = tipoListo && !esGratisTipo && valorActual !== null && valorActual <= 0;
-    var esDePago = tipoListo && valorActual !== null && valorActual > 0;
+    var esDePago = tipoListo && !esGratisTipo && valorActual !== null && valorActual > 0;
 
     setVisible(campoValor, true);
     pasosDespuesTipo.forEach(function (campo) {
-      campo.disabled = !tipoListo;
       if (campo.classList.contains('js-valor-evento')) {
-        campo.required = tipoListo;
+        campo.disabled = !tipoListo || esGratisTipo;
+        campo.required = tipoListo && !esGratisTipo;
         campo.min = '0';
-        campo.placeholder = '0.00';
+        campo.placeholder = esGratisTipo ? 'Gratuito' : (esPendiente ? 'Pendiente de pago' : '0.00');
+        if (esGratisTipo) {
+          campo.value = '0';
+        }
+        return;
       }
+
+      campo.disabled = !tipoListo;
     });
+
+    if (hiddenValor) {
+      hiddenValor.disabled = !esGratisTipo;
+      hiddenValor.value = '0';
+    }
+
+    if (valorInput) {
+      if (esGratisTipo) {
+        valorInput.removeAttribute('name');
+      } else {
+        valorInput.setAttribute('name', 'valor');
+      }
+    }
 
     setVisible(bloqueFormaPago, esDePago);
     setVisible(bloqueEstado, esDePago);
@@ -277,10 +296,6 @@
 
     if (hiddenEstadoPendiente) {
       hiddenEstadoPendiente.disabled = !esPendiente;
-    }
-
-    if (hiddenValor) {
-      hiddenValor.disabled = true;
     }
 
     metodosPago.forEach(function (radio) {

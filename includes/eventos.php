@@ -449,6 +449,24 @@ function etiquetaEstadoPagoEvento(?string $estado): string
     return $estados[normalizarEstadoPagoEvento($estado)] ?? $estado;
 }
 
+function etiquetaEstadoPagoRegistroEvento(array $registro): string
+{
+    if (registroEventoEsEntradaGratis($registro)) {
+        return 'Completado';
+    }
+
+    return etiquetaEstadoPagoEvento($registro['estado_pago'] ?? null);
+}
+
+function claseBadgeEstadoPagoRegistroEvento(array $registro): string
+{
+    if (registroEventoEsEntradaGratis($registro)) {
+        return 'bg-success';
+    }
+
+    return claseBadgeEstadoPagoEvento($registro['estado_pago'] ?? null);
+}
+
 function claseBadgeEstadoPagoEvento(?string $estado): string
 {
     return normalizarEstadoPagoEvento((string) $estado) === 'pagado'
@@ -749,7 +767,7 @@ function actualizarEstadoPagoRegistroEvento(int $id, string $estadoPago, string 
     validarAccesoRegistroEventoPorEstadoEvento($registro, $rol);
 
     if (registroEventoEsEntradaGratis($registro)) {
-        throw new InvalidArgumentException('Las entradas gratuitas siempre tienen estado Pagado.');
+        throw new InvalidArgumentException('Las entradas gratuitas siempre tienen estado Completado.');
     }
 
     $estadoActual = normalizarEstadoPagoEvento((string) ($registro['estado_pago'] ?? '')) ?: 'por_cancelar';

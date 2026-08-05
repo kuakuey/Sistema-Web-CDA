@@ -107,7 +107,7 @@ function enviarInformeExcel(array $informe, string $seccion = 'completo'): void
                 echo '<td>' . htmlspecialchars($registroEvento['nombre']) . '</td>';
                 echo '<td>' . htmlspecialchars(trim((string) ($registroEvento['tipo_entrada'] ?? '')) !== '' ? $registroEvento['tipo_entrada'] : '—') . '</td>';
                 echo '<td>' . htmlspecialchars($registroEvento['numeracion'] ?? '—') . '</td>';
-                echo '<td>' . htmlspecialchars(etiquetaEstadoPagoEvento($registroEvento['estado_pago'] ?? null)) . '</td>';
+                echo '<td>' . htmlspecialchars(etiquetaEstadoPagoRegistroEvento($registroEvento)) . '</td>';
                 echo '<td>' . htmlspecialchars(formatearFechaInforme($registroEvento['fecha'])) . '</td>';
                 echo '<td>' . htmlspecialchars($registroEvento['telefono']) . '</td>';
                 echo '<td>' . htmlspecialchars(etiquetaFormaPagoEvento($registroEvento['forma_pago'] ?? null)) . '</td>';

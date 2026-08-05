@@ -450,7 +450,7 @@ function construirDetalleActividadRegistroEvento(array $datos): string
         $lineas[] = 'Forma de pago: ' . etiquetaFormaPagoEvento((string) $datos['forma_pago']);
     }
     if (!empty($datos['estado_pago'])) {
-        $lineas[] = 'Estado: ' . etiquetaEstadoPagoEvento((string) $datos['estado_pago']);
+        $lineas[] = 'Estado: ' . etiquetaEstadoPagoRegistroEvento($datos);
     }
     if (!empty($datos['numeracion'])) {
         $lineas[] = 'Numeración: ' . trim((string) $datos['numeracion']);
@@ -572,6 +572,7 @@ function construirDetalleActividadEstadoPagoEvento(int $registroId, string $esta
     require_once __DIR__ . '/eventos.php';
 
     $lineas = [];
+    $registro = null;
     if ($registroId > 0) {
         $registro = obtenerRegistroEventoPorId($registroId);
         if ($registro) {
@@ -590,7 +591,10 @@ function construirDetalleActividadEstadoPagoEvento(int $registroId, string $esta
 
     $estadoPago = trim($estadoPago);
     if ($estadoPago !== '') {
-        $lineas[] = 'Estado: ' . etiquetaEstadoPagoEvento($estadoPago);
+        $etiquetaEstado = is_array($registro)
+            ? etiquetaEstadoPagoRegistroEvento($registro)
+            : etiquetaEstadoPagoEvento($estadoPago);
+        $lineas[] = 'Estado: ' . $etiquetaEstado;
     }
 
     return implode("\n", $lineas);
@@ -891,7 +895,7 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
         $campos['Fecha'] = formatearFechaActividadLog($registro['fecha'] ?? null);
         $campos['Valor'] = formatearMonto((float) ($registro['valor'] ?? 0));
         $campos['Forma de pago'] = etiquetaFormaPagoEvento($registro['forma_pago'] ?? null);
-        $campos['Estado'] = etiquetaEstadoPagoEvento($registro['estado_pago'] ?? null);
+        $campos['Estado'] = etiquetaEstadoPagoRegistroEvento($registro);
         $numeracion = trim((string) ($registro['numeracion'] ?? ''));
         if ($numeracion !== '' || !empty($registro['requiere_numeracion'])) {
             $campos['Numeración'] = $numeracion !== '' ? $numeracion : '—';

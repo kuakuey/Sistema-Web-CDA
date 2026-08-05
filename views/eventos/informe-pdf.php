@@ -168,7 +168,7 @@
         <td><?= htmlspecialchars($registro['nombre']) ?></td>
         <td><?= htmlspecialchars(trim((string) ($registro['tipo_entrada'] ?? '')) !== '' ? $registro['tipo_entrada'] : '—') ?></td>
         <td><?= htmlspecialchars($registro['numeracion'] ?? '—') ?></td>
-        <td><?= htmlspecialchars(etiquetaEstadoPagoEvento($registro['estado_pago'] ?? null)) ?></td>
+        <td><?= htmlspecialchars(etiquetaEstadoPagoRegistroEvento($registro)) ?></td>
         <td><?= htmlspecialchars(formatearFechaInforme($registro['fecha'])) ?></td>
         <td><?= htmlspecialchars($registro['telefono']) ?></td>
         <td><?= !empty($registro['observacion']) ? htmlspecialchars($registro['observacion']) : '—' ?></td>

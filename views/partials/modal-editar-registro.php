@@ -198,11 +198,13 @@ $fila = $filaEditar;
           <?php elseif ($tipoEditar === 'registro_evento'): ?>
           <input type="hidden" name="accion" value="actualizar_registro_evento">
           <?php
-          $puedeGestionarEstadoRegistro = esRolConControlTotal((string) ($usuario['rol'] ?? ''));
+          $puedeGestionarEstadoRegistro = puedeCrearRegistroEventoPendiente((string) ($usuario['rol'] ?? ''));
+          $registroEventoSoloMetodosPago = registroEventoRequiereMetodoPagoInmediato((string) ($usuario['rol'] ?? ''));
           ?>
           <div
             class="row g-3 js-form-registro-evento"
             data-puede-estado-pago="<?= $puedeGestionarEstadoRegistro ? '1' : '0' ?>"
+            data-solo-metodos-pago="<?= $registroEventoSoloMetodosPago ? '1' : '0' ?>"
           >
             <?php
             $eventoSeleccionado = null;
@@ -318,6 +320,8 @@ $fila = $filaEditar;
                 <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-estado-pagado') ?>">Pagado</label>
               </div>
             </div>
+            <?php elseif (!empty($registroEventoSoloMetodosPago)): ?>
+            <input type="hidden" name="estado_pago" class="js-estado-pago-counter" value="pagado">
             <?php else: ?>
             <input type="hidden" name="estado_pago" class="js-estado-pago-oculto" value="por_cancelar">
             <?php endif; ?>
@@ -325,13 +329,13 @@ $fila = $filaEditar;
               <label class="form-label d-block">Forma de pago</label>
               <div
                 class="js-bloque-forma-pago-pendiente"
-                style="display:<?= (!$puedeGestionarEstadoRegistro || $estadoPagoActual === 'por_cancelar') && !$ocultarBloquesPago ? 'block' : 'none' ?>"
+                style="display:<?= !$registroEventoSoloMetodosPago && (!$puedeGestionarEstadoRegistro || $estadoPagoActual === 'por_cancelar') && !$ocultarBloquesPago ? 'block' : 'none' ?>"
               >
                 <input type="text" class="form-control" value="Pendiente" readonly tabindex="-1" aria-readonly="true">
               </div>
               <div
                 class="js-bloque-metodos-pago"
-                style="display:<?= $puedeGestionarEstadoRegistro && $estadoPagoActual === 'pagado' && !$ocultarBloquesPago ? 'block' : 'none' ?>"
+                style="display:<?= ($registroEventoSoloMetodosPago || ($puedeGestionarEstadoRegistro && $estadoPagoActual === 'pagado')) && !$ocultarBloquesPago ? 'block' : 'none' ?>"
               >
                 <div class="form-check form-check-inline">
                   <input
@@ -341,7 +345,7 @@ $fila = $filaEditar;
                     id="<?= htmlspecialchars($modalEditarId . '-pago-efectivo') ?>"
                     value="efectivo"
                     <?= $formaPagoActual === 'efectivo' ? 'checked' : '' ?>
-                    <?= (!$puedeGestionarEstadoRegistro || $estadoPagoActual !== 'pagado' || $ocultarBloquesPago) ? 'disabled' : '' ?>
+                    <?= (!$registroEventoSoloMetodosPago && (!$puedeGestionarEstadoRegistro || $estadoPagoActual !== 'pagado' || $ocultarBloquesPago)) ? 'disabled' : '' ?>
                   >
                   <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-pago-efectivo') ?>">Efectivo</label>
                 </div>
@@ -353,7 +357,7 @@ $fila = $filaEditar;
                     id="<?= htmlspecialchars($modalEditarId . '-pago-transferencia') ?>"
                     value="transferencia"
                     <?= $formaPagoActual === 'transferencia' ? 'checked' : '' ?>
-                    <?= (!$puedeGestionarEstadoRegistro || $estadoPagoActual !== 'pagado' || $ocultarBloquesPago) ? 'disabled' : '' ?>
+                    <?= (!$registroEventoSoloMetodosPago && (!$puedeGestionarEstadoRegistro || $estadoPagoActual !== 'pagado' || $ocultarBloquesPago)) ? 'disabled' : '' ?>
                   >
                   <label class="form-check-label" for="<?= htmlspecialchars($modalEditarId . '-pago-transferencia') ?>">Transferencia</label>
                 </div>
@@ -364,7 +368,7 @@ $fila = $filaEditar;
               <input type="date" class="form-control js-paso-despues-tipo" name="fecha" required value="<?= htmlspecialchars($fila['fecha'] ?? '') ?>">
             </div>
             <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
-            <input type="hidden" name="forma_pago" class="js-forma-pago-pendiente" value="pendiente" <?= $esGratuitoRegistro || ($puedeGestionarEstadoRegistro && $estadoPagoActual === 'pagado') ? 'disabled' : '' ?>>
+            <input type="hidden" name="forma_pago" class="js-forma-pago-pendiente" value="pendiente" <?= $esGratuitoRegistro || !empty($registroEventoSoloMetodosPago) || ($puedeGestionarEstadoRegistro && $estadoPagoActual === 'pagado') ? 'disabled' : '' ?>>
             <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
             <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
             <div class="col-12">

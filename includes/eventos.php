@@ -481,6 +481,20 @@ function puedeRevertirEstadoPagoEvento(string $rol): bool
     return esRolConControlTotal($rol);
 }
 
+function puedeCrearRegistroEventoPendiente(string $rol): bool
+{
+    require_once __DIR__ . '/roles.php';
+
+    return esRolConControlTotal($rol);
+}
+
+function registroEventoRequiereMetodoPagoInmediato(string $rol): bool
+{
+    require_once __DIR__ . '/roles.php';
+
+    return $rol === ROL_CONTADOR;
+}
+
 function puedeMostrarComboboxEstadoPagoEvento(string $rol, string $estadoActual): bool
 {
     require_once __DIR__ . '/roles.php';
@@ -700,7 +714,13 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?stri
         $formaPago = 'gratuito';
         $valor = 0;
         $estadoPago = 'pagado';
-    } elseif (!esRolConControlTotal($rol)) {
+    } elseif (registroEventoRequiereMetodoPagoInmediato($rol)) {
+        $estadoPago = 'pagado';
+
+        if (!in_array($formaPago, ['efectivo', 'transferencia'], true)) {
+            throw new InvalidArgumentException('Selecciona Efectivo o Transferencia.');
+        }
+    } elseif (!puedeCrearRegistroEventoPendiente($rol)) {
         $estadoPago = 'por_cancelar';
         $formaPago = 'pendiente';
     } else {

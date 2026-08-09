@@ -207,7 +207,8 @@
       No hay eventos habilitados. Un superadmin debe agregar y habilitar eventos primero.
     </div>
     <?php else:
-      $puedeGestionarEstadoRegistro = esRolConControlTotal((string) ($usuario['rol'] ?? ''));
+      $puedeGestionarEstadoRegistro = puedeCrearRegistroEventoPendiente((string) ($usuario['rol'] ?? ''));
+      $registroEventoSoloMetodosPago = registroEventoRequiereMetodoPagoInmediato((string) ($usuario['rol'] ?? ''));
     ?>
     <form
       method="POST"
@@ -216,6 +217,7 @@
       id="formRegistroEvento"
       data-mensaje-exito="Participante registrado correctamente."
       data-puede-estado-pago="<?= $puedeGestionarEstadoRegistro ? '1' : '0' ?>"
+      data-solo-metodos-pago="<?= $registroEventoSoloMetodosPago ? '1' : '0' ?>"
     >
       <input type="hidden" name="accion" value="registrar_evento">
       <input type="hidden" name="redireccion" value="eventos.php?pestaña=registrar">
@@ -286,6 +288,8 @@
           <label class="form-check-label" for="estado-pagado">Pagado</label>
         </div>
       </div>
+      <?php elseif (!empty($registroEventoSoloMetodosPago)): ?>
+      <input type="hidden" name="estado_pago" class="js-estado-pago-counter" value="pagado">
       <?php else: ?>
       <input type="hidden" name="estado_pago" class="js-estado-pago-oculto" value="por_cancelar">
       <?php endif; ?>

@@ -124,7 +124,18 @@
   function puedeGestionarEstadoPago(contenedor) {
     var bloque = contenedor.querySelector('.js-form-registro-evento');
     var fuente = bloque || contenedor;
+
+    if (fuente.getAttribute('data-solo-metodos-pago') === '1') {
+      return false;
+    }
+
     return fuente.getAttribute('data-puede-estado-pago') === '1';
+  }
+
+  function soloMetodosPago(contenedor) {
+    var bloque = contenedor.querySelector('.js-form-registro-evento');
+    var fuente = bloque || contenedor;
+    return fuente.getAttribute('data-solo-metodos-pago') === '1';
   }
 
   function obtenerEstadoPagoSeleccionado(contenedor) {
@@ -229,6 +240,7 @@
     opciones = opciones || {};
     var sugerirValor = !!opciones.sugerirValor;
     var puedeEstado = puedeGestionarEstadoPago(contenedor);
+    var esSoloMetodos = soloMetodosPago(contenedor);
     var valorCatalogo = obtenerValorEventoSeleccionado(contenedor);
     var tipos = obtenerTiposEntradaEvento(contenedor);
     var sinEvento = tipos === null;
@@ -246,6 +258,7 @@
     var hiddenValor = contenedor.querySelector('.js-valor-gratuito');
     var hiddenEstado = contenedor.querySelector('.js-estado-pago-gratuito');
     var hiddenEstadoOculto = contenedor.querySelector('.js-estado-pago-oculto');
+    var hiddenEstadoCounter = contenedor.querySelector('.js-estado-pago-counter');
     var valorInput = contenedor.querySelector('.js-valor-evento');
     var metodosPago = contenedor.querySelectorAll('.js-metodo-pago-evento');
     var estadosPago = contenedor.querySelectorAll('.js-estado-pago-evento');
@@ -263,8 +276,8 @@
     var estadoActual = esGratisTipo ? 'pagado' : (tipoListo ? obtenerEstadoPagoSeleccionado(contenedor) : 'por_cancelar');
     var esPagado = estadoActual === 'pagado';
     var esPorCancelar = estadoActual === 'por_cancelar';
-    var usarPendiente = mostrarPago && (esPorCancelar || !puedeEstado);
-    var usarMetodos = mostrarPago && esPagado && puedeEstado;
+    var usarPendiente = mostrarPago && !esSoloMetodos && (esPorCancelar || !puedeEstado);
+    var usarMetodos = mostrarPago && (esSoloMetodos || (esPagado && puedeEstado));
 
     setVisible(campoValor, true);
     pasosDespuesTipo.forEach(function (campo) {
@@ -317,7 +330,11 @@
     }
 
     if (hiddenEstadoOculto) {
-      hiddenEstadoOculto.disabled = esGratisTipo || puedeEstado;
+      hiddenEstadoOculto.disabled = esGratisTipo || puedeEstado || esSoloMetodos;
+    }
+
+    if (hiddenEstadoCounter) {
+      hiddenEstadoCounter.disabled = !esSoloMetodos || esGratisTipo;
     }
 
     metodosPago.forEach(function (radio) {

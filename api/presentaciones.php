@@ -52,11 +52,10 @@ try {
 
     if ($accion === 'registrar' || esPayloadRegistroPresentacion($payload)) {
         $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        $agente = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
         responderRegistroPresentacionesPublico($payload, [
             'ip_cliente'     => $ip,
-            'agente_usuario' => $agente,
+            'agente_usuario' => 'Formulario Publico',
         ]);
         exit;
     }

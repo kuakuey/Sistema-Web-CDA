@@ -21,6 +21,12 @@ function filasMetaRegistro(array $fila): array
         $registrado = trim((string) $fila['agente_usuario']);
     }
 
+    if (str_starts_with($registrado, 'Sistema Web — ')) {
+        $registrado = substr($registrado, strlen('Sistema Web — '));
+    } elseif (str_starts_with($registrado, 'WordPress/')) {
+        $registrado = 'Formulario Publico';
+    }
+
     return [
         [
             'etiqueta' => 'Registrado por',

@@ -59,7 +59,7 @@ $tipoFormulario = isset($payload['tipo_formulario']) ? trim((string) $payload['t
 
 $tiposInscripcion = ['escol', 'academia', 'bautismo', 'conexion'];
 $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-$agente = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$agente = 'Formulario Publico';
 
 try {
     if (in_array($tipoFormulario, $tiposInscripcion, true)) {

@@ -269,6 +269,7 @@ function sincronizarTablasSistema(bool $asegurarAdmin = true): array
         migrarColumnasEspanol($pdo);
         asegurarColumnasBautismoInscripciones($pdo);
         asegurarColumnasPresentacionesNinos($pdo);
+        normalizarAgenteFormularioPublico($pdo);
 
         if ($asegurarAdmin) {
             $adminHash = '$2y$12$IAeuaVZ.DxfMzkDongA4ouBkTyb5fVAp0gSsKiqu2EuTJAFBT7TZW';
@@ -811,6 +812,23 @@ function migrateEstructuraTables(PDO $pdo): void
         if (!$viejaNombre) {
             $pdo->exec('ALTER TABLE ofrendas ADD COLUMN registrado_por_nombre VARCHAR(100) NULL');
         }
+    }
+}
+
+/**
+ * Reemplaza User-Agent de WordPress por la etiqueta del formulario público.
+ */
+function normalizarAgenteFormularioPublico(PDO $pdo): void
+{
+    foreach (['inscripciones', 'presentaciones_ninos'] as $tabla) {
+        if (!tablaExiste($pdo, $tabla)) {
+            continue;
+        }
+
+        $stmt = $pdo->prepare(
+            "UPDATE `{$tabla}` SET agente_usuario = ? WHERE agente_usuario LIKE ?"
+        );
+        $stmt->execute(['Formulario Publico', 'WordPress/%']);
     }
 }
 

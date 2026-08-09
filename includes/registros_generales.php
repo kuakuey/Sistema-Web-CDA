@@ -48,6 +48,10 @@ function obtenerNombreRegistradoPorFila(array $fila): string
         return substr($registrado, strlen('Sistema Web — '));
     }
 
+    if (str_starts_with($registrado, 'WordPress/')) {
+        return 'Formulario Publico';
+    }
+
     return $registrado;
 }
 

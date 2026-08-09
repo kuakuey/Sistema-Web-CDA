@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $resultadoBd = ejecutarAccionInstalacionBd($accion);
         $detalleBd = match ($accion) {
             'bd_crear'                => 'Crear base de datos',
-            'bd_actualizar'           => 'Actualizar tablas BD',
+            'bd_actualizar'           => 'Actualizar base de datos',
             'bd_instalacion_completa' => 'Instalación completa BD',
             default                   => 'Acción BD',
         };

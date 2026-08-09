@@ -4,17 +4,13 @@
 /** @var string|null $error */
 
 $bdConectada = !empty($estadoBd['bd_conectada']);
-$sistemaListo = !empty($estadoBd['sistema_listo']);
-$hayPendientes = !$sistemaListo
-    || (int) ($estadoBd['migraciones_aplicadas'] ?? 0) < (int) ($estadoBd['total_migraciones'] ?? 0);
 $mostrarAccionesInstalacion = !$bdConectada;
-$mostrarActualizarTablas = !$sistemaListo || $hayPendientes;
-$mostrarPanelAcciones = $mostrarAccionesInstalacion || $mostrarActualizarTablas;
 ?>
 <?php if (!empty($estadoBd['sistema_listo'])): ?>
 <div class="alert alert-success mb-4" role="alert">
   <i class="bi bi-check-circle me-1"></i>
   <strong>Sistema listo.</strong> La base de datos está conectada y todas las tablas están instaladas.
+  Usa <strong>Actualizar base de datos</strong> cuando haya cambios nuevos en el sistema.
 </div>
 <?php elseif (!empty($estadoBd['error'])): ?>
 <div class="alert alert-danger mb-4" role="alert">
@@ -66,8 +62,7 @@ $mostrarPanelAcciones = $mostrarAccionesInstalacion || $mostrarActualizarTablas;
 </div>
 
 <div class="row g-4">
-  <div class="col-lg-<?= $mostrarPanelAcciones ? '4' : '12' ?>">
-    <?php if ($mostrarPanelAcciones): ?>
+  <div class="col-lg-4">
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-header bg-white py-3">
         <h3 class="h6 mb-0"><i class="bi bi-lightning-charge me-2"></i>Acciones</h3>
@@ -81,14 +76,15 @@ $mostrarPanelAcciones = $mostrarAccionesInstalacion || $mostrarActualizarTablas;
           </button>
         </form>
         <?php endif; ?>
-        <?php if ($mostrarActualizarTablas): ?>
-        <form method="POST" action="avanzado.php?pestaña=bd" class="js-form-confirmar" data-confirm-title="Actualizar tablas" data-confirm="¿Ejecutar migraciones y actualizar tablas pendientes?">
+        <form method="POST" action="avanzado.php?pestaña=bd" class="js-form-confirmar" data-confirm-title="Actualizar base de datos" data-confirm="¿Aplicar migraciones, columnas nuevas y normalizaciones pendientes?">
           <input type="hidden" name="accion" value="bd_actualizar">
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-arrow-repeat me-1"></i>Actualizar tablas
+          <button type="submit" class="btn btn-primary w-100" <?= empty($estadoBd['servidor_conectado']) ? 'disabled' : '' ?>>
+            <i class="bi bi-arrow-repeat me-1"></i>Actualizar base de datos
           </button>
         </form>
-        <?php endif; ?>
+        <p class="text-muted small mb-0">
+          Aplica tablas, columnas y cambios de datos pendientes (por ejemplo, etiquetas de formularios públicos).
+        </p>
         <?php if ($mostrarAccionesInstalacion): ?>
         <form method="POST" action="avanzado.php?pestaña=bd" class="js-form-confirmar" data-confirm-title="Instalación completa" data-confirm="¿Ejecutar instalación completa (BD + tablas + usuario admin)?">
           <input type="hidden" name="accion" value="bd_instalacion_completa">
@@ -99,9 +95,8 @@ $mostrarPanelAcciones = $mostrarAccionesInstalacion || $mostrarActualizarTablas;
         <?php endif; ?>
       </div>
     </div>
-    <?php endif; ?>
 
-    <div class="card border-0 shadow-sm <?= !$mostrarPanelAcciones ? 'mb-4' : '' ?>">
+    <div class="card border-0 shadow-sm">
       <div class="card-header bg-white py-3">
         <h3 class="h6 mb-0"><i class="bi bi-plug me-2"></i>Conexión</h3>
       </div>
@@ -134,11 +129,7 @@ $mostrarPanelAcciones = $mostrarAccionesInstalacion || $mostrarActualizarTablas;
     </div>
   </div>
 
-  <?php if ($mostrarPanelAcciones): ?>
   <div class="col-lg-8">
-  <?php else: ?>
-  <div class="col-12">
-  <?php endif; ?>
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h3 class="h6 mb-0"><i class="bi bi-file-earmark-code me-2"></i>Migraciones</h3>

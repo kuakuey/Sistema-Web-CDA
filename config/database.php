@@ -293,7 +293,7 @@ function sincronizarTablasSistema(bool $asegurarAdmin = true): array
             'exito'   => true,
             'mensaje' => $asegurarAdmin
                 ? 'Instalación completa: tablas sincronizadas y usuario admin verificado.'
-                : 'Tablas y migraciones actualizadas correctamente.',
+                : 'Base de datos actualizada: tablas, columnas y cambios pendientes aplicados.',
         ];
     } catch (Throwable $e) {
         return [

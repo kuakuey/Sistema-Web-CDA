@@ -177,7 +177,7 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
               <?php endif; ?>
             </div>
             <p class="small text-muted mb-0">
-              <i class="bi bi-calendar-event me-1"></i><?= htmlspecialchars(formatearFechaTabla($evento['fecha'] ?? '')) ?>
+              <i class="bi bi-calendar-event me-1"></i><?= htmlspecialchars(formatearRangoFechaTablaCalendario($evento)) ?>
             </p>
             <?php if (trim((string) ($evento['descripcion'] ?? '')) !== ''): ?>
             <p class="small text-muted mb-0 mt-1"><?= htmlspecialchars($evento['descripcion'] ?? '') ?></p>
@@ -205,8 +205,13 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
         <input type="text" class="form-control" id="titulo_nuevo" name="titulo" required maxlength="150" value="<?= htmlspecialchars($_POST['titulo'] ?? '') ?>">
       </div>
       <div class="col-md-3">
-        <label class="form-label" for="fecha_nueva">Fecha <span class="text-danger">*</span></label>
+        <label class="form-label" for="fecha_nueva">Fecha inicio <span class="text-danger">*</span></label>
         <input type="date" class="form-control" id="fecha_nueva" name="fecha" required value="<?= htmlspecialchars($_POST['fecha'] ?? date('Y-m-d')) ?>">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="fecha_fin_nueva">Fecha fin</label>
+        <input type="date" class="form-control" id="fecha_fin_nueva" name="fecha_fin" value="<?= htmlspecialchars($_POST['fecha_fin'] ?? '') ?>">
+        <div class="form-text">Opcional, si dura más de un día.</div>
       </div>
       <div class="col-md-3">
         <label class="form-label" for="estado_nuevo">Estado <span class="text-danger">*</span></label>
@@ -215,7 +220,7 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
           <option value="inactivo" <?= (($_POST['estado'] ?? '') === 'inactivo') ? 'selected' : '' ?>>Inactivo</option>
         </select>
       </div>
-      <div class="col-12">
+      <div class="col-md-9">
         <label class="form-label" for="descripcion_nueva">Descripción breve <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="descripcion_nueva" name="descripcion" required maxlength="255" value="<?= htmlspecialchars($_POST['descripcion'] ?? '') ?>" placeholder="Ej. Una mañana especial para los teens">
       </div>
@@ -272,7 +277,7 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
             </td>
             <td><?= htmlspecialchars($evento['titulo'] ?? '') ?></td>
             <td><small class="text-muted"><?= htmlspecialchars($evento['descripcion'] ?? '') ?></small></td>
-            <td><?= htmlspecialchars(formatearFechaTabla($evento['fecha'] ?? '')) ?></td>
+            <td><?= htmlspecialchars(formatearRangoFechaTablaCalendario($evento)) ?></td>
             <td>
               <?php if ($activo): ?>
               <span class="badge bg-success">Activo</span>
@@ -335,8 +340,13 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
             <input type="text" class="form-control" name="descripcion" required maxlength="255" value="<?= htmlspecialchars($evento['descripcion'] ?? '') ?>">
           </div>
           <div class="mb-3">
-            <label class="form-label">Fecha <span class="text-danger">*</span></label>
+            <label class="form-label">Fecha inicio <span class="text-danger">*</span></label>
             <input type="date" class="form-control" name="fecha" required value="<?= htmlspecialchars($evento['fecha'] ?? '') ?>">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Fecha fin</label>
+            <input type="date" class="form-control" name="fecha_fin" value="<?= htmlspecialchars($evento['fecha_fin'] ?? '') ?>">
+            <div class="form-text">Opcional, si el evento dura más de un día.</div>
           </div>
           <div class="mb-3">
             <label class="form-label">Estado <span class="text-danger">*</span></label>

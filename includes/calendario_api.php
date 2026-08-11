@@ -49,7 +49,7 @@ function nombresMesesCalendarioApi(): array
 }
 
 /**
- * Eventos activos del mes actual y el siguiente (solo desde hoy en adelante).
+ * Eventos activos del mes actual y el siguiente (solo si aún no terminaron).
  *
  * @return array{
  *   meses: array<int, array{anio: int, mes: int, etiqueta: string, eventos: array<int, array<string, mixed>>}>,
@@ -60,40 +60,79 @@ function obtenerProximosEventosCalendarioApi(): array
 {
     $hoy = (new DateTime('today'))->format('Y-m-d');
     $mesesMeta = obtenerMesesProximosCalendarioApi();
-    $resultado = [];
-    $total = 0;
+    $inicioVentana = sprintf('%04d-%02d-01', $mesesMeta[0]['anio'], $mesesMeta[0]['mes']);
+    $ultimoMes = $mesesMeta[count($mesesMeta) - 1];
+    $finVentana = date('Y-m-t', strtotime(sprintf('%04d-%02d-01', $ultimoMes['anio'], $ultimoMes['mes'])));
 
+    $eventos = obtenerEventosCalendarioActivos();
+    $porMes = [];
     foreach ($mesesMeta as $meta) {
-        $eventos = obtenerEventosCalendarioActivos($meta['anio'], $meta['mes']);
-        $filtrados = [];
-
-        foreach ($eventos as $evento) {
-            $fecha = (string) ($evento['fecha'] ?? '');
-            if ($fecha === '' || $fecha < $hoy) {
-                continue;
-            }
-
-            $filtrados[] = [
-                'id'          => (int) ($evento['id'] ?? 0),
-                'titulo'      => (string) ($evento['titulo'] ?? ''),
-                'descripcion' => (string) ($evento['descripcion'] ?? ''),
-                'fecha'       => $fecha,
-                'dia'         => (int) date('j', strtotime($fecha)),
-                'activo'      => 1,
-            ];
-            $total++;
-        }
-
-        $resultado[] = [
+        $clave = sprintf('%04d-%02d', $meta['anio'], $meta['mes']);
+        $porMes[$clave] = [
             'anio'     => $meta['anio'],
             'mes'      => $meta['mes'],
             'etiqueta' => $meta['etiqueta'],
-            'eventos'  => $filtrados,
+            'eventos'  => [],
         ];
     }
 
+    $vistos = [];
+    $total = 0;
+
+    foreach ($eventos as $evento) {
+        $id = (int) ($evento['id'] ?? 0);
+        if ($id > 0 && isset($vistos[$id])) {
+            continue;
+        }
+
+        $fecha = (string) ($evento['fecha'] ?? '');
+        $fechaFin = fechaFinEfectivaEventoCalendario($evento);
+
+        if ($fecha === '' || $fechaFin < $hoy) {
+            continue;
+        }
+
+        if ($fecha > $finVentana || $fechaFin < $inicioVentana) {
+            continue;
+        }
+
+        // Asignar al mes de inicio si cae en la ventana; si empezó antes, al mes actual.
+        if ($fecha >= $inicioVentana) {
+            $claveMes = substr($fecha, 0, 7);
+        } else {
+            $claveMes = substr($inicioVentana, 0, 7);
+        }
+
+        if (!isset($porMes[$claveMes])) {
+            continue;
+        }
+
+        $porMes[$claveMes]['eventos'][] = [
+            'id'          => $id,
+            'titulo'      => (string) ($evento['titulo'] ?? ''),
+            'descripcion' => (string) ($evento['descripcion'] ?? ''),
+            'fecha'       => $fecha,
+            'fecha_fin'   => ($fechaFin !== $fecha) ? $fechaFin : null,
+            'badge'       => formatearBadgeFechaEventoCalendario($fecha, $fechaFin !== $fecha ? $fechaFin : null),
+            'activo'      => 1,
+        ];
+        $vistos[$id] = true;
+        $total++;
+    }
+
+    foreach ($porMes as &$mes) {
+        usort(
+            $mes['eventos'],
+            static function (array $a, array $b): int {
+                return strcmp((string) $a['fecha'], (string) $b['fecha'])
+                    ?: strcmp((string) $a['titulo'], (string) $b['titulo']);
+            }
+        );
+    }
+    unset($mes);
+
     return [
-        'meses' => $resultado,
+        'meses' => array_values($porMes),
         'total' => $total,
     ];
 }
@@ -151,7 +190,7 @@ function renderizarHtmlCalendarioTextoApi(): string
       </div>
       <?php foreach ($mes['eventos'] as $evento): ?>
       <div class="event-item">
-        <div class="event-date-badge"><?= (int) $evento['dia'] ?></div>
+        <div class="event-date-badge"><?= htmlspecialchars((string) ($evento['badge'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
         <div class="event-info">
           <div class="event-name"><?= htmlspecialchars($evento['titulo'], ENT_QUOTES, 'UTF-8') ?></div>
           <?php if (trim((string) ($evento['descripcion'] ?? '')) !== ''): ?>

@@ -669,10 +669,12 @@ function migrarTablaCalendarioEventos(PDO $pdo): void
             titulo VARCHAR(150) NOT NULL,
             descripcion VARCHAR(255) NOT NULL DEFAULT "",
             fecha DATE NOT NULL,
+            fecha_fin DATE NULL,
             foto VARCHAR(255) NOT NULL DEFAULT "",
             activo TINYINT(1) NOT NULL DEFAULT 1,
             creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_fecha (fecha),
+            INDEX idx_fecha_fin (fecha_fin),
             INDEX idx_activo (activo),
             INDEX idx_creado_en (creado_en)
         ) ENGINE=InnoDB'
@@ -690,6 +692,17 @@ function migrarTablaCalendarioEventos(PDO $pdo): void
         $pdo->exec(
             'ALTER TABLE calendario_eventos
              ADD COLUMN descripcion VARCHAR(255) NOT NULL DEFAULT "" AFTER titulo'
+        );
+    }
+
+    $existeFechaFin = $pdo->query(
+        "SHOW COLUMNS FROM calendario_eventos LIKE 'fecha_fin'"
+    )->fetch();
+
+    if (!$existeFechaFin) {
+        $pdo->exec(
+            'ALTER TABLE calendario_eventos
+             ADD COLUMN fecha_fin DATE NULL AFTER fecha'
         );
     }
 

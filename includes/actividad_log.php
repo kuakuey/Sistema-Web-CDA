@@ -899,6 +899,9 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
         $campos['Título'] = $valorTexto($registro['titulo'] ?? '');
         $campos['Descripción'] = $valorTexto($registro['descripcion'] ?? '');
         $campos['Fecha'] = formatearFechaActividadLog($registro['fecha'] ?? null);
+        if (!empty($registro['fecha_fin']) && (string) $registro['fecha_fin'] !== (string) ($registro['fecha'] ?? '')) {
+            $campos['Fecha fin'] = formatearFechaActividadLog($registro['fecha_fin'] ?? null);
+        }
         $campos['Estado'] = etiquetaEstadoEventoCalendario((int) ($registro['activo'] ?? 0));
         $campos['Foto'] = $valorTexto($registro['foto'] ?? '');
 

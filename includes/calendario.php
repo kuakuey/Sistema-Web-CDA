@@ -37,10 +37,11 @@ function obtenerEventosCalendario(?int $anio = null, ?int $mes = null): array
         $fin = date('Y-m-t', strtotime($inicio));
         $stmt = $pdo->prepare(
             'SELECT * FROM calendario_eventos
-             WHERE fecha BETWEEN ? AND ?
+             WHERE fecha <= ?
+               AND COALESCE(fecha_fin, fecha) >= ?
              ORDER BY fecha ASC, titulo ASC, id ASC'
         );
-        $stmt->execute([$inicio, $fin]);
+        $stmt->execute([$fin, $inicio]);
 
         return $stmt->fetchAll();
     }
@@ -98,13 +99,14 @@ function crearEventoCalendario(array $datos, ?array $archivo = null): int
 
     $pdo = getConnection();
     $stmt = $pdo->prepare(
-        'INSERT INTO calendario_eventos (titulo, descripcion, fecha, foto, activo)
-         VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO calendario_eventos (titulo, descripcion, fecha, fecha_fin, foto, activo)
+         VALUES (?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $normalizado['titulo'],
         $normalizado['descripcion'],
         $normalizado['fecha'],
+        $normalizado['fecha_fin'],
         $foto,
         $normalizado['activo'],
     ]);
@@ -141,13 +143,14 @@ function actualizarEventoCalendario(int $id, array $datos, ?array $archivo = nul
     $pdo = getConnection();
     $stmt = $pdo->prepare(
         'UPDATE calendario_eventos
-         SET titulo = ?, descripcion = ?, fecha = ?, foto = ?, activo = ?
+         SET titulo = ?, descripcion = ?, fecha = ?, fecha_fin = ?, foto = ?, activo = ?
          WHERE id = ?'
     );
     $ok = $stmt->execute([
         $normalizado['titulo'],
         $normalizado['descripcion'],
         $normalizado['fecha'],
+        $normalizado['fecha_fin'],
         $fotoFinal,
         $normalizado['activo'],
         $id,
@@ -181,7 +184,7 @@ function eliminarEventoCalendario(int $id): bool
 
 /**
  * @param array<string, mixed> $datos
- * @return array{titulo: string, descripcion: string, fecha: string, activo: int}
+ * @return array{titulo: string, descripcion: string, fecha: string, fecha_fin: ?string, activo: int}
  */
 function normalizarDatosEventoCalendario(array $datos, bool $esNuevo): array
 {
@@ -203,6 +206,7 @@ function normalizarDatosEventoCalendario(array $datos, bool $esNuevo): array
     }
 
     $fecha = trim((string) ($datos['fecha'] ?? ''));
+    $fechaFin = trim((string) ($datos['fecha_fin'] ?? ''));
     $estado = strtolower(trim((string) ($datos['estado'] ?? ($datos['activo'] ?? ''))));
 
     if ($titulo === '') {
@@ -214,6 +218,16 @@ function normalizarDatosEventoCalendario(array $datos, bool $esNuevo): array
     }
 
     validarFechaCalendario($fecha);
+
+    if ($fechaFin === '' || $fechaFin === $fecha) {
+        $fechaFinNormalizada = null;
+    } else {
+        validarFechaCalendario($fechaFin);
+        if ($fechaFin < $fecha) {
+            throw new InvalidArgumentException('La fecha de fin no puede ser anterior a la fecha de inicio.');
+        }
+        $fechaFinNormalizada = $fechaFin;
+    }
 
     if (in_array($estado, ['1', 'activo', 'si', 'sí', 'true'], true)) {
         $activo = 1;
@@ -229,6 +243,7 @@ function normalizarDatosEventoCalendario(array $datos, bool $esNuevo): array
         'titulo'      => $titulo,
         'descripcion' => $descripcion,
         'fecha'       => $fecha,
+        'fecha_fin'   => $fechaFinNormalizada,
         'activo'      => $activo,
     ];
 }
@@ -360,14 +375,106 @@ function agruparEventosCalendarioPorFecha(array $eventos): array
     $porFecha = [];
 
     foreach ($eventos as $evento) {
-        $fecha = (string) ($evento['fecha'] ?? '');
-        if ($fecha === '') {
+        $fechaInicio = (string) ($evento['fecha'] ?? '');
+        if ($fechaInicio === '') {
             continue;
         }
-        $porFecha[$fecha][] = $evento;
+
+        $fechaFin = trim((string) ($evento['fecha_fin'] ?? ''));
+        if ($fechaFin === '' || $fechaFin < $fechaInicio) {
+            $fechaFin = $fechaInicio;
+        }
+
+        $cursor = DateTime::createFromFormat('Y-m-d', $fechaInicio);
+        $fin = DateTime::createFromFormat('Y-m-d', $fechaFin);
+
+        if (!$cursor || !$fin) {
+            $porFecha[$fechaInicio][] = $evento;
+            continue;
+        }
+
+        while ($cursor <= $fin) {
+            $clave = $cursor->format('Y-m-d');
+            $porFecha[$clave][] = $evento;
+            $cursor->modify('+1 day');
+        }
     }
 
     return $porFecha;
+}
+
+function fechaFinEfectivaEventoCalendario(array $evento): string
+{
+    $fecha = trim((string) ($evento['fecha'] ?? ''));
+    $fechaFin = trim((string) ($evento['fecha_fin'] ?? ''));
+
+    if ($fechaFin !== '' && $fechaFin >= $fecha) {
+        return $fechaFin;
+    }
+
+    return $fecha;
+}
+
+/**
+ * Badge público: "11" o "28–29" (mismo mes) o "30 Jul–2 Ago".
+ */
+function formatearBadgeFechaEventoCalendario(string $fecha, ?string $fechaFin = null): string
+{
+    $fecha = trim($fecha);
+    $fechaFin = trim((string) $fechaFin);
+
+    if ($fecha === '') {
+        return '';
+    }
+
+    $inicio = DateTime::createFromFormat('Y-m-d', $fecha);
+    if (!$inicio) {
+        return $fecha;
+    }
+
+    if ($fechaFin === '' || $fechaFin === $fecha) {
+        return (string) (int) $inicio->format('j');
+    }
+
+    $fin = DateTime::createFromFormat('Y-m-d', $fechaFin);
+    if (!$fin || $fechaFin < $fecha) {
+        return (string) (int) $inicio->format('j');
+    }
+
+    $nombresCortos = [
+        1 => 'Ene', 2 => 'Feb', 3 => 'Mar', 4 => 'Abr',
+        5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago',
+        9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dic',
+    ];
+
+    $diaInicio = (int) $inicio->format('j');
+    $diaFin = (int) $fin->format('j');
+
+    if ($inicio->format('Y-m') === $fin->format('Y-m')) {
+        return $diaInicio . '–' . $diaFin;
+    }
+
+    $mesInicio = $nombresCortos[(int) $inicio->format('n')] ?? $inicio->format('M');
+    $mesFin = $nombresCortos[(int) $fin->format('n')] ?? $fin->format('M');
+
+    return $diaInicio . ' ' . $mesInicio . '–' . $diaFin . ' ' . $mesFin;
+}
+
+/**
+ * Texto para tablas del panel: "11/08/2026" o "11/08/2026 – 13/08/2026".
+ */
+function formatearRangoFechaTablaCalendario(array $evento): string
+{
+    require_once __DIR__ . '/detalle_registro.php';
+
+    $inicio = formatearFechaTabla($evento['fecha'] ?? '');
+    $fechaFin = trim((string) ($evento['fecha_fin'] ?? ''));
+
+    if ($fechaFin === '' || $fechaFin === (string) ($evento['fecha'] ?? '')) {
+        return $inicio;
+    }
+
+    return $inicio . ' – ' . formatearFechaTabla($fechaFin);
 }
 
 function etiquetaEstadoEventoCalendario(int $activo): string

@@ -50,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'titulo'      => $_POST['titulo'] ?? '',
                     'descripcion' => $_POST['descripcion'] ?? '',
                     'fecha'       => $_POST['fecha'] ?? '',
+                    'fecha_fin'   => $_POST['fecha_fin'] ?? '',
                     'estado'      => $_POST['estado'] ?? 'activo',
                 ], $_FILES['foto'] ?? null);
                 salirConActividad('calendario.php?pestaña=nuevo&ok=1', 'crear_evento_calendario', $eventoId);
@@ -60,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'titulo'      => $_POST['titulo'] ?? '',
                     'descripcion' => $_POST['descripcion'] ?? '',
                     'fecha'       => $_POST['fecha'] ?? '',
+                    'fecha_fin'   => $_POST['fecha_fin'] ?? '',
                     'estado'      => $_POST['estado'] ?? 'activo',
                 ], $_FILES['foto'] ?? null);
                 salirConActividad(

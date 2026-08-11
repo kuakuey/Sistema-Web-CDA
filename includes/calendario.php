@@ -481,3 +481,44 @@ function etiquetaEstadoEventoCalendario(int $activo): string
 {
     return $activo === 1 ? 'Activo' : 'Inactivo';
 }
+
+/**
+ * URL base pública del Sistema Web (para fotos vía API).
+ */
+function obtenerUrlBasePublicaSistema(): string
+{
+    $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+        $https = strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https';
+    }
+
+    $scheme = $https ? 'https' : 'http';
+    $host = trim((string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+    $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+
+    // .../api/calendario.php → directorio raíz del sistema
+    $basePath = dirname(dirname($script));
+    if ($basePath === '/' || $basePath === '\\' || $basePath === '.') {
+        $basePath = '';
+    }
+
+    return rtrim($scheme . '://' . $host . $basePath, '/');
+}
+
+/**
+ * Convierte ruta relativa de foto en URL absoluta.
+ */
+function urlAbsolutaFotoEventoCalendario(?string $rutaRelativa): string
+{
+    $relativa = urlFotoEventoCalendario($rutaRelativa);
+
+    if ($relativa === '') {
+        return '';
+    }
+
+    if (preg_match('#^https?://#i', $relativa)) {
+        return $relativa;
+    }
+
+    return obtenerUrlBasePublicaSistema() . '/' . ltrim($relativa, '/');
+}

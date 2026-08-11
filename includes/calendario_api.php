@@ -208,3 +208,65 @@ function renderizarHtmlCalendarioTextoApi(): string
 
     return trim((string) ob_get_clean());
 }
+
+/**
+ * Fotos de eventos activos del mes actual (para banners).
+ *
+ * @return array{
+ *   anio: int,
+ *   mes: int,
+ *   etiqueta: string,
+ *   imagenes: array<int, array{id: int, titulo: string, fecha: string, fecha_fin: ?string, url: string}>,
+ *   total: int
+ * }
+ */
+function obtenerBannersCalendarioMesActualApi(): array
+{
+    $hoy = new DateTime('today');
+    $anio = (int) $hoy->format('Y');
+    $mes = (int) $hoy->format('n');
+    $nombres = nombresMesesCalendarioApi();
+    $eventos = obtenerEventosCalendarioActivos($anio, $mes);
+    $imagenes = [];
+    $vistos = [];
+
+    foreach ($eventos as $evento) {
+        $id = (int) ($evento['id'] ?? 0);
+        if ($id > 0 && isset($vistos[$id])) {
+            continue;
+        }
+
+        $url = urlAbsolutaFotoEventoCalendario($evento['foto'] ?? '');
+        if ($url === '') {
+            continue;
+        }
+
+        $fecha = (string) ($evento['fecha'] ?? '');
+        $fechaFin = fechaFinEfectivaEventoCalendario($evento);
+
+        $imagenes[] = [
+            'id'        => $id,
+            'titulo'    => (string) ($evento['titulo'] ?? ''),
+            'fecha'     => $fecha,
+            'fecha_fin' => ($fechaFin !== $fecha) ? $fechaFin : null,
+            'url'       => $url,
+        ];
+        $vistos[$id] = true;
+    }
+
+    usort(
+        $imagenes,
+        static function (array $a, array $b): int {
+            return strcmp((string) $a['fecha'], (string) $b['fecha'])
+                ?: strcmp((string) $a['titulo'], (string) $b['titulo']);
+        }
+    );
+
+    return [
+        'anio'     => $anio,
+        'mes'      => $mes,
+        'etiqueta' => $nombres[$mes] ?? $hoy->format('F'),
+        'imagenes' => $imagenes,
+        'total'    => count($imagenes),
+    ];
+}

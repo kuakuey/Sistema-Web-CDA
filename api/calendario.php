@@ -51,10 +51,25 @@ try {
         exit;
     }
 
+    if (in_array($accion, ['banners', 'calendario_banners'], true)) {
+        $datos = obtenerBannersCalendarioMesActualApi();
+
+        echo json_encode([
+            'exito'    => true,
+            'accion'   => 'banners',
+            'anio'     => $datos['anio'],
+            'mes'      => $datos['mes'],
+            'etiqueta' => $datos['etiqueta'],
+            'imagenes' => $datos['imagenes'],
+            'total'    => $datos['total'],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
     http_response_code(400);
     echo json_encode([
         'exito'   => false,
-        'mensaje' => 'Acción no válida. Usa calendario_text o listar.',
+        'mensaje' => 'Acción no válida. Usa calendario_text, banners o listar.',
     ]);
 } catch (PDOException $e) {
     http_response_code(500);

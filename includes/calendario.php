@@ -102,11 +102,12 @@ function crearEventoCalendario(array $datos, ?array $archivo = null): int
 
     $pdo = getConnection();
     $stmt = $pdo->prepare(
-        'INSERT INTO calendario_eventos (titulo, fecha, foto, activo)
-         VALUES (?, ?, ?, ?)'
+        'INSERT INTO calendario_eventos (titulo, descripcion, fecha, foto, activo)
+         VALUES (?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $normalizado['titulo'],
+        $normalizado['descripcion'],
         $normalizado['fecha'],
         $foto,
         $normalizado['activo'],
@@ -148,11 +149,12 @@ function actualizarEventoCalendario(int $id, array $datos, ?array $archivo = nul
     $pdo = getConnection();
     $stmt = $pdo->prepare(
         'UPDATE calendario_eventos
-         SET titulo = ?, fecha = ?, foto = ?, activo = ?
+         SET titulo = ?, descripcion = ?, fecha = ?, foto = ?, activo = ?
          WHERE id = ?'
     );
     $ok = $stmt->execute([
         $normalizado['titulo'],
+        $normalizado['descripcion'],
         $normalizado['fecha'],
         $fotoFinal,
         $normalizado['activo'],
@@ -187,7 +189,7 @@ function eliminarEventoCalendario(int $id): bool
 
 /**
  * @param array<string, mixed> $datos
- * @return array{titulo: string, fecha: string, activo: int}
+ * @return array{titulo: string, descripcion: string, fecha: string, activo: int}
  */
 function normalizarDatosEventoCalendario(array $datos, bool $esNuevo): array
 {
@@ -199,11 +201,24 @@ function normalizarDatosEventoCalendario(array $datos, bool $esNuevo): array
     } else {
         $titulo = substr($titulo, 0, 150);
     }
+
+    $descripcion = trim((string) ($datos['descripcion'] ?? ''));
+    $descripcion = preg_replace('/\s+/u', ' ', $descripcion) ?? $descripcion;
+    if (function_exists('mb_substr')) {
+        $descripcion = mb_substr($descripcion, 0, 255, 'UTF-8');
+    } else {
+        $descripcion = substr($descripcion, 0, 255);
+    }
+
     $fecha = trim((string) ($datos['fecha'] ?? ''));
     $estado = strtolower(trim((string) ($datos['estado'] ?? ($datos['activo'] ?? ''))));
 
     if ($titulo === '') {
         throw new InvalidArgumentException('El título es obligatorio.');
+    }
+
+    if ($descripcion === '') {
+        throw new InvalidArgumentException('La descripción breve es obligatoria.');
     }
 
     validarFechaCalendario($fecha);
@@ -219,9 +234,10 @@ function normalizarDatosEventoCalendario(array $datos, bool $esNuevo): array
     }
 
     return [
-        'titulo' => $titulo,
-        'fecha'  => $fecha,
-        'activo' => $activo,
+        'titulo'      => $titulo,
+        'descripcion' => $descripcion,
+        'fecha'       => $fecha,
+        'activo'      => $activo,
     ];
 }
 

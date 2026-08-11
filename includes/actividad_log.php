@@ -897,6 +897,7 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
         require_once __DIR__ . '/calendario.php';
         $campos['ID'] = '#' . (int) ($registro['id'] ?? 0);
         $campos['Título'] = $valorTexto($registro['titulo'] ?? '');
+        $campos['Descripción'] = $valorTexto($registro['descripcion'] ?? '');
         $campos['Fecha'] = formatearFechaActividadLog($registro['fecha'] ?? null);
         $campos['Estado'] = etiquetaEstadoEventoCalendario((int) ($registro['activo'] ?? 0));
         $campos['Foto'] = $valorTexto($registro['foto'] ?? '');

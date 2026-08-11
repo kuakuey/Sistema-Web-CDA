@@ -47,18 +47,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         switch ($accion) {
             case 'crear_evento_calendario':
                 $eventoId = crearEventoCalendario([
-                    'titulo' => $_POST['titulo'] ?? '',
-                    'fecha'  => $_POST['fecha'] ?? '',
-                    'estado' => $_POST['estado'] ?? 'activo',
+                    'titulo'      => $_POST['titulo'] ?? '',
+                    'descripcion' => $_POST['descripcion'] ?? '',
+                    'fecha'       => $_POST['fecha'] ?? '',
+                    'estado'      => $_POST['estado'] ?? 'activo',
                 ], $_FILES['foto'] ?? null);
                 salirConActividad('calendario.php?pestaña=nuevo&ok=1', 'crear_evento_calendario', $eventoId);
 
             case 'actualizar_evento_calendario':
                 $eventoId = (int) ($_POST['id'] ?? 0);
                 actualizarEventoCalendario($eventoId, [
-                    'titulo' => $_POST['titulo'] ?? '',
-                    'fecha'  => $_POST['fecha'] ?? '',
-                    'estado' => $_POST['estado'] ?? 'activo',
+                    'titulo'      => $_POST['titulo'] ?? '',
+                    'descripcion' => $_POST['descripcion'] ?? '',
+                    'fecha'       => $_POST['fecha'] ?? '',
+                    'estado'      => $_POST['estado'] ?? 'activo',
                 ], $_FILES['foto'] ?? null);
                 salirConActividad(
                     'calendario.php?pestaña=gestionar&ok=1&anio=' . $anio . '&mes=' . $mes,

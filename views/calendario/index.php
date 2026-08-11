@@ -29,7 +29,7 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <h2 class="h4 mb-1">Calendario</h2>
-    <p class="text-muted small mb-0">Eventos del calendario con foto, título, fecha y estado</p>
+    <p class="text-muted small mb-0">Eventos del calendario con foto, título, descripción, fecha y estado</p>
   </div>
   <span class="badge bg-primary fs-6"><?= (int) $totalEventosVista ?> evento(s)</span>
 </div>
@@ -179,6 +179,9 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
             <p class="small text-muted mb-0">
               <i class="bi bi-calendar-event me-1"></i><?= htmlspecialchars(formatearFechaTabla($evento['fecha'] ?? '')) ?>
             </p>
+            <?php if (trim((string) ($evento['descripcion'] ?? '')) !== ''): ?>
+            <p class="small text-muted mb-0 mt-1"><?= htmlspecialchars($evento['descripcion'] ?? '') ?></p>
+            <?php endif; ?>
           </div>
         </div>
       </div>
@@ -212,6 +215,10 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
           <option value="inactivo" <?= (($_POST['estado'] ?? '') === 'inactivo') ? 'selected' : '' ?>>Inactivo</option>
         </select>
       </div>
+      <div class="col-12">
+        <label class="form-label" for="descripcion_nueva">Descripción breve <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="descripcion_nueva" name="descripcion" required maxlength="255" value="<?= htmlspecialchars($_POST['descripcion'] ?? '') ?>" placeholder="Ej. Una mañana especial para los teens">
+      </div>
       <div class="col-md-6">
         <label class="form-label" for="foto_nueva">Foto <span class="text-danger">*</span></label>
         <input type="file" class="form-control" id="foto_nueva" name="foto" accept="image/jpeg,image/png,image/webp,image/gif" required>
@@ -238,6 +245,7 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
             <th class="text-center col-numero">#</th>
             <th>Foto</th>
             <th>Título</th>
+            <th>Descripción</th>
             <th>Fecha</th>
             <th>Estado</th>
             <th class="text-end">Acciones</th>
@@ -246,7 +254,7 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
         <tbody>
           <?php if (empty($eventosTodos)): ?>
           <tr>
-            <td colspan="6" class="text-center text-muted py-5">No hay eventos en el calendario.</td>
+            <td colspan="7" class="text-center text-muted py-5">No hay eventos en el calendario.</td>
           </tr>
           <?php else: ?>
           <?php foreach ($eventosTodos as $indice => $evento):
@@ -263,6 +271,7 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
               <?php endif; ?>
             </td>
             <td><?= htmlspecialchars($evento['titulo'] ?? '') ?></td>
+            <td><small class="text-muted"><?= htmlspecialchars($evento['descripcion'] ?? '') ?></small></td>
             <td><?= htmlspecialchars(formatearFechaTabla($evento['fecha'] ?? '')) ?></td>
             <td>
               <?php if ($activo): ?>
@@ -320,6 +329,10 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
           <div class="mb-3">
             <label class="form-label">Título <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="titulo" required maxlength="150" value="<?= htmlspecialchars($evento['titulo'] ?? '') ?>">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Descripción breve <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="descripcion" required maxlength="255" value="<?= htmlspecialchars($evento['descripcion'] ?? '') ?>">
           </div>
           <div class="mb-3">
             <label class="form-label">Fecha <span class="text-danger">*</span></label>

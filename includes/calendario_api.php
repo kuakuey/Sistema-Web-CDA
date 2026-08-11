@@ -74,11 +74,12 @@ function obtenerProximosEventosCalendarioApi(): array
             }
 
             $filtrados[] = [
-                'id'     => (int) ($evento['id'] ?? 0),
-                'titulo' => (string) ($evento['titulo'] ?? ''),
-                'fecha'  => $fecha,
-                'dia'    => (int) date('j', strtotime($fecha)),
-                'activo' => 1,
+                'id'          => (int) ($evento['id'] ?? 0),
+                'titulo'      => (string) ($evento['titulo'] ?? ''),
+                'descripcion' => (string) ($evento['descripcion'] ?? ''),
+                'fecha'       => $fecha,
+                'dia'         => (int) date('j', strtotime($fecha)),
+                'activo'      => 1,
             ];
             $total++;
         }
@@ -128,7 +129,8 @@ function renderizarHtmlCalendarioTextoApi(): string
   .cda-events-section .event-item:hover { background: rgba(232, 93, 36, 0.06); }
   .cda-events-section .event-item + .event-item { border-top: 1px solid rgba(0,0,0,0.07); }
   .cda-events-section .event-date-badge { flex-shrink: 0; min-width: 80px; background: #E85D24; color: #fff; font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 1px; text-align: center; padding: 6px 8px; border-radius: 8px; line-height: 1.2; }
-  .cda-events-section .event-name { font-size: 13px; font-weight: 700; color: #1a1a1a; letter-spacing: 0.4px; text-transform: uppercase; line-height: 1.3; margin-bottom: 0; font-family: 'Lato', sans-serif; }
+  .cda-events-section .event-name { font-size: 13px; font-weight: 700; color: #1a1a1a; letter-spacing: 0.4px; text-transform: uppercase; line-height: 1.3; margin-bottom: 3px; font-family: 'Lato', sans-serif; }
+  .cda-events-section .event-desc { font-size: 12px; color: #777; line-height: 1.4; font-weight: 300; font-family: 'Lato', sans-serif; }
   .cda-events-section .events-empty { font-family: 'Lato', sans-serif; color: #777; font-size: 14px; }
 </style>
 <section class="cda-events-section events-section">
@@ -152,6 +154,9 @@ function renderizarHtmlCalendarioTextoApi(): string
         <div class="event-date-badge"><?= (int) $evento['dia'] ?></div>
         <div class="event-info">
           <div class="event-name"><?= htmlspecialchars($evento['titulo'], ENT_QUOTES, 'UTF-8') ?></div>
+          <?php if (trim((string) ($evento['descripcion'] ?? '')) !== ''): ?>
+          <div class="event-desc"><?= htmlspecialchars($evento['descripcion'], ENT_QUOTES, 'UTF-8') ?></div>
+          <?php endif; ?>
         </div>
       </div>
       <?php endforeach; ?>

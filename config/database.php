@@ -263,6 +263,7 @@ function sincronizarTablasSistema(bool $asegurarAdmin = true): array
         migrarTablaValoresAdicionales($pdo);
         migrarTablaTiposValorAdicional($pdo);
         migrarTablaConsejerias($pdo);
+        migrarTablaCalendarioEventos($pdo);
         migrarTablaTransporteAniversario($pdo);
         migrarTablaRolPermisos($pdo);
         migrarTablaActividadLog($pdo);
@@ -655,6 +656,23 @@ function migrarTablaConsejerias(PDO $pdo): void
             actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_tipo_consejeria (tipo_consejeria),
             INDEX idx_cita_fecha (cita_fecha),
+            INDEX idx_creado_en (creado_en)
+        ) ENGINE=InnoDB'
+    );
+}
+
+function migrarTablaCalendarioEventos(PDO $pdo): void
+{
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS calendario_eventos (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            titulo VARCHAR(150) NOT NULL,
+            fecha DATE NOT NULL,
+            foto VARCHAR(255) NOT NULL,
+            activo TINYINT(1) NOT NULL DEFAULT 1,
+            creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_fecha (fecha),
+            INDEX idx_activo (activo),
             INDEX idx_creado_en (creado_en)
         ) ENGINE=InnoDB'
     );

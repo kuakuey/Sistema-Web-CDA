@@ -56,6 +56,7 @@ function mapaMetadatosActividad(): array
         'eliminar_lider'                   => ['seccion' => 'estructura', 'entidad' => 'lider', 'etiqueta' => 'Eliminar líder'],
         'eliminar_casa'                    => ['seccion' => 'estructura', 'entidad' => 'casa', 'etiqueta' => 'Eliminar casa de vida'],
         'eliminar_evento'                  => ['seccion' => 'eventos', 'entidad' => 'evento', 'etiqueta' => 'Eliminar evento'],
+        'eliminar_evento_calendario'       => ['seccion' => 'calendario', 'entidad' => 'evento_calendario', 'etiqueta' => 'Eliminar evento del calendario'],
         'eliminar_tipo_valor'              => ['seccion' => 'valores_adicionales', 'entidad' => 'tipo_valor', 'etiqueta' => 'Eliminar tipo de valor'],
         'actualizar_estado_presentacion'   => ['seccion' => 'presentaciones', 'entidad' => 'presentacion', 'etiqueta' => 'Cambiar estado de presentación'],
         'actualizar_estado_conexion'       => ['seccion' => 'conexion', 'entidad' => 'inscripcion', 'etiqueta' => 'Cambiar estado de conexión'],
@@ -65,6 +66,8 @@ function mapaMetadatosActividad(): array
         'restablecer_estado_presentacion'  => ['seccion' => 'presentaciones', 'entidad' => 'presentacion', 'etiqueta' => 'Restablecer estado de presentación'],
         'crear_evento'                     => ['seccion' => 'eventos', 'entidad' => 'evento', 'etiqueta' => 'Crear evento'],
         'actualizar_evento_catalogo'       => ['seccion' => 'eventos', 'entidad' => 'evento', 'etiqueta' => 'Editar evento'],
+        'crear_evento_calendario'          => ['seccion' => 'calendario', 'entidad' => 'evento_calendario', 'etiqueta' => 'Crear evento del calendario'],
+        'actualizar_evento_calendario'     => ['seccion' => 'calendario', 'entidad' => 'evento_calendario', 'etiqueta' => 'Editar evento del calendario'],
         'crear_tipo_valor'                 => ['seccion' => 'valores_adicionales', 'entidad' => 'tipo_valor', 'etiqueta' => 'Crear tipo de valor'],
         'actualizar_tipo_valor'            => ['seccion' => 'valores_adicionales', 'entidad' => 'tipo_valor', 'etiqueta' => 'Editar tipo de valor'],
         'crear_territorio'                 => ['seccion' => 'estructura', 'entidad' => 'territorio', 'etiqueta' => 'Crear territorio'],
@@ -795,6 +798,10 @@ function obtenerSnapshotEliminacion(string $accion, int $id): ?array
             require_once __DIR__ . '/eventos.php';
             return obtenerEvento($id);
 
+        case 'eliminar_evento_calendario':
+            require_once __DIR__ . '/calendario.php';
+            return obtenerEventoCalendario($id);
+
         case 'eliminar_registro_evento':
             require_once __DIR__ . '/eventos.php';
             return obtenerRegistroEventoPorId($id);
@@ -882,6 +889,17 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
                 $campos['Tipos de entrada'] = implode(' · ', $partesTipos);
             }
         }
+
+        return $campos;
+    }
+
+    if ($accion === 'eliminar_evento_calendario') {
+        require_once __DIR__ . '/calendario.php';
+        $campos['ID'] = '#' . (int) ($registro['id'] ?? 0);
+        $campos['Título'] = $valorTexto($registro['titulo'] ?? '');
+        $campos['Fecha'] = formatearFechaActividadLog($registro['fecha'] ?? null);
+        $campos['Estado'] = etiquetaEstadoEventoCalendario((int) ($registro['activo'] ?? 0));
+        $campos['Foto'] = $valorTexto($registro['foto'] ?? '');
 
         return $campos;
     }

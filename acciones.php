@@ -16,6 +16,7 @@ require_once 'includes/submissions.php';
 require_once 'includes/estructura.php';
 require_once 'includes/valores_adicionales.php';
 require_once 'includes/eventos.php';
+require_once 'includes/calendario.php';
 require_once 'includes/consejerias.php';
 require_once 'includes/transporte_aniversario.php';
 require_once 'includes/actividad_log.php';
@@ -649,6 +650,7 @@ $accionesEliminar = [
     'eliminar_lider',
     'eliminar_casa',
     'eliminar_evento',
+    'eliminar_evento_calendario',
     'eliminar_tipo_valor',
 ];
 
@@ -707,6 +709,13 @@ if (in_array($accion, $accionesEliminar, true)) {
             break;
         case 'eliminar_evento':
             eliminarEvento($id);
+            break;
+        case 'eliminar_evento_calendario':
+            if (!puedeGestionarCalendario(obtenerUsuarioActual()['rol'])) {
+                header('Location: ' . $urlInicio);
+                exit;
+            }
+            eliminarEventoCalendario($id);
             break;
         case 'eliminar_tipo_valor':
             try {

@@ -188,6 +188,11 @@ function puedeGestionarEventos(string $rol): bool
     return tienePermisoSeccion($rol, 'eventos');
 }
 
+function puedeGestionarCalendario(string $rol): bool
+{
+    return esRolConControlTotal($rol);
+}
+
 function puedeAgregarEventos(string $rol): bool
 {
     return tienePermisoDetalle($rol, 'eventos', 'agregar');
@@ -254,6 +259,7 @@ function obtenerEtiquetasSecciones(): array
         'ofrendas'            => 'Ofrendas',
         'valores_adicionales' => 'Valores adicionales',
         'eventos'             => 'Eventos',
+        'calendario'          => 'Calendario',
         'consejeria'          => "Consejer\u{00ED}a",
         'generar_informe'     => 'Generar informe',
         'estructura'          => 'Estructura CDV',
@@ -273,6 +279,7 @@ function obtenerIconosSecciones(): array
         'ofrendas'            => 'bi-cash-stack',
         'valores_adicionales' => 'bi-wallet2',
         'eventos'             => 'bi-calendar-event',
+        'calendario'          => 'bi-calendar3',
         'consejeria'          => 'bi-chat-heart',
         'generar_informe'     => 'bi-file-earmark-bar-graph',
         'estructura'          => 'bi-diagram-3',
@@ -296,6 +303,7 @@ function obtenerOrdenMenuSidebar(): array
         'presentaciones',
         'ofrendas',
         'eventos',
+        'calendario',
         'valores_adicionales',
         'consejeria',
         'generar_informe',
@@ -314,6 +322,10 @@ function puedeVerItemMenuSidebar(string $rol, string $clave): bool
 
     if ($clave === 'avanzado') {
         return $rol === ROL_SUPERADMIN;
+    }
+
+    if ($clave === 'calendario') {
+        return puedeGestionarCalendario($rol);
     }
 
     if ($clave === 'generar_informe') {
@@ -347,6 +359,7 @@ function obtenerUrlMenuSidebar(string $clave): string
         'ofrendas'            => 'ofrendas.php',
         'valores_adicionales' => 'valores-adicionales.php',
         'eventos'             => 'eventos.php',
+        'calendario'          => 'calendario.php',
         'consejeria'          => 'consejeria.php',
         'generar_informe'     => 'generar-informe.php',
         'estructura'          => 'estructura.php',

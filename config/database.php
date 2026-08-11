@@ -667,6 +667,7 @@ function migrarTablaCalendarioEventos(PDO $pdo): void
         'CREATE TABLE IF NOT EXISTS calendario_eventos (
             id INT AUTO_INCREMENT PRIMARY KEY,
             titulo VARCHAR(150) NOT NULL,
+            descripcion VARCHAR(255) NOT NULL DEFAULT "",
             fecha DATE NOT NULL,
             foto VARCHAR(255) NOT NULL,
             activo TINYINT(1) NOT NULL DEFAULT 1,
@@ -676,6 +677,21 @@ function migrarTablaCalendarioEventos(PDO $pdo): void
             INDEX idx_creado_en (creado_en)
         ) ENGINE=InnoDB'
     );
+
+    if (!tablaExiste($pdo, 'calendario_eventos')) {
+        return;
+    }
+
+    $existeDescripcion = $pdo->query(
+        "SHOW COLUMNS FROM calendario_eventos LIKE 'descripcion'"
+    )->fetch();
+
+    if (!$existeDescripcion) {
+        $pdo->exec(
+            'ALTER TABLE calendario_eventos
+             ADD COLUMN descripcion VARCHAR(255) NOT NULL DEFAULT "" AFTER titulo'
+        );
+    }
 }
 
 function migrarTablaTiposValorAdicional(PDO $pdo): void

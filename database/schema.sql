@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS calendario_eventos (
     titulo VARCHAR(150) NOT NULL,
     descripcion VARCHAR(255) NOT NULL DEFAULT "",
     fecha DATE NOT NULL,
-    foto VARCHAR(255) NOT NULL,
+    foto VARCHAR(255) NOT NULL DEFAULT "",
     activo TINYINT(1) NOT NULL DEFAULT 1,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_fecha (fecha),

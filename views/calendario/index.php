@@ -220,9 +220,9 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
         <input type="text" class="form-control" id="descripcion_nueva" name="descripcion" required maxlength="255" value="<?= htmlspecialchars($_POST['descripcion'] ?? '') ?>" placeholder="Ej. Una mañana especial para los teens">
       </div>
       <div class="col-md-6">
-        <label class="form-label" for="foto_nueva">Foto <span class="text-danger">*</span></label>
-        <input type="file" class="form-control" id="foto_nueva" name="foto" accept="image/jpeg,image/png,image/webp,image/gif" required>
-        <div class="form-text">JPG, PNG, WEBP o GIF. Máximo 5 MB.</div>
+        <label class="form-label" for="foto_nueva">Foto</label>
+        <input type="file" class="form-control" id="foto_nueva" name="foto" accept="image/jpeg,image/png,image/webp,image/gif">
+        <div class="form-text">Opcional. JPG, PNG, WEBP o GIF. Máximo 5 MB. Puedes agregarla después.</div>
       </div>
       <div class="col-12">
         <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Guardar evento</button>
@@ -353,7 +353,7 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
             </div>
             <?php endif; ?>
             <input type="file" class="form-control" name="foto" accept="image/jpeg,image/png,image/webp,image/gif">
-            <div class="form-text">Deja vacío para mantener la foto actual.</div>
+            <div class="form-text">Opcional. Deja vacío para mantener la foto actual (o sin foto).</div>
           </div>
         </div>
         <div class="modal-footer">

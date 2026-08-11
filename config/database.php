@@ -669,7 +669,7 @@ function migrarTablaCalendarioEventos(PDO $pdo): void
             titulo VARCHAR(150) NOT NULL,
             descripcion VARCHAR(255) NOT NULL DEFAULT "",
             fecha DATE NOT NULL,
-            foto VARCHAR(255) NOT NULL,
+            foto VARCHAR(255) NOT NULL DEFAULT "",
             activo TINYINT(1) NOT NULL DEFAULT 1,
             creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_fecha (fecha),
@@ -690,6 +690,14 @@ function migrarTablaCalendarioEventos(PDO $pdo): void
         $pdo->exec(
             'ALTER TABLE calendario_eventos
              ADD COLUMN descripcion VARCHAR(255) NOT NULL DEFAULT "" AFTER titulo'
+        );
+    }
+
+    $colFoto = $pdo->query("SHOW COLUMNS FROM calendario_eventos LIKE 'foto'")->fetch();
+    if ($colFoto && stripos((string) ($colFoto['Type'] ?? ''), 'varchar') !== false) {
+        $pdo->exec(
+            'ALTER TABLE calendario_eventos
+             MODIFY COLUMN foto VARCHAR(255) NOT NULL DEFAULT ""'
         );
     }
 }

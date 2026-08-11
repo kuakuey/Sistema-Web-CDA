@@ -94,11 +94,7 @@ function crearEventoCalendario(array $datos, ?array $archivo = null): int
 {
     asegurarTablaCalendarioEventos();
     $normalizado = normalizarDatosEventoCalendario($datos, true);
-    $foto = guardarFotoEventoCalendario($archivo);
-
-    if ($foto === null) {
-        throw new InvalidArgumentException('Debes subir una foto del evento (JPG, PNG, WEBP o GIF, máx. 5 MB).');
-    }
+    $foto = guardarFotoEventoCalendario($archivo) ?? '';
 
     $pdo = getConnection();
     $stmt = $pdo->prepare(
@@ -141,10 +137,6 @@ function actualizarEventoCalendario(int $id, array $datos, ?array $archivo = nul
     }
 
     $fotoFinal = $fotoNueva ?? $fotoActual;
-
-    if ($fotoFinal === '') {
-        throw new InvalidArgumentException('El evento debe tener una foto.');
-    }
 
     $pdo = getConnection();
     $stmt = $pdo->prepare(

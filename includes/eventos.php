@@ -1717,12 +1717,14 @@ function etiquetaTipoEventoCatalogo(array $evento): string
 
 /**
  * @param array<int, array<string, mixed>> $registros
- * @return array{monto_por_cancelar: float, monto_recaudado: float, monto_total: float}
+ * @return array{monto_por_cancelar: float, monto_recaudado: float, monto_total: float, entradas_por_cancelar: int, entradas_recaudadas: int}
  */
 function calcularResumenFinancieroInformeEvento(array $registros): array
 {
     $porCancelar = 0.0;
     $recaudado = 0.0;
+    $entradasPorCancelar = 0;
+    $entradasRecaudadas = 0;
 
     foreach ($registros as $registro) {
         if (registroEventoEsEntradaGratis($registro)) {
@@ -1735,15 +1737,19 @@ function calcularResumenFinancieroInformeEvento(array $registros): array
 
         if ($estado === 'pagado' && in_array($forma, ['efectivo', 'transferencia'], true)) {
             $recaudado += $valor;
+            $entradasRecaudadas++;
         } else {
             $porCancelar += $valor;
+            $entradasPorCancelar++;
         }
     }
 
     return [
-        'monto_por_cancelar' => $porCancelar,
-        'monto_recaudado'    => $recaudado,
-        'monto_total'        => $porCancelar + $recaudado,
+        'monto_por_cancelar'   => $porCancelar,
+        'monto_recaudado'      => $recaudado,
+        'monto_total'          => $porCancelar + $recaudado,
+        'entradas_por_cancelar'=> $entradasPorCancelar,
+        'entradas_recaudadas'  => $entradasRecaudadas,
     ];
 }
 
@@ -1941,8 +1947,10 @@ function generarInformeEvento(
         'resumen' => [
             'total_participantes' => count($registros),
             'total_entradas'      => $totalEntradas,
-            'monto_por_cancelar'  => $resumenFinanciero['monto_por_cancelar'],
-            'monto_recaudado'     => $resumenFinanciero['monto_recaudado'],
+            'monto_por_cancelar'     => $resumenFinanciero['monto_por_cancelar'],
+            'monto_recaudado'        => $resumenFinanciero['monto_recaudado'],
+            'entradas_por_cancelar'  => $resumenFinanciero['entradas_por_cancelar'],
+            'entradas_recaudadas'    => $resumenFinanciero['entradas_recaudadas'],
             'monto_total'         => $resumenFinanciero['monto_total'],
             'por_tipo_entrada'    => $resumenTiposEntrada,
         ],

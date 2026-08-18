@@ -14,11 +14,11 @@
 <table class="resumen resumen-evento">
   <tr>
     <td>
-      <span class="resumen-label">Falta por cancelar</span>
+      <span class="resumen-label">Falta por cancelar (<?= (int) ($informe['resumen']['entradas_por_cancelar'] ?? 0) ?>)</span>
       <span class="resumen-valor destacado"><?= htmlspecialchars(formatearMonto((float) ($informe['resumen']['monto_por_cancelar'] ?? 0))) ?></span>
     </td>
     <td>
-      <span class="resumen-label">Recaudado</span>
+      <span class="resumen-label">Recaudado (<?= (int) ($informe['resumen']['entradas_recaudadas'] ?? 0) ?>)</span>
       <span class="resumen-valor destacado"><?= htmlspecialchars(formatearMonto((float) ($informe['resumen']['monto_recaudado'] ?? 0))) ?></span>
     </td>
     <td>

@@ -137,6 +137,31 @@ function normalizarFormatoInforme(string $formato): string
     return in_array($formato, ['pdf', 'excel'], true) ? $formato : 'pdf';
 }
 
+function slugArchivoInforme(string $texto): string
+{
+    $texto = trim($texto);
+
+    if ($texto !== '' && function_exists('iconv')) {
+        $transliterado = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto);
+        if (is_string($transliterado) && $transliterado !== '') {
+            $texto = $transliterado;
+        }
+    }
+
+    $texto = strtolower($texto);
+    $texto = preg_replace('/[^a-z0-9]+/', '_', $texto) ?? '';
+    $texto = trim($texto, '_');
+
+    return $texto !== '' ? $texto : 'evento';
+}
+
+function nombreArchivoReporteEvento(array $informe, string $extension): string
+{
+    $nombre = (string) ($informe['evento']['nombre'] ?? $informe['evento_etiqueta'] ?? 'evento');
+
+    return 'reporte_' . slugArchivoInforme($nombre) . '.' . ltrim($extension, '.');
+}
+
 function normalizarEstadoInforme(string $estado): string
 {
     $estado = trim(mb_strtolower($estado));

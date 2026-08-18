@@ -3,16 +3,11 @@
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
+require_once __DIR__ . '/informes.php';
+
 function nombreArchivoInformeEventoPdf(array $informe): string
 {
-    $nombre = preg_replace('/[^a-z0-9]+/i', '-', strtolower((string) ($informe['evento']['nombre'] ?? 'evento')));
-    $nombre = trim($nombre, '-');
-
-    if ($nombre === '') {
-        $nombre = 'evento';
-    }
-
-    return 'informe-evento-' . $nombre . '-' . (int) ($informe['evento']['id'] ?? 0) . '.pdf';
+    return nombreArchivoReporteEvento($informe, 'pdf');
 }
 
 function renderizarHtmlInformeEventoPdf(array $informe): string

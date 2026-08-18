@@ -234,6 +234,30 @@ function nombresTipoEntradaEquivalentes(string $a, string $b): bool
     return mb_strtolower(trim($a)) === mb_strtolower(trim($b));
 }
 
+function claveNombreTipoEntrada(string $nombre, int $tipoId = 0): string
+{
+    $nombre = mb_strtolower(trim($nombre));
+
+    if ($nombre !== '') {
+        return 'n:' . $nombre;
+    }
+
+    return 'id:' . $tipoId;
+}
+
+function etiquetaValorCatalogoTipoEntrada(array $tipo): string
+{
+    if (tipoEntradaEsGratis($tipo)) {
+        return 'Gratuito';
+    }
+
+    if ((float) ($tipo['valor'] ?? 0) <= 0) {
+        return 'Pendiente de pago';
+    }
+
+    return formatearMonto((float) ($tipo['valor'] ?? 0));
+}
+
 /**
  * @param array<int, array<string, mixed>> $tipos
  */
@@ -1729,58 +1753,48 @@ function calcularResumenFinancieroInformeEvento(array $registros): array
  */
 function construirResumenTiposEntradaInformeEvento(array $registros, array $evento): array
 {
-    $conteo = [];
+    $resumen = [];
+    $idAClave = [];
+
+    foreach ($evento['tipos_entrada'] ?? [] as $tipo) {
+        $tipoId = (int) ($tipo['id'] ?? 0);
+        $nombre = trim((string) ($tipo['nombre'] ?? ''));
+        $clave = claveNombreTipoEntrada($nombre, $tipoId);
+
+        if (!isset($resumen[$clave])) {
+            $resumen[$clave] = [
+                'nombre'         => $nombre !== '' ? $nombre : 'Sin nombre',
+                'cantidad'       => 0,
+                'valor_catalogo' => etiquetaValorCatalogoTipoEntrada($tipo),
+            ];
+        }
+
+        if ($tipoId > 0) {
+            $idAClave[$tipoId] = $clave;
+        }
+    }
 
     foreach ($registros as $registro) {
         $tipoId = (int) ($registro['tipo_entrada_id'] ?? 0);
         $nombre = trim((string) ($registro['tipo_entrada'] ?? ''));
 
-        if (!isset($conteo[$tipoId])) {
-            $conteo[$tipoId] = [
-                'nombre'   => $nombre !== '' ? $nombre : 'Sin tipo',
-                'cantidad' => 0,
-            ];
-        }
-
-        $conteo[$tipoId]['cantidad']++;
-    }
-
-    $resumen = [];
-    $tiposVistos = [];
-
-    foreach ($evento['tipos_entrada'] ?? [] as $tipo) {
-        $tipoId = (int) ($tipo['id'] ?? 0);
-        $tiposVistos[$tipoId] = true;
-        $nombre = trim((string) ($tipo['nombre'] ?? ''));
-
-        if (tipoEntradaEsGratis($tipo)) {
-            $valorCatalogo = 'Gratuito';
-        } elseif ((float) ($tipo['valor'] ?? 0) <= 0) {
-            $valorCatalogo = 'Pendiente de pago';
+        if ($tipoId > 0 && isset($idAClave[$tipoId])) {
+            $clave = $idAClave[$tipoId];
         } else {
-            $valorCatalogo = formatearMonto((float) ($tipo['valor'] ?? 0));
+            $clave = claveNombreTipoEntrada($nombre, $tipoId);
+            if (!isset($resumen[$clave])) {
+                $resumen[$clave] = [
+                    'nombre'         => $nombre !== '' ? $nombre : 'Sin tipo',
+                    'cantidad'       => 0,
+                    'valor_catalogo' => '—',
+                ];
+            }
         }
 
-        $resumen[] = [
-            'nombre'         => $nombre !== '' ? $nombre : 'Sin nombre',
-            'cantidad'       => (int) ($conteo[$tipoId]['cantidad'] ?? 0),
-            'valor_catalogo' => $valorCatalogo,
-        ];
+        $resumen[$clave]['cantidad']++;
     }
 
-    foreach ($conteo as $tipoId => $datos) {
-        if (isset($tiposVistos[(int) $tipoId])) {
-            continue;
-        }
-
-        $resumen[] = [
-            'nombre'         => (string) ($datos['nombre'] ?? 'Sin tipo'),
-            'cantidad'       => (int) ($datos['cantidad'] ?? 0),
-            'valor_catalogo' => '—',
-        ];
-    }
-
-    return $resumen;
+    return array_values($resumen);
 }
 
 function compararRegistrosInformeEventoPorNumeracion(array $a, array $b): int
@@ -1814,16 +1828,24 @@ function compararRegistrosInformeEventoPorNumeracion(array $a, array $b): int
 function agruparRegistrosInformeEventoPorTipoEntrada(array $registros, array $evento): array
 {
     $grupos = [];
+    $idAClave = [];
 
     foreach ($evento['tipos_entrada'] ?? [] as $tipo) {
         $tipoId = (int) ($tipo['id'] ?? 0);
         $nombre = trim((string) ($tipo['nombre'] ?? ''));
+        $clave = claveNombreTipoEntrada($nombre, $tipoId);
 
-        $grupos[$tipoId] = [
-            'tipo_entrada_id' => $tipoId,
-            'tipo_entrada'    => $nombre !== '' ? $nombre : 'Sin nombre',
-            'registros'       => [],
-        ];
+        if (!isset($grupos[$clave])) {
+            $grupos[$clave] = [
+                'tipo_entrada_id' => $tipoId,
+                'tipo_entrada'    => $nombre !== '' ? $nombre : 'Sin nombre',
+                'registros'       => [],
+            ];
+        }
+
+        if ($tipoId > 0) {
+            $idAClave[$tipoId] = $clave;
+        }
     }
 
     $grupoSinTipo = [
@@ -1834,21 +1856,28 @@ function agruparRegistrosInformeEventoPorTipoEntrada(array $registros, array $ev
 
     foreach ($registros as $registro) {
         $tipoId = (int) ($registro['tipo_entrada_id'] ?? 0);
+        $nombre = trim((string) ($registro['tipo_entrada'] ?? ''));
 
-        if ($tipoId > 0 && isset($grupos[$tipoId])) {
-            $grupos[$tipoId]['registros'][] = $registro;
+        if ($tipoId > 0 && isset($idAClave[$tipoId])) {
+            $grupos[$idAClave[$tipoId]]['registros'][] = $registro;
             continue;
         }
 
-        if ($tipoId > 0) {
-            if (!isset($grupos[$tipoId])) {
-                $grupos[$tipoId] = [
+        $claveNombre = claveNombreTipoEntrada($nombre, $tipoId);
+        if ($nombre !== '' && isset($grupos[$claveNombre])) {
+            $grupos[$claveNombre]['registros'][] = $registro;
+            continue;
+        }
+
+        if ($nombre !== '') {
+            if (!isset($grupos[$claveNombre])) {
+                $grupos[$claveNombre] = [
                     'tipo_entrada_id' => $tipoId,
-                    'tipo_entrada'    => trim((string) ($registro['tipo_entrada'] ?? 'Entrada')),
+                    'tipo_entrada'    => $nombre,
                     'registros'       => [],
                 ];
             }
-            $grupos[$tipoId]['registros'][] = $registro;
+            $grupos[$claveNombre]['registros'][] = $registro;
             continue;
         }
 

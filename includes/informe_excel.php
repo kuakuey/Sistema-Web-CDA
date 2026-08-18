@@ -7,6 +7,11 @@ require_once __DIR__ . '/valores_adicionales.php';
 function nombreArchivoInformeExcel(array $informe, string $seccion): string
 {
     $seccion = normalizarSeccionInforme($seccion);
+
+    if ($seccion === 'eventos') {
+        return nombreArchivoReporteEvento($informe, 'xls');
+    }
+
     $prefijo = $seccion === 'completo' ? 'informe' : 'informe-' . $seccion;
 
     return $prefijo . '-' . $informe['fecha_desde'] . '-' . $informe['fecha_hasta'] . '.xls';

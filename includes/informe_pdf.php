@@ -6,6 +6,11 @@ use Dompdf\Options;
 function nombreArchivoInformePdf(array $informe, string $seccion = 'completo'): string
 {
     $seccion = normalizarSeccionInforme($seccion);
+
+    if ($seccion === 'eventos') {
+        return nombreArchivoReporteEvento($informe, 'pdf');
+    }
+
     $prefijo = $seccion === 'completo' ? 'informe' : 'informe-' . $seccion;
 
     return $prefijo . '-' . $informe['fecha_desde'] . '-' . $informe['fecha_hasta'] . '.pdf';

@@ -229,9 +229,6 @@ $fila = $filaEditar;
             }
             $ocultarBloquesPago = $esGratuitoRegistro;
             ?>
-            <div class="col-12">
-              <p class="form-section-band">Evento</p>
-            </div>
             <div class="col-md-6">
               <label class="form-label">Nombre de evento <span class="text-danger">*</span></label>
               <select class="form-select" name="evento_id" required>
@@ -366,9 +363,6 @@ $fila = $filaEditar;
             <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
             <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
 
-            <div class="col-12">
-              <p class="form-section-band">Información personal</p>
-            </div>
             <div class="col-md-6">
               <label class="form-label">Nombre <span class="text-danger">*</span></label>
               <input type="text" class="form-control js-paso-despues-tipo" name="nombre" required maxlength="100" value="<?= htmlspecialchars($fila['nombre'] ?? '') ?>">

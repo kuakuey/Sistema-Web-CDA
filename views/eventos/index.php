@@ -222,10 +222,6 @@
       <input type="hidden" name="accion" value="registrar_evento">
       <input type="hidden" name="redireccion" value="eventos.php?pestaña=registrar">
 
-      <div class="col-12">
-        <p class="form-section-band">Evento</p>
-      </div>
-
       <div class="col-md-6">
         <label class="form-label" for="evento_id">Nombre de evento <span class="text-danger">*</span></label>
         <select class="form-select" id="evento_id" name="evento_id" required>
@@ -311,10 +307,6 @@
       <input type="hidden" name="forma_pago" class="js-forma-pago-pendiente" value="pendiente" disabled>
       <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
       <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" disabled>
-
-      <div class="col-12">
-        <p class="form-section-band">Información personal</p>
-      </div>
 
       <div class="col-md-6">
         <label class="form-label" for="nombre">Nombre <span class="text-danger">*</span></label>

@@ -76,11 +76,6 @@
     var filaCampos = document.createElement('div');
     filaCampos.className = 'row g-3';
 
-    var heading = document.createElement('div');
-    heading.className = 'col-12';
-    heading.innerHTML = '<p class="form-section-band mb-0">Información adicional</p>';
-    filaCampos.appendChild(heading);
-
     campos.forEach(function (campo) {
       var campoId = String(campo.id || '');
       if (!campoId || campoId === '0') {

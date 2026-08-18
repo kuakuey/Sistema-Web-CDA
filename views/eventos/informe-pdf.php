@@ -100,6 +100,11 @@
     .destacado {
       font-weight: bold;
     }
+
+    .salto-pagina {
+      page-break-before: always;
+      break-before: page;
+    }
   </style>
 </head>
 <body>

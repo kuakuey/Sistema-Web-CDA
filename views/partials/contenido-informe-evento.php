@@ -56,7 +56,8 @@
 </table>
 <?php endif; ?>
 
-<h2>Participantes registrados</h2>
+<div class="salto-pagina">
+<h2>Entradas</h2>
 <?php if (empty($informe['registros_por_tipo'])): ?>
 <p class="vacio">No hay participantes registrados para este evento.</p>
 <?php else: ?>
@@ -99,3 +100,4 @@
   </table>
   <?php endforeach; ?>
 <?php endif; ?>
+</div>

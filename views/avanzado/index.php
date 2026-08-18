@@ -533,6 +533,7 @@ $modalesDetalle = [];
     </div>
     <?php
     $filtros = $filtrosLog;
+    $totalRegistros = $totalRegistrosLog;
     $totalPaginas = $totalPaginasLog;
     $pestañaPaginacion = 'logs';
     include __DIR__ . '/../partials/paginacion-registros.php';

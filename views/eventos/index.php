@@ -79,9 +79,20 @@
     <div class="card-body">
       <form method="GET" action="eventos.php" class="row g-3 align-items-end">
         <input type="hidden" name="pestaña" value="tabla">
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label small" for="buscar">Buscar</label>
           <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono, evento… · numeración exacta">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small" for="filtro_tipo_entrada">Tipo entrada</label>
+          <select class="form-select form-select-sm" id="filtro_tipo_entrada" name="tipo_entrada">
+            <option value="">Todos</option>
+            <?php foreach ($tiposEntradaFiltro ?? [] as $nombreTipo): ?>
+            <option value="<?= htmlspecialchars($nombreTipo) ?>" <?= ($filtros['tipo_entrada'] ?? '') === $nombreTipo ? 'selected' : '' ?>>
+              <?= htmlspecialchars($nombreTipo) ?>
+            </option>
+            <?php endforeach; ?>
+          </select>
         </div>
         <div class="col-md-2">
           <label class="form-label small" for="fecha_desde">Desde</label>
@@ -138,9 +149,20 @@
       <form method="GET" action="eventos.php" class="row g-3 align-items-end">
         <input type="hidden" name="pestaña" value="participantes">
         <input type="hidden" name="evento_id" value="<?= (int) $eventoParticipantes['id'] ?>">
-        <div class="col-md-4">
-          <label class="form-label small" for="buscar">Buscar</label>
-          <input type="search" class="form-control form-control-sm" id="buscar" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono… · numeración exacta">
+        <div class="col-md-3">
+          <label class="form-label small" for="buscar_participantes">Buscar</label>
+          <input type="search" class="form-control form-control-sm" id="buscar_participantes" name="buscar" value="<?= htmlspecialchars($filtros['buscar']) ?>" placeholder="Nombre, teléfono… · numeración exacta">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small" for="filtro_tipo_entrada_participantes">Tipo entrada</label>
+          <select class="form-select form-select-sm" id="filtro_tipo_entrada_participantes" name="tipo_entrada">
+            <option value="">Todos</option>
+            <?php foreach ($tiposEntradaFiltro ?? [] as $nombreTipo): ?>
+            <option value="<?= htmlspecialchars($nombreTipo) ?>" <?= ($filtros['tipo_entrada'] ?? '') === $nombreTipo ? 'selected' : '' ?>>
+              <?= htmlspecialchars($nombreTipo) ?>
+            </option>
+            <?php endforeach; ?>
+          </select>
         </div>
         <div class="col-md-2">
           <label class="form-label small" for="fecha_desde">Desde</label>

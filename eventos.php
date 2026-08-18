@@ -77,6 +77,7 @@ $registros = [];
 $totalRegistros = 0;
 $totalPaginas = 1;
 $offsetRegistros = 0;
+$tiposEntradaFiltro = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? '';
@@ -151,6 +152,7 @@ try {
         $offsetRegistros = calcularOffsetRegistros($pagina);
         $totalPaginas = calcularTotalPaginasRegistros($totalRegistros);
         $registros = buscarRegistrosEventos($filtros, REGISTROS_POR_PAGINA, $offsetRegistros);
+        $tiposEntradaFiltro = obtenerNombresTipoEntradaParaFiltro((int) ($filtros['evento_id'] ?? 0));
     }
 } catch (PDOException $e) {
     $errorBd = 'No se pudieron cargar los eventos. Usa «Crear tablas» en el login si aún no existen.';
@@ -190,6 +192,7 @@ view('eventos/index', [
     'registros'              => $registros,
     'totalRegistros'         => $totalRegistros,
     'filtros'                => $filtros,
+    'tiposEntradaFiltro'     => $tiposEntradaFiltro,
     'pestaña'                => $pestaña,
     'mensaje'                => $mensaje,
     'error'                  => $error,

@@ -1077,6 +1077,7 @@ function parsearFiltrosRegistrosEventos(array $entrada): array
 
     $filtros = parsearFiltrosRegistros($entrada);
     $filtros['evento_id'] = max(0, (int) ($entrada['evento_id'] ?? 0));
+    $filtros['tipo_entrada'] = trim((string) ($entrada['tipo_entrada'] ?? ''));
 
     return $filtros;
 }
@@ -1514,6 +1515,63 @@ function contarEventos(): int
 }
 
 /**
+ * @return array<int, string>
+ */
+function obtenerNombresTipoEntradaParaFiltro(int $eventoId = 0): array
+{
+    $pdo = getConnection();
+    asegurarColumnasEventos($pdo);
+    asegurarColumnasValoresAdicionales($pdo);
+
+    $nombres = [];
+
+    if ($eventoId > 0) {
+        $stmtCatalogo = $pdo->prepare(
+            'SELECT nombre FROM eventos_tipos_entrada WHERE evento_id = ? ORDER BY orden ASC, id ASC'
+        );
+        $stmtCatalogo->execute([$eventoId]);
+        $stmtRegistros = $pdo->prepare(
+            'SELECT DISTINCT tipo_entrada
+             FROM valores_adicionales
+             WHERE tipo = ? AND evento_id = ? AND tipo_entrada IS NOT NULL AND TRIM(tipo_entrada) != \'\''
+        );
+        $stmtRegistros->execute([TIPO_VALOR_EVENTOS_INTERNO, $eventoId]);
+    } else {
+        $stmtCatalogo = $pdo->query(
+            'SELECT t.nombre
+             FROM eventos_tipos_entrada t
+             INNER JOIN eventos e ON e.id = t.evento_id
+             WHERE e.habilitado = 1
+             ORDER BY t.nombre ASC'
+        );
+        $stmtRegistros = $pdo->prepare(
+            'SELECT DISTINCT v.tipo_entrada
+             FROM valores_adicionales v
+             LEFT JOIN eventos e ON e.id = v.evento_id
+             WHERE v.tipo = ? AND e.habilitado = 1 AND v.tipo_entrada IS NOT NULL AND TRIM(v.tipo_entrada) != \'\''
+        );
+        $stmtRegistros->execute([TIPO_VALOR_EVENTOS_INTERNO]);
+    }
+
+    foreach (array_merge($stmtCatalogo->fetchAll(PDO::FETCH_COLUMN), $stmtRegistros->fetchAll(PDO::FETCH_COLUMN)) as $nombre) {
+        $nombre = trim((string) $nombre);
+        if ($nombre === '') {
+            continue;
+        }
+
+        $clave = mb_strtolower($nombre);
+        if (!isset($nombres[$clave])) {
+            $nombres[$clave] = $nombre;
+        }
+    }
+
+    $lista = array_values($nombres);
+    natcasesort($lista);
+
+    return array_values($lista);
+}
+
+/**
  * @return array{0: string, 1: array<int, mixed>}
  */
 function construirSqlRegistrosEventos(array $filtros): array
@@ -1543,6 +1601,12 @@ function construirSqlRegistrosEventos(array $filtros): array
     if ($filtros['fecha_hasta'] !== '') {
         $condiciones[] = 'v.fecha <= ?';
         $parametros[] = $filtros['fecha_hasta'];
+    }
+
+    $tipoEntrada = trim((string) ($filtros['tipo_entrada'] ?? ''));
+    if ($tipoEntrada !== '') {
+        $condiciones[] = 'LOWER(TRIM(v.tipo_entrada)) = LOWER(?)';
+        $parametros[] = $tipoEntrada;
     }
 
     $sql = 'SELECT v.*, e.nombre AS evento_nombre, e.requiere_numeracion

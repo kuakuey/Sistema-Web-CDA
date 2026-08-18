@@ -366,6 +366,13 @@ function actualizarRegistroEvento(int $id, array $datos): bool
         throw new InvalidArgumentException('Selecciona un evento válido.');
     }
 
+    if (!isset($datos['tipo_entrada']) || trim((string) $datos['tipo_entrada']) === '') {
+        $datos['tipo_entrada'] = (string) ($registro['tipo_entrada'] ?? '');
+    }
+    if (!isset($datos['tipo_entrada_id']) || (int) $datos['tipo_entrada_id'] <= 0) {
+        $datos['tipo_entrada_id'] = (int) ($registro['tipo_entrada_id'] ?? 0);
+    }
+
     $validados = validarDatosRegistroEvento($datos, $evento);
 
     return actualizarValorAdicional($id, [

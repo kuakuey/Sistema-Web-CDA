@@ -229,6 +229,36 @@ function obtenerTipoEntradaPorId(int $id, ?int $eventoId = null): ?array
     return $fila ?: null;
 }
 
+function nombresTipoEntradaEquivalentes(string $a, string $b): bool
+{
+    return mb_strtolower(trim($a)) === mb_strtolower(trim($b));
+}
+
+/**
+ * @param array<int, array<string, mixed>> $tipos
+ */
+function buscarTipoEntradaEnLista(array $tipos, int $tipoId = 0, string $tipoNombre = ''): ?array
+{
+    $tipoNombre = trim($tipoNombre);
+    if ($tipoNombre !== '') {
+        foreach ($tipos as $tipo) {
+            if (nombresTipoEntradaEquivalentes((string) ($tipo['nombre'] ?? ''), $tipoNombre)) {
+                return $tipo;
+            }
+        }
+    }
+
+    if ($tipoId > 0) {
+        foreach ($tipos as $tipo) {
+            if ((int) ($tipo['id'] ?? 0) === $tipoId) {
+                return $tipo;
+            }
+        }
+    }
+
+    return null;
+}
+
 /**
  * @param array<int, array<string, mixed>>|array<string, mixed> $tiposEntrada
  * @return array<int, array{nombre: string, valor: float, visible_publico: int, es_gratis: int}>
@@ -1198,13 +1228,16 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?stri
     $tipoEntradaNombre = null;
 
     if (is_array($tiposEntrada) && $tiposEntrada !== []) {
-        if ($tipoEntradaId <= 0) {
-            throw new InvalidArgumentException('Selecciona un tipo de entrada.');
+        $tipoEntrada = buscarTipoEntradaEnLista(
+            $tiposEntrada,
+            $tipoEntradaId,
+            (string) ($entrada['tipo_entrada'] ?? '')
+        );
+        if (!$tipoEntrada && $tipoEntradaId > 0) {
+            $tipoEntrada = obtenerTipoEntradaPorId($tipoEntradaId, (int) $evento['id']);
         }
-
-        $tipoEntrada = obtenerTipoEntradaPorId($tipoEntradaId, (int) $evento['id']);
         if (!$tipoEntrada) {
-            throw new InvalidArgumentException('Tipo de entrada no válido para este evento.');
+            throw new InvalidArgumentException('Selecciona un tipo de entrada.');
         }
 
         if (!tipoEntradaEsVisiblePublico($tipoEntrada) && !esRolConControlTotal($rol)) {

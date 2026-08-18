@@ -48,7 +48,7 @@
       }
     }
     for (i = 0; i < respuestas.length; i++) {
-      if ((respuestas[i].etiqueta || '') === (campo.etiqueta || '')) {
+      if ((respuestas[i].etiqueta || '').toLowerCase() === (campo.etiqueta || '').toLowerCase()) {
         return respuestas[i].valor || '';
       }
     }
@@ -378,11 +378,58 @@
     elemento.style.display = visible ? '' : 'none';
   }
 
+  function normalizarNombreTipoEntrada(texto) {
+    return String(texto || '').trim().toLowerCase();
+  }
+
+  function esFormularioEdicionRegistro(contenedor) {
+    var accion = contenedor.querySelector('input[name="accion"]');
+    return !!(accion && accion.value === 'actualizar_registro_evento');
+  }
+
+  function obtenerTipoEntradaGuardado(contenedor) {
+    var bloque = contenedor.querySelector('.js-form-registro-evento') || contenedor;
+    var tipoSelect = contenedor.querySelector('.js-tipo-entrada-evento');
+    var id = bloque.getAttribute('data-tipo-entrada-id') || '';
+    var nombre = bloque.getAttribute('data-tipo-entrada-nombre') || '';
+    var opcionActual = tipoSelect && tipoSelect.selectedIndex >= 0
+      ? tipoSelect.options[tipoSelect.selectedIndex]
+      : null;
+
+    if (opcionActual && opcionActual.value) {
+      if (!id) {
+        id = opcionActual.value;
+      }
+      if (!nombre) {
+        nombre = opcionActual.textContent || '';
+      }
+    }
+
+    return {
+      id: String(id || ''),
+      nombre: String(nombre || '').trim(),
+      valor: opcionActual ? opcionActual.getAttribute('data-valor') : null,
+      esGratis: opcionActual ? opcionActual.getAttribute('data-es-gratis') : null
+    };
+  }
+
+  function tipoCoincideConGuardado(tipo, guardado) {
+    if (!tipo || !guardado) {
+      return false;
+    }
+
+    if (guardado.nombre && normalizarNombreTipoEntrada(tipo.nombre) === normalizarNombreTipoEntrada(guardado.nombre)) {
+      return true;
+    }
+
+    return !!(!guardado.nombre && guardado.id && String(tipo.id || '') === String(guardado.id));
+  }
+
   function actualizarSelectTiposEntrada(contenedor) {
     var campoTipo = contenedor.querySelector('.js-campo-tipo-entrada-evento');
     var tipoSelect = contenedor.querySelector('.js-tipo-entrada-evento');
     var tipos = obtenerTiposEntradaEvento(contenedor);
-    var valorActual = tipoSelect ? tipoSelect.value : '';
+    var guardado = obtenerTipoEntradaGuardado(contenedor);
 
     if (!campoTipo || !tipoSelect) {
       return;
@@ -405,11 +452,21 @@
         option.textContent = tipo.nombre || '';
         option.setAttribute('data-valor', String(tipo.valor != null ? tipo.valor : 0));
         option.setAttribute('data-es-gratis', String(tipo.es_gratis ? 1 : 0));
-        if (String(tipo.id) === String(valorActual)) {
+        if (tipoCoincideConGuardado(tipo, guardado)) {
           option.selected = true;
         }
         tipoSelect.appendChild(option);
       });
+
+      if (!tipoSelect.value && guardado.id) {
+        var extra = document.createElement('option');
+        extra.value = String(guardado.id);
+        extra.textContent = guardado.nombre || 'Tipo actual';
+        extra.setAttribute('data-valor', String(guardado.valor != null ? guardado.valor : 0));
+        extra.setAttribute('data-es-gratis', String(guardado.esGratis === '1' ? 1 : 0));
+        extra.selected = true;
+        tipoSelect.appendChild(extra);
+      }
 
       if (!tipoSelect.value && tipos.length === 1) {
         tipoSelect.value = String(tipos[0].id || '');
@@ -420,7 +477,8 @@
     tipoSelect.disabled = !tieneTipos;
   }
 
-  function actualizarNumeracion(contenedor) {
+  function actualizarNumeracion(contenedor, opciones) {
+    opciones = opciones || {};
     var eventoSelect = contenedor.querySelector('select[name="evento_id"]');
     var campoNumeracion = contenedor.querySelector('.js-campo-numeracion-evento');
     var inputNumeracion = contenedor.querySelector('input[name="numeracion"]');
@@ -445,7 +503,7 @@
       ? 'Seleccione evento primero…'
       : (requiere ? 'Obligatoria para este evento' : 'No aplica para este evento');
 
-    if (!requiere) {
+    if (!requiere && opciones.resetearCamposEvento) {
       inputNumeracion.value = '';
     }
 
@@ -637,7 +695,7 @@
 
   function refrescarFormularioRegistro(contenedor, opciones) {
     actualizarSelectTiposEntrada(contenedor);
-    actualizarNumeracion(contenedor);
+    actualizarNumeracion(contenedor, opciones || {});
     actualizarCamposAdicionales(contenedor);
     actualizarBloquePagoEvento(contenedor, opciones || {});
   }
@@ -645,15 +703,21 @@
   function inicializarContenedorRegistro(contenedor) {
     var eventoSelect = contenedor.querySelector('select[name="evento_id"]');
     var tipoSelect = contenedor.querySelector('.js-tipo-entrada-evento');
+    var esEdicion = esFormularioEdicionRegistro(contenedor);
 
     if (eventoSelect) {
       eventoSelect.addEventListener('change', function () {
-        refrescarFormularioRegistro(contenedor, { sugerirValor: true });
+        refrescarFormularioRegistro(contenedor, { sugerirValor: true, resetearCamposEvento: true });
       });
     }
 
     if (tipoSelect) {
       tipoSelect.addEventListener('change', function () {
+        var hiddenNombre = contenedor.querySelector('input[name="tipo_entrada"]');
+        if (hiddenNombre) {
+          var opcionTipo = tipoSelect.options[tipoSelect.selectedIndex];
+          hiddenNombre.value = opcionTipo ? String(opcionTipo.textContent || '').trim() : '';
+        }
         actualizarBloquePagoEvento(contenedor, { sugerirValor: true });
       });
     }
@@ -676,8 +740,15 @@
       });
     });
 
-    var sugerirAlInicio = !valorInput || valorInput.value === '';
-    refrescarFormularioRegistro(contenedor, { sugerirValor: sugerirAlInicio });
+    var sugerirAlInicio = !esEdicion && (!valorInput || valorInput.value === '');
+    refrescarFormularioRegistro(contenedor, { sugerirValor: sugerirAlInicio, resetearCamposEvento: false });
+
+    if (esEdicion && tipoSelect) {
+      var hiddenNombreInicio = contenedor.querySelector('input[name="tipo_entrada"]');
+      if (hiddenNombreInicio && tipoSelect.selectedIndex >= 0) {
+        hiddenNombreInicio.value = String(tipoSelect.options[tipoSelect.selectedIndex].textContent || '').trim();
+      }
+    }
   }
 
   function inicializarContenedorCatalogo(contenedor) {

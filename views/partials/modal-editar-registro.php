@@ -201,38 +201,59 @@ $fila = $filaEditar;
           require_once dirname(__DIR__, 2) . '/includes/eventos.php';
           $puedeGestionarEstadoRegistro = puedeCrearRegistroEventoPendiente((string) ($usuario['rol'] ?? ''));
           $registroEventoSoloMetodosPago = registroEventoRequiereMetodoPagoInmediato((string) ($usuario['rol'] ?? ''));
+          $eventoSeleccionado = null;
+          foreach ($eventos ?? [] as $eventoItem) {
+              if ((int) ($fila['evento_id'] ?? 0) === (int) $eventoItem['id']) {
+                  $eventoSeleccionado = $eventoItem;
+                  break;
+              }
+          }
+          $tiposEntradaSeleccionados = $eventoSeleccionado['tipos_entrada'] ?? [];
+          $tipoEntradaActualId = (int) ($fila['tipo_entrada_id'] ?? 0);
+          $tipoEntradaActualNombre = trim((string) ($fila['tipo_entrada'] ?? ''));
+          $formaPagoRegistro = normalizarFormaPagoEvento((string) ($fila['forma_pago'] ?? ''));
+          $esGratuitoRegistro = $formaPagoRegistro === 'gratuito';
+          $esPendienteRegistro = $formaPagoRegistro === 'pendiente';
+          $formaPagoActual = in_array($formaPagoRegistro, ['efectivo', 'transferencia'], true) ? $formaPagoRegistro : 'efectivo';
+          $estadoPagoActual = normalizarEstadoPagoEvento((string) ($fila['estado_pago'] ?? 'por_cancelar')) ?: 'por_cancelar';
+          if ($esGratuitoRegistro) {
+              $estadoPagoActual = 'pagado';
+          } elseif ($esPendienteRegistro) {
+              $estadoPagoActual = 'por_cancelar';
+          }
+          $ocultarBloquesPago = $esGratuitoRegistro;
+          $tipoEntradaResuelto = buscarTipoEntradaEnLista(
+              is_array($tiposEntradaSeleccionados) ? $tiposEntradaSeleccionados : [],
+              $tipoEntradaActualId,
+              $tipoEntradaActualNombre
+          );
+          if ($tipoEntradaResuelto) {
+              $tipoEntradaActualId = (int) ($tipoEntradaResuelto['id'] ?? 0);
+              $tipoEntradaActualNombre = trim((string) ($tipoEntradaResuelto['nombre'] ?? $tipoEntradaActualNombre));
+          } elseif ($tipoEntradaActualId > 0 || $tipoEntradaActualNombre !== '') {
+              $tiposEntradaSeleccionados[] = [
+                  'id'        => $tipoEntradaActualId,
+                  'nombre'    => $tipoEntradaActualNombre !== '' ? $tipoEntradaActualNombre : 'Tipo actual',
+                  'valor'     => (float) ($fila['valor'] ?? 0),
+                  'es_gratis' => $esGratuitoRegistro ? 1 : 0,
+              ];
+          }
           ?>
           <div
             class="row g-3 js-form-registro-evento"
             data-puede-estado-pago="<?= $puedeGestionarEstadoRegistro ? '1' : '0' ?>"
             data-solo-metodos-pago="<?= $registroEventoSoloMetodosPago ? '1' : '0' ?>"
+            data-tipo-entrada-id="<?= (int) $tipoEntradaActualId ?>"
+            data-tipo-entrada-nombre="<?= htmlspecialchars($tipoEntradaActualNombre, ENT_QUOTES, 'UTF-8') ?>"
           >
-            <?php
-            $eventoSeleccionado = null;
-            foreach ($eventos ?? [] as $eventoItem) {
-                if ((int) ($fila['evento_id'] ?? 0) === (int) $eventoItem['id']) {
-                    $eventoSeleccionado = $eventoItem;
-                    break;
-                }
-            }
-            $tiposEntradaSeleccionados = $eventoSeleccionado['tipos_entrada'] ?? [];
-            $tipoEntradaActualId = (int) ($fila['tipo_entrada_id'] ?? 0);
-            $formaPagoRegistro = normalizarFormaPagoEvento((string) ($fila['forma_pago'] ?? ''));
-            $esGratuitoRegistro = $formaPagoRegistro === 'gratuito';
-            $esPendienteRegistro = $formaPagoRegistro === 'pendiente';
-            $formaPagoActual = in_array($formaPagoRegistro, ['efectivo', 'transferencia'], true) ? $formaPagoRegistro : 'efectivo';
-            $estadoPagoActual = normalizarEstadoPagoEvento((string) ($fila['estado_pago'] ?? 'por_cancelar')) ?: 'por_cancelar';
-            if ($esGratuitoRegistro) {
-                $estadoPagoActual = 'pagado';
-            } elseif ($esPendienteRegistro) {
-                $estadoPagoActual = 'por_cancelar';
-            }
-            $ocultarBloquesPago = $esGratuitoRegistro;
-            ?>
+            <input type="hidden" name="tipo_entrada" value="<?= htmlspecialchars($tipoEntradaActualNombre) ?>">
             <div class="col-md-6">
               <label class="form-label">Nombre de evento <span class="text-danger">*</span></label>
               <select class="form-select" name="evento_id" required>
                 <?php foreach ($eventos ?? [] as $eventoItem):
+                  $tiposParaJson = ((int) ($eventoItem['id'] ?? 0) === (int) ($fila['evento_id'] ?? 0))
+                    ? $tiposEntradaSeleccionados
+                    : ($eventoItem['tipos_entrada'] ?? []);
                   $tiposJson = array_map(static function (array $tipo): array {
                       return [
                           'id'        => (int) ($tipo['id'] ?? 0),
@@ -240,7 +261,7 @@ $fila = $filaEditar;
                           'valor'     => (float) ($tipo['valor'] ?? 0),
                           'es_gratis' => (int) ($tipo['es_gratis'] ?? 0),
                       ];
-                  }, $eventoItem['tipos_entrada'] ?? []);
+                  }, is_array($tiposParaJson) ? $tiposParaJson : []);
                   $camposAdicionalesJson = array_map('serializarCampoAdicionalEventoParaJs', $eventoItem['campos_adicionales'] ?? []);
                 ?>
                 <option

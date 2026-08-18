@@ -66,15 +66,15 @@
   foreach ($informe['registros_por_tipo'] as $grupo):
   ?>
   <h3><?= htmlspecialchars($grupo['tipo_entrada'] ?? 'Entrada') ?> (<?= count($grupo['registros'] ?? []) ?>)</h3>
-  <table class="datos datos-entradas">
+  <table class="datos datos-entradas" width="100%">
     <thead>
       <tr>
-        <th class="col-numeracion" style="width:36px">N°</th>
-        <th class="col-nombre" style="width:150px">Nombre</th>
-        <th class="col-valor" style="width:62px">Valor</th>
-        <th class="col-estado" style="width:72px">Estado</th>
-        <th class="col-forma-pago" style="width:78px">Forma de pago</th>
-        <th class="col-fecha" style="width:62px">Fecha</th>
+        <th class="col-numeracion" width="4%">N°</th>
+        <th class="col-nombre" width="24%">Nombre</th>
+        <th class="col-valor" width="9%">Valor</th>
+        <th class="col-estado" width="11%">Estado</th>
+        <th class="col-forma-pago" width="13%">Forma de pago</th>
+        <th class="col-fecha" width="10%">Fecha</th>
         <?php foreach ($camposAdicionalesInforme as $campoAdicional): ?>
         <th><?= htmlspecialchars($campoAdicional['etiqueta']) ?></th>
         <?php endforeach; ?>
@@ -84,12 +84,12 @@
     <tbody>
       <?php foreach ($grupo['registros'] as $registro): ?>
       <tr>
-        <td class="col-numeracion"><?= htmlspecialchars(trim((string) ($registro['numeracion'] ?? '')) !== '' ? $registro['numeracion'] : '—') ?></td>
-        <td class="col-nombre"><?= htmlspecialchars($registro['nombre']) ?></td>
-        <td class="col-valor"><strong><?= htmlspecialchars(formatearMonto((float) ($registro['valor'] ?? 0))) ?></strong></td>
-        <td class="col-estado"><?= htmlspecialchars(etiquetaEstadoPagoRegistroEvento($registro)) ?></td>
-        <td class="col-forma-pago"><?= htmlspecialchars(etiquetaFormaPagoEvento($registro['forma_pago'] ?? null)) ?></td>
-        <td class="col-fecha"><?= htmlspecialchars(formatearFechaInforme($registro['fecha'])) ?></td>
+        <td class="col-numeracion" width="4%"><?= htmlspecialchars(trim((string) ($registro['numeracion'] ?? '')) !== '' ? $registro['numeracion'] : '—') ?></td>
+        <td class="col-nombre" width="24%"><?= htmlspecialchars($registro['nombre']) ?></td>
+        <td class="col-valor" width="9%"><strong><?= htmlspecialchars(formatearMonto((float) ($registro['valor'] ?? 0))) ?></strong></td>
+        <td class="col-estado" width="11%"><?= htmlspecialchars(etiquetaEstadoPagoRegistroEvento($registro)) ?></td>
+        <td class="col-forma-pago" width="13%"><?= htmlspecialchars(etiquetaFormaPagoEvento($registro['forma_pago'] ?? null)) ?></td>
+        <td class="col-fecha" width="10%"><?= htmlspecialchars(formatearFechaInforme($registro['fecha'])) ?></td>
         <?php foreach ($camposAdicionalesInforme as $campoAdicional): ?>
         <td><?= htmlspecialchars(valorInfoAdicionalPorCampoInforme($registro['info_adicional'] ?? '', $campoAdicional)) ?></td>
         <?php endforeach; ?>

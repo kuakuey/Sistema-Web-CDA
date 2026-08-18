@@ -111,42 +111,16 @@
       width: 100%;
     }
 
-    table.datos-entradas th.col-numeracion,
-    table.datos-entradas td.col-numeracion {
-      width: 36px;
-      padding-left: 2px;
-      padding-right: 2px;
-      text-align: center;
-      white-space: nowrap;
-    }
-
-    table.datos-entradas th.col-nombre,
-    table.datos-entradas td.col-nombre {
-      width: 150px;
-    }
-
-    table.datos-entradas th.col-valor,
-    table.datos-entradas td.col-valor {
-      width: 62px;
-    }
-
-    table.datos-entradas th.col-estado,
-    table.datos-entradas td.col-estado {
-      width: 72px;
-    }
-
-    table.datos-entradas th.col-forma-pago,
-    table.datos-entradas td.col-forma-pago {
-      width: 78px;
-    }
-
-    table.datos-entradas th.col-fecha,
-    table.datos-entradas td.col-fecha {
-      width: 62px;
-    }
+    table.datos-entradas .col-numeracion { width: 4%; }
+    table.datos-entradas .col-nombre { width: 24%; }
+    table.datos-entradas .col-valor { width: 9%; }
+    table.datos-entradas .col-estado { width: 11%; }
+    table.datos-entradas .col-forma-pago { width: 13%; }
+    table.datos-entradas .col-fecha { width: 10%; }
 
     table.datos-entradas th,
     table.datos-entradas td {
+      text-align: left;
       word-wrap: break-word;
       overflow-wrap: break-word;
     }

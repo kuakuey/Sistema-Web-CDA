@@ -92,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'nombre'               => $_POST['nombre'] ?? '',
                     'fecha'                => $_POST['fecha'] ?? '',
                     'tipos_entrada'        => $_POST['tipo_entrada'] ?? [],
+                    'campos_adicionales'   => $_POST['campo_adicional'] ?? [],
                     'habilitado'           => isset($_POST['habilitado']) ? 1 : 0,
                     'requiere_numeracion'  => isset($_POST['requiere_numeracion']) ? 1 : 0,
                 ]);
@@ -107,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'nombre'               => $_POST['nombre'] ?? '',
                     'fecha'                => $_POST['fecha'] ?? '',
                     'tipos_entrada'        => $_POST['tipo_entrada'] ?? [],
+                    'campos_adicionales'   => $_POST['campo_adicional'] ?? [],
                     'habilitado'           => isset($_POST['habilitado']) ? 1 : 0,
                     'requiere_numeracion'  => isset($_POST['requiere_numeracion']) ? 1 : 0,
                 ]);

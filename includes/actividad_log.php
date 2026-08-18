@@ -459,6 +459,10 @@ function construirDetalleActividadRegistroEvento(array $datos): string
     if (!empty($datos['numeracion'])) {
         $lineas[] = 'Numeración: ' . trim((string) $datos['numeracion']);
     }
+    $infoAdicionalTexto = formatearInfoAdicionalRegistro($datos['info_adicional'] ?? '');
+    if ($infoAdicionalTexto !== '') {
+        $lineas[] = 'Información adicional: ' . $infoAdicionalTexto;
+    }
     if (!empty($datos['observacion'])) {
         $lineas[] = 'Observación: ' . trim((string) $datos['observacion']);
     }
@@ -890,6 +894,24 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
             }
         }
 
+        $camposExtra = $registro['campos_adicionales'] ?? [];
+        if (is_array($camposExtra) && $camposExtra !== []) {
+            $partesExtra = [];
+            foreach ($camposExtra as $campoExtra) {
+                if (!is_array($campoExtra)) {
+                    continue;
+                }
+                $etiquetaExtra = trim((string) ($campoExtra['etiqueta'] ?? ''));
+                if ($etiquetaExtra === '') {
+                    continue;
+                }
+                $partesExtra[] = $etiquetaExtra . (!empty($campoExtra['obligatorio']) ? ' (obligatorio)' : '');
+            }
+            if ($partesExtra !== []) {
+                $campos['Información adicional'] = implode(' · ', $partesExtra);
+            }
+        }
+
         return $campos;
     }
 
@@ -922,6 +944,10 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
         $numeracion = trim((string) ($registro['numeracion'] ?? ''));
         if ($numeracion !== '' || !empty($registro['requiere_numeracion'])) {
             $campos['Numeración'] = $numeracion !== '' ? $numeracion : '—';
+        }
+        $infoAdicionalTexto = formatearInfoAdicionalRegistro($registro['info_adicional'] ?? '');
+        if ($infoAdicionalTexto !== '') {
+            $campos['Información adicional'] = $infoAdicionalTexto;
         }
         $observacion = trim((string) ($registro['observacion'] ?? ''));
         if ($observacion !== '') {
@@ -970,6 +996,7 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
         'estado_pago'          => 'Estado pago',
         'tipo_entrada'         => 'Tipo de entrada',
         'numeracion'           => 'Numeración',
+        'info_adicional'       => 'Información adicional',
     ];
 
     // Si hay IDs de evento/entrada, mostrar nombres legibles.

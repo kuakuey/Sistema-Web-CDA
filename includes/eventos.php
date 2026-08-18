@@ -21,7 +21,7 @@ function obtenerEventos(): array
          ORDER BY e.nombre ASC, e.id ASC'
     )->fetchAll();
 
-    return adjuntarTiposEntradaAEventos($eventos);
+    return adjuntarCamposAdicionalesAEventos(adjuntarTiposEntradaAEventos($eventos));
 }
 
 /**
@@ -36,7 +36,7 @@ function obtenerEventosHabilitados(): array
         'SELECT * FROM eventos WHERE habilitado = 1 ORDER BY nombre ASC, id ASC'
     )->fetchAll();
 
-    return adjuntarTiposEntradaAEventos($eventos);
+    return adjuntarCamposAdicionalesAEventos(adjuntarTiposEntradaAEventos($eventos));
 }
 
 function obtenerEvento(int $id): ?array
@@ -52,6 +52,7 @@ function obtenerEvento(int $id): ?array
     }
 
     $evento['tipos_entrada'] = obtenerTiposEntradaPorEvento((int) $evento['id']);
+    $evento['campos_adicionales'] = obtenerCamposAdicionalesPorEvento((int) $evento['id']);
 
     return $evento;
 }
@@ -76,6 +77,75 @@ function adjuntarTiposEntradaAEventos(array $eventos): array
     unset($evento);
 
     return $eventos;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $eventos
+ * @return array<int, array<string, mixed>>
+ */
+function adjuntarCamposAdicionalesAEventos(array $eventos): array
+{
+    if ($eventos === []) {
+        return [];
+    }
+
+    $ids = array_map(static fn (array $evento): int => (int) $evento['id'], $eventos);
+    $camposPorEvento = obtenerCamposAdicionalesPorEventos($ids);
+
+    foreach ($eventos as &$evento) {
+        $eventoId = (int) $evento['id'];
+        $evento['campos_adicionales'] = $camposPorEvento[$eventoId] ?? [];
+    }
+    unset($evento);
+
+    return $eventos;
+}
+
+/**
+ * @return array<int, array<string, mixed>>
+ */
+function obtenerCamposAdicionalesPorEvento(int $eventoId): array
+{
+    if ($eventoId <= 0) {
+        return [];
+    }
+
+    $porEvento = obtenerCamposAdicionalesPorEventos([$eventoId]);
+
+    return $porEvento[$eventoId] ?? [];
+}
+
+/**
+ * @param array<int, int> $eventoIds
+ * @return array<int, array<int, array<string, mixed>>>
+ */
+function obtenerCamposAdicionalesPorEventos(array $eventoIds): array
+{
+    $eventoIds = array_values(array_unique(array_filter(array_map('intval', $eventoIds))));
+
+    if ($eventoIds === []) {
+        return [];
+    }
+
+    $pdo = getConnection();
+    asegurarColumnasEventos($pdo);
+
+    $placeholders = implode(',', array_fill(0, count($eventoIds), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT id, evento_id, etiqueta, obligatorio, orden
+         FROM eventos_campos_adicionales
+         WHERE evento_id IN ($placeholders)
+         ORDER BY orden ASC, id ASC"
+    );
+    $stmt->execute($eventoIds);
+
+    $resultado = [];
+    foreach ($stmt->fetchAll() as $fila) {
+        $eventoId = (int) $fila['evento_id'];
+        $resultado[$eventoId][] = $fila;
+    }
+
+    return $resultado;
 }
 
 /**
@@ -265,6 +335,228 @@ function guardarTiposEntradaEvento(int $eventoId, array $tiposEntrada): void
             (int) ($tipo['es_gratis'] ?? 0),
         ]);
     }
+}
+
+/**
+ * @param array<int, array<string, mixed>>|array<string, mixed> $camposAdicionales
+ * @return array<int, array{etiqueta: string, obligatorio: int}>
+ */
+function normalizarCamposAdicionalesCatalogo($camposAdicionales): array
+{
+    require_once __DIR__ . '/texto.php';
+
+    if (!is_array($camposAdicionales)) {
+        return [];
+    }
+
+    if (isset($camposAdicionales['etiqueta']) || isset($camposAdicionales['obligatorio'])) {
+        $etiquetas = $camposAdicionales['etiqueta'] ?? [];
+        $obligatorios = $camposAdicionales['obligatorio'] ?? [];
+
+        if (!is_array($etiquetas)) {
+            $etiquetas = [$etiquetas];
+        }
+        if (!is_array($obligatorios)) {
+            $obligatorios = [$obligatorios];
+        }
+
+        $camposAdicionales = [];
+        $total = max(count($etiquetas), count($obligatorios));
+        for ($i = 0; $i < $total; $i++) {
+            $camposAdicionales[] = [
+                'etiqueta'    => $etiquetas[$i] ?? '',
+                'obligatorio' => $obligatorios[$i] ?? 1,
+            ];
+        }
+    }
+
+    $normalizados = [];
+    $etiquetasVistas = [];
+
+    foreach ($camposAdicionales as $campo) {
+        if (!is_array($campo)) {
+            continue;
+        }
+
+        $etiqueta = normalizarTextoOrdenado($campo['etiqueta'] ?? '');
+        if ($etiqueta === '') {
+            continue;
+        }
+
+        if (function_exists('mb_strlen') ? mb_strlen($etiqueta) > 100 : strlen($etiqueta) > 100) {
+            throw new InvalidArgumentException('Cada dato adicional debe tener máximo 100 caracteres.');
+        }
+
+        $clave = function_exists('mb_strtolower') ? mb_strtolower($etiqueta, 'UTF-8') : strtolower($etiqueta);
+        if (isset($etiquetasVistas[$clave])) {
+            throw new InvalidArgumentException('No repitas el mismo dato adicional: ' . $etiqueta . '.');
+        }
+        $etiquetasVistas[$clave] = true;
+
+        $normalizados[] = [
+            'etiqueta'    => $etiqueta,
+            'obligatorio' => !empty($campo['obligatorio']) ? 1 : 0,
+        ];
+    }
+
+    if (count($normalizados) > 10) {
+        throw new InvalidArgumentException('Puedes solicitar como máximo 10 datos adicionales por evento.');
+    }
+
+    return $normalizados;
+}
+
+/**
+ * @param array<int, array{etiqueta: string, obligatorio: int}> $camposAdicionales
+ */
+function guardarCamposAdicionalesEvento(int $eventoId, array $camposAdicionales): void
+{
+    if ($eventoId <= 0) {
+        throw new InvalidArgumentException('Evento inválido.');
+    }
+
+    $pdo = getConnection();
+    $pdo->prepare('DELETE FROM eventos_campos_adicionales WHERE evento_id = ?')->execute([$eventoId]);
+
+    if ($camposAdicionales === []) {
+        return;
+    }
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO eventos_campos_adicionales (evento_id, etiqueta, obligatorio, orden, creado_en)
+         VALUES (?, ?, ?, ?, NOW())'
+    );
+
+    foreach ($camposAdicionales as $orden => $campo) {
+        $stmt->execute([
+            $eventoId,
+            $campo['etiqueta'],
+            (int) ($campo['obligatorio'] ?? 1),
+            (int) $orden,
+        ]);
+    }
+}
+
+/**
+ * @return array<int, array{id: int, etiqueta: string, valor: string}>
+ */
+function decodificarInfoAdicionalRegistro($infoAdicional): array
+{
+    if (is_array($infoAdicional)) {
+        $decoded = $infoAdicional;
+    } else {
+        $raw = trim((string) $infoAdicional);
+        if ($raw === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+    }
+
+    $resultado = [];
+    foreach ($decoded as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+
+        $etiqueta = trim((string) ($item['etiqueta'] ?? ''));
+        $valor = trim((string) ($item['valor'] ?? ''));
+        if ($etiqueta === '' && $valor === '') {
+            continue;
+        }
+
+        $resultado[] = [
+            'id'       => (int) ($item['id'] ?? 0),
+            'etiqueta' => $etiqueta,
+            'valor'    => $valor,
+        ];
+    }
+
+    return $resultado;
+}
+
+function codificarInfoAdicionalRegistro(array $respuestas): ?string
+{
+    if ($respuestas === []) {
+        return null;
+    }
+
+    return json_encode($respuestas, JSON_UNESCAPED_UNICODE);
+}
+
+function formatearInfoAdicionalRegistro($infoAdicional): string
+{
+    $respuestas = decodificarInfoAdicionalRegistro($infoAdicional);
+    if ($respuestas === []) {
+        return '';
+    }
+
+    $partes = [];
+    foreach ($respuestas as $item) {
+        $etiqueta = $item['etiqueta'] !== '' ? $item['etiqueta'] : 'Dato';
+        $valor = $item['valor'] !== '' ? $item['valor'] : '—';
+        $partes[] = $etiqueta . ': ' . $valor;
+    }
+
+    return implode(' · ', $partes);
+}
+
+/**
+ * @param array<string, mixed> $entrada
+ * @param array<int, array<string, mixed>> $campos
+ * @return array<int, array{id: int, etiqueta: string, valor: string}>
+ */
+function validarRespuestasCamposAdicionalesEvento(array $entrada, array $campos, bool $exigirObligatorios = true): array
+{
+    require_once __DIR__ . '/texto.php';
+
+    if ($campos === []) {
+        return [];
+    }
+
+    $valoresPost = $entrada['info_adicional'] ?? [];
+    if (!is_array($valoresPost)) {
+        $valoresPost = [];
+    }
+
+    $respuestas = [];
+    foreach ($campos as $campo) {
+        $campoId = (int) ($campo['id'] ?? 0);
+        $etiqueta = trim((string) ($campo['etiqueta'] ?? ''));
+        if ($etiqueta === '') {
+            continue;
+        }
+
+        $valorBruto = '';
+        if ($campoId > 0 && array_key_exists($campoId, $valoresPost)) {
+            $valorBruto = (string) $valoresPost[$campoId];
+        } elseif ($campoId > 0 && array_key_exists((string) $campoId, $valoresPost)) {
+            $valorBruto = (string) $valoresPost[(string) $campoId];
+        } elseif (array_key_exists($etiqueta, $valoresPost)) {
+            $valorBruto = (string) $valoresPost[$etiqueta];
+        }
+
+        $valor = normalizarTextoOrdenado($valorBruto);
+        $longitud = function_exists('mb_strlen') ? mb_strlen($valor) : strlen($valor);
+        if ($longitud > 255) {
+            throw new InvalidArgumentException('El dato «' . $etiqueta . '» no puede superar 255 caracteres.');
+        }
+
+        if ($exigirObligatorios && !empty($campo['obligatorio']) && $valor === '') {
+            throw new InvalidArgumentException('Completa el dato adicional: ' . $etiqueta . '.');
+        }
+
+        $respuestas[] = [
+            'id'       => $campoId,
+            'etiqueta' => $etiqueta,
+            'valor'    => $valor,
+        ];
+    }
+
+    return $respuestas;
 }
 
 /**
@@ -629,6 +921,7 @@ function normalizarDatosEventoCatalogo(array $datos): array
 
     $tiposEntrada = normalizarTiposEntradaCatalogo($tiposEntrada);
     $valor = valorCatalogoDesdeTiposEntrada($tiposEntrada);
+    $camposAdicionales = normalizarCamposAdicionalesCatalogo($datos['campos_adicionales'] ?? []);
 
     validarFechaEvento($fecha);
 
@@ -639,6 +932,7 @@ function normalizarDatosEventoCatalogo(array $datos): array
         'habilitado'           => $habilitado,
         'requiere_numeracion'  => $requiereNumeracion,
         'tipos_entrada'        => $tiposEntrada,
+        'campos_adicionales'   => $camposAdicionales,
     ];
 }
 
@@ -646,7 +940,7 @@ function normalizarDatosEventoCatalogo(array $datos): array
  * @param array<string, mixed> $entrada
  * @return array<string, mixed>
  */
-function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?string $rol = null): array
+function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?string $rol = null, bool $exigirCamposAdicionales = true): array
 {
     require_once __DIR__ . '/texto.php';
     require_once __DIR__ . '/roles.php';
@@ -669,8 +963,13 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?stri
 
     if ($evento === null) {
         $evento = $eventoId > 0 ? obtenerEventoHabilitado($eventoId) : null;
-    } elseif (!isset($evento['tipos_entrada'])) {
-        $evento['tipos_entrada'] = obtenerTiposEntradaPorEvento((int) ($evento['id'] ?? 0));
+    } else {
+        if (!isset($evento['tipos_entrada'])) {
+            $evento['tipos_entrada'] = obtenerTiposEntradaPorEvento((int) ($evento['id'] ?? 0));
+        }
+        if (!isset($evento['campos_adicionales'])) {
+            $evento['campos_adicionales'] = obtenerCamposAdicionalesPorEvento((int) ($evento['id'] ?? 0));
+        }
     }
 
     if (!$evento) {
@@ -755,6 +1054,12 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?stri
         throw new InvalidArgumentException('La numeración es obligatoria para este evento.');
     }
 
+    $camposAdicionales = $evento['campos_adicionales'] ?? [];
+    if (!is_array($camposAdicionales)) {
+        $camposAdicionales = [];
+    }
+    $infoAdicional = validarRespuestasCamposAdicionalesEvento($entrada, $camposAdicionales, $exigirCamposAdicionales);
+
     return [
         'evento_id'        => (int) $evento['id'],
         'nombre'           => $nombre,
@@ -767,6 +1072,7 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?stri
         'tipo_entrada_id'  => $tipoEntrada !== null ? (int) $tipoEntrada['id'] : null,
         'tipo_entrada'     => $tipoEntradaNombre,
         'estado_pago'      => $estadoPago,
+        'info_adicional'   => $infoAdicional,
     ];
 }
 
@@ -854,6 +1160,7 @@ function crearEvento(array $datos): int
 
         $eventoId = (int) $pdo->lastInsertId();
         guardarTiposEntradaEvento($eventoId, $datos['tipos_entrada']);
+        guardarCamposAdicionalesEvento($eventoId, $datos['campos_adicionales']);
 
         if ($pdo->inTransaction()) {
             $pdo->commit();
@@ -900,6 +1207,7 @@ function actualizarEventoCatalogo(int $id, array $datos): bool
         ]);
 
         guardarTiposEntradaEvento($id, $datos['tipos_entrada']);
+        guardarCamposAdicionalesEvento($id, $datos['campos_adicionales']);
 
         if ($pdo->inTransaction()) {
             $pdo->commit();
@@ -931,6 +1239,7 @@ function eliminarEvento(int $id): bool
     $pdo->beginTransaction();
     try {
         $pdo->prepare('DELETE FROM eventos_tipos_entrada WHERE evento_id = ?')->execute([$id]);
+        $pdo->prepare('DELETE FROM eventos_campos_adicionales WHERE evento_id = ?')->execute([$id]);
         $stmt = $pdo->prepare('DELETE FROM eventos WHERE id = ?');
         $ok = $stmt->execute([$id]) && $stmt->rowCount() > 0;
 

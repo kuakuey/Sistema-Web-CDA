@@ -331,6 +331,7 @@ function asegurarColumnasEventos(PDO $pdo): void
     }
 
     migrarTablaEventosTiposEntrada($pdo);
+    migrarTablaEventosCamposAdicionales($pdo);
 }
 
 function migrarTablaEventos(PDO $pdo): void
@@ -425,6 +426,32 @@ function migrarTablaEventosTiposEntrada(PDO $pdo): void
     $migrado = true;
 }
 
+function migrarTablaEventosCamposAdicionales(PDO $pdo): void
+{
+    static $migrado = false;
+
+    if ($migrado) {
+        return;
+    }
+
+    if (!tablaExiste($pdo, 'eventos_campos_adicionales')) {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS eventos_campos_adicionales (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                evento_id INT NOT NULL,
+                etiqueta VARCHAR(100) NOT NULL,
+                obligatorio TINYINT(1) NOT NULL DEFAULT 1,
+                orden INT NOT NULL DEFAULT 0,
+                creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_evento_id (evento_id),
+                INDEX idx_orden (orden)
+            ) ENGINE=InnoDB'
+        );
+    }
+
+    $migrado = true;
+}
+
 function migrarTablaValoresAdicionales(PDO $pdo): void
 {
     $pdo->exec(
@@ -473,6 +500,7 @@ function asegurarColumnasValoresAdicionales(PDO $pdo): void
         'tipo_entrada_id'  => 'ADD COLUMN tipo_entrada_id INT NULL AFTER forma_pago',
         'tipo_entrada'     => 'ADD COLUMN tipo_entrada VARCHAR(100) NULL AFTER tipo_entrada_id',
         'estado_pago'      => "ADD COLUMN estado_pago VARCHAR(20) NULL DEFAULT 'por_cancelar' AFTER tipo_entrada",
+        'info_adicional'   => 'ADD COLUMN info_adicional TEXT NULL AFTER estado_pago',
     ];
 
     foreach ($columnas as $nombre => $sqlAlter) {

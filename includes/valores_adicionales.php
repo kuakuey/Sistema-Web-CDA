@@ -257,15 +257,25 @@ function insertarValorAdicional(array $datos): int
     require_once __DIR__ . '/texto.php';
     $datos = normalizarCamposTextoOrdenado($datos, ['nombre', 'observacion', 'registrado_por_nombre']);
 
+    $infoAdicional = $datos['info_adicional'] ?? null;
+    if (is_array($infoAdicional)) {
+        $infoAdicional = $infoAdicional === [] ? null : json_encode($infoAdicional, JSON_UNESCAPED_UNICODE);
+    } elseif ($infoAdicional !== null) {
+        $infoAdicional = trim((string) $infoAdicional);
+        if ($infoAdicional === '') {
+            $infoAdicional = null;
+        }
+    }
+
     $pdo = getConnection();
     asegurarColumnasValoresAdicionales($pdo);
 
     $stmt = $pdo->prepare(
         'INSERT INTO valores_adicionales (
             tipo, nombre, fecha, telefono, valor, observacion, evento_id,
-            numeracion, forma_pago, tipo_entrada_id, tipo_entrada, estado_pago,
+            numeracion, forma_pago, tipo_entrada_id, tipo_entrada, estado_pago, info_adicional,
             registrado_por_id, registrado_por_nombre, creado_en
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
     );
 
     $stmt->execute([
@@ -281,6 +291,7 @@ function insertarValorAdicional(array $datos): int
         isset($datos['tipo_entrada_id']) && (int) $datos['tipo_entrada_id'] > 0 ? (int) $datos['tipo_entrada_id'] : null,
         $datos['tipo_entrada'] ?? null,
         $datos['estado_pago'] ?? null,
+        $infoAdicional,
         $datos['registrado_por_id'],
         $datos['registrado_por_nombre'],
     ]);
@@ -301,13 +312,23 @@ function actualizarValorAdicional(int $id, array $datos): bool
     require_once __DIR__ . '/texto.php';
     $datos = normalizarCamposTextoOrdenado($datos, ['nombre', 'observacion']);
 
+    $infoAdicional = $datos['info_adicional'] ?? null;
+    if (is_array($infoAdicional)) {
+        $infoAdicional = $infoAdicional === [] ? null : json_encode($infoAdicional, JSON_UNESCAPED_UNICODE);
+    } elseif ($infoAdicional !== null) {
+        $infoAdicional = trim((string) $infoAdicional);
+        if ($infoAdicional === '') {
+            $infoAdicional = null;
+        }
+    }
+
     $pdo = getConnection();
     asegurarColumnasValoresAdicionales($pdo);
 
     $stmt = $pdo->prepare(
         'UPDATE valores_adicionales SET
             tipo = ?, nombre = ?, fecha = ?, telefono = ?, valor = ?, observacion = ?, evento_id = ?,
-            numeracion = ?, forma_pago = ?, tipo_entrada_id = ?, tipo_entrada = ?, estado_pago = ?
+            numeracion = ?, forma_pago = ?, tipo_entrada_id = ?, tipo_entrada = ?, estado_pago = ?, info_adicional = ?
          WHERE id = ?'
     );
 
@@ -324,6 +345,7 @@ function actualizarValorAdicional(int $id, array $datos): bool
         isset($datos['tipo_entrada_id']) && (int) $datos['tipo_entrada_id'] > 0 ? (int) $datos['tipo_entrada_id'] : null,
         $datos['tipo_entrada'] ?? null,
         $datos['estado_pago'] ?? null,
+        $infoAdicional,
         $id,
     ]);
 }
@@ -359,6 +381,7 @@ function actualizarRegistroEvento(int $id, array $datos): bool
         'tipo_entrada_id'  => $validados['tipo_entrada_id'],
         'tipo_entrada'     => $validados['tipo_entrada'],
         'estado_pago'      => $validados['estado_pago'],
+        'info_adicional'   => $validados['info_adicional'] ?? null,
     ]);
 }
 

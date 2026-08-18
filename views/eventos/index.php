@@ -236,12 +236,20 @@
                     'es_gratis' => (int) ($tipo['es_gratis'] ?? 0),
                 ];
             }, $tiposVisibles);
+            $camposAdicionalesJson = array_map(static function (array $campo): array {
+                return [
+                    'id'          => (int) ($campo['id'] ?? 0),
+                    'etiqueta'    => (string) ($campo['etiqueta'] ?? ''),
+                    'obligatorio' => (int) ($campo['obligatorio'] ?? 1),
+                ];
+            }, $evento['campos_adicionales'] ?? []);
           ?>
           <option
             value="<?= (int) $evento['id'] ?>"
             data-valor="<?= htmlspecialchars((string) $evento['valor']) ?>"
             data-requiere-numeracion="<?= (int) ($evento['requiere_numeracion'] ?? 0) ?>"
             data-tipos-entrada="<?= htmlspecialchars(json_encode($tiposJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
+            data-campos-adicionales="<?= htmlspecialchars(json_encode($camposAdicionalesJson, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
           >
             <?= htmlspecialchars($evento['nombre']) ?>
           </option>
@@ -265,6 +273,8 @@
         <label class="form-label" for="telefono">Teléfono <span class="text-danger">*</span></label>
         <input type="tel" class="form-control js-paso-despues-tipo" id="telefono" name="telefono" required maxlength="30" disabled>
       </div>
+
+      <div class="col-12 js-campos-adicionales-evento"></div>
 
       <div class="col-md-6 js-campo-valor-evento">
         <label class="form-label" for="valor">Valor <span class="text-danger">*</span></label>
@@ -356,6 +366,13 @@
         $tiposEntradaEvento = [];
         $prefijoId = 'nuevo';
         include __DIR__ . '/../partials/tipos-entrada-evento-catalogo.php';
+        ?>
+      </div>
+      <div class="col-12">
+        <?php
+        $camposAdicionalesEvento = [];
+        $prefijoId = 'nuevo_campo';
+        include __DIR__ . '/../partials/campos-adicionales-evento-catalogo.php';
         ?>
       </div>
       <div class="col-12">
@@ -506,6 +523,13 @@
             }
             $prefijoId = 'editar' . (int) $evento['id'];
             include __DIR__ . '/../partials/tipos-entrada-evento-catalogo.php';
+            ?>
+          </div>
+          <div class="mb-3">
+            <?php
+            $camposAdicionalesEvento = $evento['campos_adicionales'] ?? [];
+            $prefijoId = 'editarCampo' . (int) $evento['id'];
+            include __DIR__ . '/../partials/campos-adicionales-evento-catalogo.php';
             ?>
           </div>
           <div class="form-check mb-2">

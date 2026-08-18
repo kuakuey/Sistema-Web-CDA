@@ -167,6 +167,18 @@ function construirDetalleRegistroEvento(array $fila): array
         ['etiqueta' => 'Valor', 'valor' => formatearMonto((float) ($fila['valor'] ?? 0))],
     ];
 
+    foreach (decodificarInfoAdicionalRegistro($fila['info_adicional'] ?? '') as $datoExtra) {
+        $etiquetaExtra = trim((string) ($datoExtra['etiqueta'] ?? ''));
+        if ($etiquetaExtra === '') {
+            continue;
+        }
+        $valorExtra = trim((string) ($datoExtra['valor'] ?? ''));
+        $filas[] = [
+            'etiqueta' => $etiquetaExtra,
+            'valor'    => $valorExtra !== '' ? $valorExtra : '—',
+        ];
+    }
+
     if ($numeracion !== '' || !empty($fila['requiere_numeracion'])) {
         $filas[] = ['etiqueta' => 'Numeración', 'valor' => $numeracion !== '' ? $numeracion : '—'];
     }

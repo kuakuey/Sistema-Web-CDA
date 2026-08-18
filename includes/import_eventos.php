@@ -1188,7 +1188,7 @@ function procesarImportacionRegistrosEventos(array $archivo, array $usuario): ar
                 }
 
                 $entrada = prepararEntradaImportEvento($fila, $evento, $tipoEntrada);
-                $validados = validarDatosRegistroEvento($entrada, $evento, $rol);
+                $validados = validarDatosRegistroEvento($entrada, $evento, $rol, false);
 
                 insertarValorAdicional([
                     'tipo'                  => TIPO_VALOR_EVENTOS_INTERNO,
@@ -1203,6 +1203,7 @@ function procesarImportacionRegistrosEventos(array $archivo, array $usuario): ar
                     'tipo_entrada_id'       => $validados['tipo_entrada_id'],
                     'tipo_entrada'          => $validados['tipo_entrada'],
                     'estado_pago'           => $validados['estado_pago'],
+                    'info_adicional'        => $validados['info_adicional'] ?? null,
                     'registrado_por_id'     => (int) ($usuario['id'] ?? 0),
                     'registrado_por_nombre' => (string) ($usuario['nombre'] ?? $usuario['usuario'] ?? 'Importación'),
                 ]);

@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS valores_adicionales (
     tipo_entrada_id INT DEFAULT NULL,
     tipo_entrada VARCHAR(100) DEFAULT NULL,
     estado_pago VARCHAR(20) DEFAULT 'por_cancelar',
+    info_adicional TEXT DEFAULT NULL,
     registrado_por_id INT DEFAULT NULL,
     registrado_por_nombre VARCHAR(100) DEFAULT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -155,6 +156,17 @@ CREATE TABLE IF NOT EXISTS eventos_tipos_entrada (
     orden INT NOT NULL DEFAULT 0,
     visible_publico TINYINT(1) NOT NULL DEFAULT 1,
     es_gratis TINYINT(1) NOT NULL DEFAULT 0,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_evento_id (evento_id),
+    INDEX idx_orden (orden)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS eventos_campos_adicionales (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    evento_id INT NOT NULL,
+    etiqueta VARCHAR(100) NOT NULL,
+    obligatorio TINYINT(1) NOT NULL DEFAULT 1,
+    orden INT NOT NULL DEFAULT 0,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_evento_id (evento_id),
     INDEX idx_orden (orden)

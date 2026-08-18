@@ -71,6 +71,7 @@
         <th>Estado</th>
         <th>Forma de pago</th>
         <th>Fecha</th>
+        <th>Información adicional</th>
         <th>Observación</th>
       </tr>
     </thead>
@@ -83,6 +84,10 @@
         <td><?= htmlspecialchars(etiquetaEstadoPagoRegistroEvento($registro)) ?></td>
         <td><?= htmlspecialchars(etiquetaFormaPagoEvento($registro['forma_pago'] ?? null)) ?></td>
         <td><?= htmlspecialchars(formatearFechaInforme($registro['fecha'])) ?></td>
+        <td><?php
+          $infoAdicionalTexto = formatearInfoAdicionalRegistro($registro['info_adicional'] ?? '');
+          echo $infoAdicionalTexto !== '' ? htmlspecialchars($infoAdicionalTexto) : '—';
+        ?></td>
         <td><?= !empty($registro['observacion']) ? htmlspecialchars($registro['observacion']) : '—' ?></td>
       </tr>
       <?php endforeach; ?>

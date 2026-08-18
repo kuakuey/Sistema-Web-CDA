@@ -101,6 +101,7 @@ if ($accion === 'registrar_evento') {
             'tipo_entrada_id'       => $validados['tipo_entrada_id'],
             'tipo_entrada'          => $validados['tipo_entrada'],
             'estado_pago'           => $validados['estado_pago'],
+            'info_adicional'        => $validados['info_adicional'] ?? null,
             'registrado_por_id'     => (int) $usuario['id'],
             'registrado_por_nombre' => $usuario['nombre'] ?? $usuario['usuario'],
         ]);

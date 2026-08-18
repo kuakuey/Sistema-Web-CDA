@@ -10,6 +10,164 @@
     return eventoSelect.options[eventoSelect.selectedIndex] || null;
   }
 
+  function obtenerCamposAdicionalesEvento(contenedor) {
+    var opcion = obtenerOpcionEvento(contenedor);
+    if (!opcion) {
+      return null;
+    }
+
+    var raw = opcion.getAttribute('data-campos-adicionales') || '[]';
+    try {
+      var campos = JSON.parse(raw);
+      return Array.isArray(campos) ? campos : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function obtenerValoresInfoAdicional(contenedor) {
+    var destino = contenedor.querySelector('.js-campos-adicionales-evento');
+    if (!destino) {
+      return [];
+    }
+
+    var raw = destino.getAttribute('data-valores') || '[]';
+    try {
+      var valores = JSON.parse(raw);
+      return Array.isArray(valores) ? valores : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function valorInfoAdicionalCampo(respuestas, campo) {
+    var i;
+    for (i = 0; i < respuestas.length; i++) {
+      if (String(respuestas[i].id || '') === String(campo.id || '') && String(campo.id || '') !== '0') {
+        return respuestas[i].valor || '';
+      }
+    }
+    for (i = 0; i < respuestas.length; i++) {
+      if ((respuestas[i].etiqueta || '') === (campo.etiqueta || '')) {
+        return respuestas[i].valor || '';
+      }
+    }
+    return '';
+  }
+
+  function actualizarCamposAdicionales(contenedor) {
+    var destino = contenedor.querySelector('.js-campos-adicionales-evento');
+    if (!destino) {
+      return;
+    }
+
+    var campos = obtenerCamposAdicionalesEvento(contenedor);
+    var respuestas = obtenerValoresInfoAdicional(contenedor);
+
+    destino.innerHTML = '';
+
+    if (!campos || campos.length === 0) {
+      destino.style.display = 'none';
+      return;
+    }
+
+    destino.style.display = '';
+
+    var filaCampos = document.createElement('div');
+    filaCampos.className = 'row g-3';
+
+    var heading = document.createElement('div');
+    heading.className = 'col-12';
+    heading.innerHTML = '<p class="form-label mb-0">Información adicional</p>';
+    filaCampos.appendChild(heading);
+
+    campos.forEach(function (campo) {
+      var campoId = String(campo.id || '');
+      if (!campoId || campoId === '0') {
+        return;
+      }
+
+      var obligatorio = String(campo.obligatorio) === '1' || campo.obligatorio === true || campo.obligatorio === 1;
+      var col = document.createElement('div');
+      col.className = 'col-md-6';
+
+      var label = document.createElement('label');
+      label.className = 'form-label';
+      label.textContent = campo.etiqueta || 'Dato adicional';
+      if (obligatorio) {
+        var marca = document.createElement('span');
+        marca.className = 'text-danger';
+        marca.textContent = ' *';
+        label.appendChild(marca);
+      }
+
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'form-control js-paso-despues-tipo js-input-info-adicional';
+      input.name = 'info_adicional[' + campoId + ']';
+      input.maxLength = 255;
+      input.value = valorInfoAdicionalCampo(respuestas, campo);
+      input.required = obligatorio;
+      input.placeholder = 'Ingrese ' + (campo.etiqueta || 'dato').toLowerCase() + '…';
+
+      col.appendChild(label);
+      col.appendChild(input);
+      filaCampos.appendChild(col);
+    });
+
+    destino.appendChild(filaCampos);
+  }
+
+  function sincronizarObligatorioFila(fila) {
+    var hidden = fila.querySelector('.js-obligatorio-valor');
+    var check = fila.querySelector('.js-obligatorio-check');
+    if (hidden && check) {
+      hidden.value = check.checked ? '1' : '0';
+    }
+  }
+
+  function enlazarObligatorioFila(fila) {
+    var check = fila.querySelector('.js-obligatorio-check');
+    if (!check || check.dataset.boundObligatorio) {
+      return;
+    }
+
+    check.dataset.boundObligatorio = '1';
+    check.addEventListener('change', function () {
+      sincronizarObligatorioFila(fila);
+    });
+    sincronizarObligatorioFila(fila);
+  }
+
+  function crearFilaCampoAdicional(contenedor) {
+    var lista = contenedor.querySelector('.js-campos-adicionales-lista');
+    var plantilla = lista ? lista.querySelector('.js-campo-adicional-fila') : null;
+    if (!lista || !plantilla) {
+      return;
+    }
+
+    var nueva = plantilla.cloneNode(true);
+    var uid = 'campo_adicional_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    nueva.querySelectorAll('input').forEach(function (input) {
+      if (input.classList.contains('js-obligatorio-valor')) {
+        input.value = '1';
+      } else if (input.classList.contains('js-obligatorio-check')) {
+        input.checked = true;
+        input.removeAttribute('data-bound-obligatorio');
+        input.id = uid;
+      } else if (input.type === 'text') {
+        input.value = '';
+      }
+    });
+
+    nueva.querySelectorAll('label[for]').forEach(function (label) {
+      label.setAttribute('for', uid);
+    });
+
+    lista.appendChild(nueva);
+    enlazarObligatorioFila(nueva);
+  }
+
   function obtenerTiposEntradaEvento(contenedor) {
     var opcion = obtenerOpcionEvento(contenedor);
     if (!opcion) {
@@ -414,6 +572,7 @@
   function refrescarFormularioRegistro(contenedor, opciones) {
     actualizarSelectTiposEntrada(contenedor);
     actualizarNumeracion(contenedor);
+    actualizarCamposAdicionales(contenedor);
     actualizarBloquePagoEvento(contenedor, opciones || {});
   }
 
@@ -464,6 +623,14 @@
       });
     }
 
+    var botonAgregarCampo = contenedor.querySelector('.js-agregar-campo-adicional');
+    if (botonAgregarCampo && !botonAgregarCampo.dataset.boundCampos) {
+      botonAgregarCampo.dataset.boundCampos = '1';
+      botonAgregarCampo.addEventListener('click', function () {
+        crearFilaCampoAdicional(contenedor);
+      });
+    }
+
     if (!contenedor.dataset.boundQuitarTipos) {
       contenedor.dataset.boundQuitarTipos = '1';
       contenedor.addEventListener('click', function (event) {
@@ -481,11 +648,40 @@
       });
     }
 
+    if (!contenedor.dataset.boundQuitarCampos) {
+      contenedor.dataset.boundQuitarCampos = '1';
+      contenedor.addEventListener('click', function (event) {
+        var boton = event.target.closest('.js-quitar-campo-adicional');
+        if (!boton || !contenedor.contains(boton)) {
+          return;
+        }
+
+        var fila = boton.closest('.js-campo-adicional-fila');
+        var filas = contenedor.querySelectorAll('.js-campo-adicional-fila');
+        if (!fila) {
+          return;
+        }
+
+        if (filas.length > 1) {
+          fila.remove();
+          return;
+        }
+
+        fila.querySelectorAll('input[type="text"]').forEach(function (input) {
+          input.value = '';
+        });
+      });
+    }
+
     contenedor.querySelectorAll('.js-tipo-entrada-fila').forEach(function (fila) {
       enlazarVisiblePublicoFila(fila);
       enlazarEsGratisFila(fila);
     });
     actualizarFilasTipoEntrada(contenedor);
+
+    contenedor.querySelectorAll('.js-campo-adicional-fila').forEach(function (fila) {
+      enlazarObligatorioFila(fila);
+    });
   }
 
   document.querySelectorAll('#formRegistroEvento, .modal-editar-registro form').forEach(function (form) {
@@ -503,7 +699,7 @@
   });
 
   document.querySelectorAll('#formAgregarEvento, .modal').forEach(function (contenedor) {
-    if (contenedor.querySelector('.js-tipos-entrada-lista')) {
+    if (contenedor.querySelector('.js-tipos-entrada-lista') || contenedor.querySelector('.js-campos-adicionales-lista')) {
       inicializarContenedorCatalogo(contenedor);
     }
   });

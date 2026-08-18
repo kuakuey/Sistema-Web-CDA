@@ -766,6 +766,19 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   border-bottom: 2px solid var(--cda-border);
 }
 
+.form-section-band {
+  display: block;
+  margin: 0;
+  padding: 0.5rem 0.85rem;
+  background: var(--cda-primary);
+  color: #fff;
+  font-size: var(--cda-text-xs);
+  font-weight: var(--cda-font-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 0.25rem;
+}
+
 .badge-form--conexion { background-color: var(--cda-primary); }
 .badge-form--escol { background-color: #6f42c1; }
 .badge-form--academia { background-color: #fd7e14; }

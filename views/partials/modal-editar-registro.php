@@ -229,8 +229,11 @@ $fila = $filaEditar;
             }
             $ocultarBloquesPago = $esGratuitoRegistro;
             ?>
+            <div class="col-12">
+              <p class="form-section-band">Evento</p>
+            </div>
             <div class="col-md-6">
-              <label class="form-label">Nombre evento <span class="text-danger">*</span></label>
+              <label class="form-label">Nombre de evento <span class="text-danger">*</span></label>
               <select class="form-select" name="evento_id" required>
                 <?php foreach ($eventos ?? [] as $eventoItem):
                   $tiposJson = array_map(static function (array $tipo): array {
@@ -257,7 +260,7 @@ $fila = $filaEditar;
               </select>
             </div>
             <div class="col-md-6 js-campo-tipo-entrada-evento">
-              <label class="form-label">Tipo de entrada <span class="text-danger">*</span></label>
+              <label class="form-label">Tipo de evento <span class="text-danger">*</span></label>
               <select class="form-select js-tipo-entrada-evento" name="tipo_entrada_id" required>
                 <option value="">Seleccione tipo…</option>
                 <?php foreach ($tiposEntradaSeleccionados as $tipoItem): ?>
@@ -272,18 +275,6 @@ $fila = $filaEditar;
                 <?php endforeach; ?>
               </select>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Nombre completo <span class="text-danger">*</span></label>
-              <input type="text" class="form-control js-paso-despues-tipo" name="nombre" required maxlength="100" value="<?= htmlspecialchars($fila['nombre'] ?? '') ?>">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Teléfono <span class="text-danger">*</span></label>
-              <input type="tel" class="form-control js-paso-despues-tipo" name="telefono" required maxlength="30" value="<?= htmlspecialchars($fila['telefono'] ?? '') ?>">
-            </div>
-            <div
-              class="col-12 js-campos-adicionales-evento"
-              data-valores="<?= htmlspecialchars(json_encode(decodificarInfoAdicionalRegistro($fila['info_adicional'] ?? ''), JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
-            ></div>
             <div class="col-md-6 js-campo-valor-evento">
               <label class="form-label">Valor <span class="text-danger">*</span></label>
               <input
@@ -370,14 +361,30 @@ $fila = $filaEditar;
                 </div>
               </div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Fecha <span class="text-danger">*</span></label>
-              <input type="date" class="form-control js-paso-despues-tipo" name="fecha" required value="<?= htmlspecialchars($fila['fecha'] ?? '') ?>">
-            </div>
             <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
             <input type="hidden" name="forma_pago" class="js-forma-pago-pendiente" value="pendiente" <?= $esGratuitoRegistro || !empty($registroEventoSoloMetodosPago) || ($puedeGestionarEstadoRegistro && $estadoPagoActual === 'pagado') ? 'disabled' : '' ?>>
             <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
             <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" <?= !$esGratuitoRegistro ? 'disabled' : '' ?>>
+
+            <div class="col-12">
+              <p class="form-section-band">Información personal</p>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Nombre <span class="text-danger">*</span></label>
+              <input type="text" class="form-control js-paso-despues-tipo" name="nombre" required maxlength="100" value="<?= htmlspecialchars($fila['nombre'] ?? '') ?>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Teléfono <span class="text-danger">*</span></label>
+              <input type="tel" class="form-control js-paso-despues-tipo" name="telefono" required maxlength="30" value="<?= htmlspecialchars($fila['telefono'] ?? '') ?>">
+            </div>
+            <div
+              class="col-12 js-campos-adicionales-evento"
+              data-valores="<?= htmlspecialchars(json_encode(decodificarInfoAdicionalRegistro($fila['info_adicional'] ?? ''), JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
+            ></div>
+            <div class="col-md-6">
+              <label class="form-label">Fecha de registro <span class="text-danger">*</span></label>
+              <input type="date" class="form-control js-paso-despues-tipo" name="fecha" required value="<?= htmlspecialchars($fila['fecha'] ?? '') ?>">
+            </div>
             <div class="col-12">
               <label class="form-label">Observación</label>
               <textarea class="form-control js-paso-despues-tipo" name="observacion" rows="2" maxlength="500"><?= htmlspecialchars($fila['observacion'] ?? '') ?></textarea>

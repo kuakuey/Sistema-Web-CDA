@@ -222,8 +222,12 @@
       <input type="hidden" name="accion" value="registrar_evento">
       <input type="hidden" name="redireccion" value="eventos.php?pestaña=registrar">
 
+      <div class="col-12">
+        <p class="form-section-band">Evento</p>
+      </div>
+
       <div class="col-md-6">
-        <label class="form-label" for="evento_id">Nombre evento <span class="text-danger">*</span></label>
+        <label class="form-label" for="evento_id">Nombre de evento <span class="text-danger">*</span></label>
         <select class="form-select" id="evento_id" name="evento_id" required>
           <option value="">Seleccione evento…</option>
           <?php foreach ($eventosHabilitados as $evento):
@@ -252,23 +256,11 @@
       </div>
 
       <div class="col-md-6 js-campo-tipo-entrada-evento">
-        <label class="form-label" for="tipo_entrada_id">Tipo de entrada <span class="text-danger">*</span></label>
+        <label class="form-label" for="tipo_entrada_id">Tipo de evento <span class="text-danger">*</span></label>
         <select class="form-select js-tipo-entrada-evento" id="tipo_entrada_id" name="tipo_entrada_id" required disabled>
           <option value="">Seleccione evento primero…</option>
         </select>
       </div>
-
-      <div class="col-md-6">
-        <label class="form-label" for="nombre">Nombre completo <span class="text-danger">*</span></label>
-        <input type="text" class="form-control js-paso-despues-tipo" id="nombre" name="nombre" required maxlength="100" disabled>
-      </div>
-
-      <div class="col-md-6">
-        <label class="form-label" for="telefono">Teléfono <span class="text-danger">*</span></label>
-        <input type="tel" class="form-control js-paso-despues-tipo" id="telefono" name="telefono" required maxlength="30" disabled>
-      </div>
-
-      <div class="col-12 js-campos-adicionales-evento"></div>
 
       <div class="col-md-6 js-campo-valor-evento">
         <label class="form-label" for="valor">Valor <span class="text-danger">*</span></label>
@@ -315,15 +307,31 @@
         </div>
       </div>
 
-      <div class="col-md-6">
-        <label class="form-label" for="fecha">Fecha <span class="text-danger">*</span></label>
-        <input type="date" class="form-control js-paso-despues-tipo" id="fecha" name="fecha" required value="<?= htmlspecialchars(date('Y-m-d')) ?>" disabled>
-      </div>
-
       <input type="hidden" name="forma_pago" class="js-forma-pago-gratuito" value="gratuito" disabled>
       <input type="hidden" name="forma_pago" class="js-forma-pago-pendiente" value="pendiente" disabled>
       <input type="hidden" name="valor" class="js-valor-gratuito" value="0" disabled>
       <input type="hidden" name="estado_pago" class="js-estado-pago-gratuito" value="pagado" disabled>
+
+      <div class="col-12">
+        <p class="form-section-band">Información personal</p>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="nombre">Nombre <span class="text-danger">*</span></label>
+        <input type="text" class="form-control js-paso-despues-tipo" id="nombre" name="nombre" required maxlength="100" disabled>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="telefono">Teléfono <span class="text-danger">*</span></label>
+        <input type="tel" class="form-control js-paso-despues-tipo" id="telefono" name="telefono" required maxlength="30" disabled>
+      </div>
+
+      <div class="col-12 js-campos-adicionales-evento"></div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="fecha">Fecha de registro <span class="text-danger">*</span></label>
+        <input type="date" class="form-control js-paso-despues-tipo" id="fecha" name="fecha" required value="<?= htmlspecialchars(date('Y-m-d')) ?>" disabled>
+      </div>
 
       <div class="col-12">
         <label class="form-label" for="observacion">Observación</label>

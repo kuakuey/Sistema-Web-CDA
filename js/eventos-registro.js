@@ -78,7 +78,7 @@
 
     var heading = document.createElement('div');
     heading.className = 'col-12';
-    heading.innerHTML = '<p class="form-label mb-0">Información adicional</p>';
+    heading.innerHTML = '<p class="form-section-band mb-0">Información adicional</p>';
     filaCampos.appendChild(heading);
 
     campos.forEach(function (campo) {

@@ -143,6 +143,37 @@ function puedeGenerarInforme(string $rol): bool
     return tienePermisoSeccion($rol, 'generar_informe');
 }
 
+function puedeGenerarSeccionInforme(string $rol, string $seccion): bool
+{
+    require_once __DIR__ . '/informes.php';
+
+    $seccion = normalizarSeccionInforme($seccion);
+
+    if (tienePermisoDetalleOAcceso($rol, 'generar_informe', $seccion)) {
+        return true;
+    }
+
+    return $seccion === 'eventos' && puedeVerInformeEventos($rol);
+}
+
+/**
+ * @return array<string, string>
+ */
+function obtenerEtiquetasSeccionInformeParaRol(string $rol): array
+{
+    require_once __DIR__ . '/informes.php';
+
+    $filtradas = [];
+
+    foreach (obtenerEtiquetasSeccionInforme() as $clave => $etiqueta) {
+        if (puedeGenerarSeccionInforme($rol, $clave)) {
+            $filtradas[$clave] = $etiqueta;
+        }
+    }
+
+    return $filtradas;
+}
+
 function puedeRegistrarOfrendas(string $rol): bool
 {
     return tienePermisoDetalle($rol, 'ofrendas', 'nuevo');
@@ -183,6 +214,31 @@ function puedeGestionarEstructura(string $rol): bool
     return tienePermisoSeccion($rol, 'estructura');
 }
 
+function puedeGestionarEstructuraPestana(string $rol, string $pestana): bool
+{
+    if (!in_array($pestana, ['territorios', 'casas', 'lideres'], true)) {
+        return false;
+    }
+
+    return tienePermisoDetalleOAcceso($rol, 'estructura', $pestana);
+}
+
+/**
+ * @return array<int, string>
+ */
+function obtenerPestanasEstructuraPermitidas(string $rol): array
+{
+    $permitidas = [];
+
+    foreach (['territorios', 'casas', 'lideres'] as $pestana) {
+        if (puedeGestionarEstructuraPestana($rol, $pestana)) {
+            $permitidas[] = $pestana;
+        }
+    }
+
+    return $permitidas;
+}
+
 function puedeGestionarEventos(string $rol): bool
 {
     return tienePermisoSeccion($rol, 'eventos');
@@ -190,7 +246,43 @@ function puedeGestionarEventos(string $rol): bool
 
 function puedeGestionarCalendario(string $rol): bool
 {
-    return esRolConControlTotal($rol);
+    return tienePermisoSeccion($rol, 'calendario');
+}
+
+function puedeVerCalendario(string $rol): bool
+{
+    return tienePermisoDetalle($rol, 'calendario', 'ver');
+}
+
+function puedeGestionarEventosCalendario(string $rol): bool
+{
+    return tienePermisoDetalle($rol, 'calendario', 'gestionar');
+}
+
+function puedeCrearEventosCalendario(string $rol): bool
+{
+    return tienePermisoDetalle($rol, 'calendario', 'nuevo');
+}
+
+/**
+ * @return array<int, string>
+ */
+function obtenerPestanasCalendarioPermitidas(string $rol): array
+{
+    $mapa = [
+        'calendario' => puedeVerCalendario($rol),
+        'gestionar'  => puedeGestionarEventosCalendario($rol),
+        'nuevo'      => puedeCrearEventosCalendario($rol),
+    ];
+    $permitidas = [];
+
+    foreach ($mapa as $pestana => $permitida) {
+        if ($permitida) {
+            $permitidas[] = $pestana;
+        }
+    }
+
+    return $permitidas;
 }
 
 function puedeAgregarEventos(string $rol): bool
@@ -216,6 +308,11 @@ function puedeVerCatalogoEventos(string $rol): bool
 function puedeVerInformeEventos(string $rol): bool
 {
     return tienePermisoDetalle($rol, 'eventos', 'informe');
+}
+
+function puedeVerParticipantesEventos(string $rol): bool
+{
+    return tienePermisoDetalle($rol, 'eventos', 'participantes');
 }
 
 function puedeGestionarEstadoConexion(string $rol): bool
@@ -329,7 +426,7 @@ function puedeVerItemMenuSidebar(string $rol, string $clave): bool
     }
 
     if ($clave === 'generar_informe') {
-        return puedeGenerarInforme($rol) || puedeVerInformeEventos($rol);
+        return tienePermisoSeccion($rol, 'generar_informe') || puedeVerInformeEventos($rol);
     }
 
     return tienePermisoSeccion($rol, $clave);

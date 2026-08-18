@@ -14,21 +14,27 @@
 <?php endif; ?>
 
 <ul class="nav nav-tabs mb-4 flex-wrap">
+  <?php if (in_array('territorios', $pestañasPermitidas ?? ['territorios', 'casas', 'lideres'], true)): ?>
   <li class="nav-item">
     <a class="nav-link <?= $pestaña === 'territorios' ? 'active' : '' ?>" href="estructura.php?pestaña=territorios">
       <i class="bi bi-map me-1"></i>1. Territorios
     </a>
   </li>
+  <?php endif; ?>
+  <?php if (in_array('casas', $pestañasPermitidas ?? ['territorios', 'casas', 'lideres'], true)): ?>
   <li class="nav-item">
     <a class="nav-link <?= $pestaña === 'casas' ? 'active' : '' ?>" href="estructura.php?pestaña=casas">
       <i class="bi bi-house-heart me-1"></i>2. Casas de vida
     </a>
   </li>
+  <?php endif; ?>
+  <?php if (in_array('lideres', $pestañasPermitidas ?? ['territorios', 'casas', 'lideres'], true)): ?>
   <li class="nav-item">
     <a class="nav-link <?= $pestaña === 'lideres' ? 'active' : '' ?>" href="estructura.php?pestaña=lideres">
       <i class="bi bi-person-badge me-1"></i>3. Líderes
     </a>
   </li>
+  <?php endif; ?>
 </ul>
 
 <?php if ($pestaña === 'territorios'): ?>

@@ -39,17 +39,16 @@ if (puedeVerCatalogoEventos($rol)) {
     $pestañasPermitidas[] = 'catalogo';
 }
 
+if (puedeVerParticipantesEventos($rol)) {
+    $pestañasPermitidas[] = 'participantes';
+}
+
 if ($pestañasPermitidas === []) {
     header('Location: ' . obtenerUrlInicioPorRol($rol));
     exit;
 }
 
-if ($pestaña === 'participantes') {
-    if (!esRolConControlTotal($rol)) {
-        header('Location: ' . obtenerUrlInicioPorRol($rol));
-        exit;
-    }
-} elseif (!in_array($pestaña, $pestañasPermitidas, true)) {
+if (!in_array($pestaña, $pestañasPermitidas, true)) {
     $pestaña = $pestañasPermitidas[0];
 }
 
@@ -131,14 +130,14 @@ try {
             $eventoIdParticipantes = max(0, (int) ($_GET['evento_id'] ?? 0));
 
             if ($eventoIdParticipantes <= 0) {
-                header('Location: eventos.php?pestaña=catalogo&error=' . urlencode('Evento no válido.'));
+                header('Location: eventos.php?pestaña=' . urlencode($pestañasPermitidas[0]) . '&error=' . urlencode('Evento no válido.'));
                 exit;
             }
 
             $eventoParticipantes = obtenerEvento($eventoIdParticipantes);
 
             if (!$eventoParticipantes) {
-                header('Location: eventos.php?pestaña=catalogo&error=' . urlencode('Evento no encontrado.'));
+                header('Location: eventos.php?pestaña=' . urlencode($pestañasPermitidas[0]) . '&error=' . urlencode('Evento no encontrado.'));
                 exit;
             }
 
@@ -184,7 +183,7 @@ view('eventos/index', [
     'puedeRegistrar'         => puedeRegistrarEventos($rol),
     'puedeVerTabla'          => puedeVerTablaEventos($rol),
     'puedeVerCatalogo'       => puedeVerCatalogoEventos($rol),
-    'puedeVerParticipantes'  => esRolConControlTotal($rol),
+    'puedeVerParticipantes'  => puedeVerParticipantesEventos($rol),
     'puedeVerInformeEventos'   => puedeVerInformeEventos($rol),
     'eventos'                => $eventos,
     'eventosHabilitados'     => $eventosHabilitados,

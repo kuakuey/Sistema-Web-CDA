@@ -89,11 +89,21 @@ function obtenerCatalogoPermisosDetallados(): array
             'etiqueta'  => 'Eventos',
             'icono'     => 'bi-calendar-event',
             'permisos'  => [
-                'tabla'     => 'Tabla de eventos',
-                'registrar' => 'Registro de eventos',
-                'agregar'   => 'Agregar eventos',
-                'catalogo'  => 'Eventos registrados',
-                'informe'   => 'Informe de evento',
+                'tabla'          => 'Tabla de eventos',
+                'registrar'      => 'Registro de eventos',
+                'agregar'        => 'Agregar eventos',
+                'catalogo'       => 'Eventos registrados',
+                'participantes'  => 'Participantes del evento',
+                'informe'        => 'Informe de evento',
+            ],
+        ],
+        'calendario' => [
+            'etiqueta'  => 'Calendario',
+            'icono'     => 'bi-calendar3',
+            'permisos'  => [
+                'ver'       => 'Calendario',
+                'gestionar' => 'Gestionar',
+                'nuevo'     => 'Nuevo evento',
             ],
         ],
         'valores_adicionales' => [
@@ -117,14 +127,21 @@ function obtenerCatalogoPermisosDetallados(): array
             'etiqueta'  => 'Generar informe',
             'icono'     => 'bi-file-earmark-bar-graph',
             'permisos'  => [
-                'acceso' => 'Acceso al informe',
+                'completo'       => 'Informe general',
+                'ofrendas'       => 'Informe de ofrendas',
+                'valores'        => 'Informe de valores adicionales',
+                'eventos'        => 'Informe de eventos',
+                'presentaciones' => 'Informe de presentación de niños',
+                'bautismos'      => 'Informe de personas bautizadas',
             ],
         ],
         'estructura' => [
             'etiqueta'  => 'Estructura CDV',
             'icono'     => 'bi-diagram-3',
             'permisos'  => [
-                'acceso' => 'Gestionar estructura',
+                'territorios' => 'Territorios',
+                'casas'       => 'Casas de vida',
+                'lideres'     => "L\u{00ED}deres",
             ],
         ],
     ];
@@ -201,14 +218,24 @@ function expandirModulosAPermisosDetallados(array $modulos, ?string $rol = null)
 function normalizarPermisosParaUi(array $permisos): array
 {
     $activos = [];
+    $legacyAccesoPorModulo = [
+        'generar_informe' => ['completo', 'ofrendas', 'valores', 'eventos', 'presentaciones', 'bautismos'],
+        'estructura'      => ['territorios', 'casas', 'lideres'],
+    ];
 
     foreach (obtenerCatalogoPermisosDetallados() as $modulo => $info) {
         $moduloCompleto = in_array($modulo, $permisos, true);
+        $tieneAccesoLegacy = in_array(codificarPermisoDetalle($modulo, 'acceso'), $permisos, true);
 
         foreach ($info['permisos'] as $detalle => $_etiqueta) {
             $clave = codificarPermisoDetalle($modulo, $detalle);
 
             if ($moduloCompleto || in_array($clave, $permisos, true)) {
+                $activos[] = $clave;
+                continue;
+            }
+
+            if ($tieneAccesoLegacy && isset($legacyAccesoPorModulo[$modulo]) && in_array($detalle, $legacyAccesoPorModulo[$modulo], true)) {
                 $activos[] = $clave;
             }
         }
@@ -232,12 +259,12 @@ function obtenerSeccionesConfigurablesPermisos(): array
         'conexion'            => "Conexi\u{00F3}n",
         'presentaciones'      => "Presentaci\u{00F3}n ni\u{00F1}os",
         'ofrendas'            => 'Ofrendas',
-        'valores_adicionales' => 'Valores adicionales',
         'eventos'             => 'Eventos',
+        'calendario'          => 'Calendario',
+        'valores_adicionales' => 'Valores adicionales',
         'consejeria'          => "Consejer\u{00ED}a",
         'generar_informe'     => 'Generar informe',
         'estructura'          => 'Estructura CDV',
-        'usuarios'            => 'Usuarios',
     ];
 }
 
@@ -270,6 +297,7 @@ function obtenerPermisosPorDefectoRol(string $rol): array
                 'ofrendas',
                 'valores_adicionales',
                 'eventos',
+                'calendario',
                 'consejeria',
                 'generar_informe',
                 'estructura',
@@ -450,6 +478,15 @@ function tienePermisoDetalle(string $rol, string $modulo, string $detalle): bool
     }
 
     return in_array($modulo, $permisos, true);
+}
+
+function tienePermisoDetalleOAcceso(string $rol, string $modulo, string $detalle): bool
+{
+    if (tienePermisoDetalle($rol, $modulo, $detalle)) {
+        return true;
+    }
+
+    return tienePermisoDetalle($rol, $modulo, 'acceso');
 }
 
 function sembrarPermisosPorDefecto(PDO $pdo): void

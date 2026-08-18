@@ -13,11 +13,17 @@ if (!puedeGestionarEstructura(obtenerUsuarioActual()['rol'])) {
 }
 
 $usuario = obtenerUsuarioActual();
-$pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : 'territorios';
-$pestañasPermitidas = ['territorios', 'casas', 'lideres'];
+$pestañasPermitidas = obtenerPestanasEstructuraPermitidas($usuario['rol']);
+
+if ($pestañasPermitidas === []) {
+    header('Location: ' . obtenerUrlInicioPorRol($usuario['rol']));
+    exit;
+}
+
+$pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : $pestañasPermitidas[0];
 
 if (!in_array($pestaña, $pestañasPermitidas, true)) {
-    $pestaña = 'territorios';
+    $pestaña = $pestañasPermitidas[0];
 }
 
 $mensaje = null;
@@ -27,7 +33,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? '';
     require_once 'includes/actividad_log.php';
 
+    $pestanaPorAccion = [
+        'crear_territorio'      => 'territorios',
+        'actualizar_territorio' => 'territorios',
+        'crear_lider'           => 'lideres',
+        'actualizar_lider'      => 'lideres',
+        'crear_casa'            => 'casas',
+        'actualizar_casa'       => 'casas',
+    ];
+
     try {
+        if (isset($pestanaPorAccion[$accion]) && !puedeGestionarEstructuraPestana($usuario['rol'], $pestanaPorAccion[$accion])) {
+            throw new InvalidArgumentException('No tienes permiso para esta acción.');
+        }
+
         switch ($accion) {
             case 'crear_territorio':
                 if (trim($_POST['nombre'] ?? '') === '') {
@@ -133,4 +152,5 @@ view('estructura/index', [
     'etiquetasSecciones'  => $etiquetasSecciones,
     'estadisticas'        => $estadisticas,
     'seccion'             => '',
+    'pestañasPermitidas'  => $pestañasPermitidas,
 ], 'app');

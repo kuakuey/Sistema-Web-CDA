@@ -55,21 +55,27 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
 <?php else: ?>
 
 <ul class="nav nav-tabs mb-4" role="tablist">
+  <?php if (!empty($puedeVerCalendario)): ?>
   <li class="nav-item" role="presentation">
     <a class="nav-link <?= $pestaña === 'calendario' ? 'active' : '' ?>" href="calendario.php?pestaña=calendario&amp;anio=<?= (int) $anio ?>&amp;mes=<?= (int) $mes ?>" role="tab">
       <i class="bi bi-calendar3 me-1"></i>Calendario
     </a>
   </li>
+  <?php endif; ?>
+  <?php if (!empty($puedeGestionarEventosCalendario)): ?>
   <li class="nav-item" role="presentation">
     <a class="nav-link <?= $pestaña === 'gestionar' ? 'active' : '' ?>" href="calendario.php?pestaña=gestionar" role="tab">
       <i class="bi bi-list-ul me-1"></i>Gestionar
     </a>
   </li>
+  <?php endif; ?>
+  <?php if (!empty($puedeCrearEventosCalendario)): ?>
   <li class="nav-item" role="presentation">
     <a class="nav-link <?= $pestaña === 'nuevo' ? 'active' : '' ?>" href="calendario.php?pestaña=nuevo" role="tab">
       <i class="bi bi-plus-circle me-1"></i>Nuevo evento
     </a>
   </li>
+  <?php endif; ?>
 </ul>
 
 <?php if ($pestaña === 'calendario'): ?>

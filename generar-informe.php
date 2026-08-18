@@ -50,12 +50,21 @@ $etiquetasRoles = obtenerEtiquetasRoles();
 $error = isset($_GET['error']) ? trim((string) $_GET['error']) : null;
 $errorBd = null;
 
-$etiquetasSeccionInforme = obtenerEtiquetasSeccionInforme();
+$etiquetasSeccionInforme = obtenerEtiquetasSeccionInformeParaRol($rol);
 $soloInformeEventos = !$puedeGenerarInformesGenerales && $puedeInformeEventos;
 
 if ($soloInformeEventos) {
     $etiquetasSeccionInforme = ['eventos' => 'Eventos'];
     $seccion = 'eventos';
+} elseif ($etiquetasSeccionInforme === []) {
+    header('Location: ' . obtenerUrlInicioPorRol($rol));
+    exit;
+} else {
+    $seccionNormalizada = normalizarSeccionInforme($seccion);
+
+    if (!isset($etiquetasSeccionInforme[$seccionNormalizada])) {
+        $seccion = (string) array_key_first($etiquetasSeccionInforme);
+    }
 }
 
 try {
@@ -66,6 +75,10 @@ try {
 
         if ($seccion !== 'ofrendas') {
             $mostrarSinEntregar = false;
+        }
+
+        if (!puedeGenerarSeccionInforme($rol, $seccion)) {
+            throw new InvalidArgumentException('No tienes permiso para generar este informe.');
         }
 
         if ($seccion !== 'eventos') {
@@ -93,10 +106,6 @@ try {
                 $estadoBautismoInforme
             );
         } elseif ($seccion === 'eventos') {
-            if (!$puedeInformeEventos && !$puedeGenerarInformesGenerales) {
-                throw new InvalidArgumentException('No tienes permiso para generar informes de eventos.');
-            }
-
             if ($eventoId <= 0) {
                 throw new InvalidArgumentException('Selecciona un evento para generar el informe.');
             }

@@ -700,19 +700,31 @@ if (in_array($accion, $accionesEliminar, true)) {
             $redireccion = 'avanzado.php?pestaña=usuarios';
             break;
         case 'eliminar_territorio':
+            if (!puedeGestionarEstructuraPestana(obtenerUsuarioActual()['rol'], 'territorios')) {
+                header('Location: ' . $urlInicio);
+                exit;
+            }
             eliminarTerritorio($id);
             break;
         case 'eliminar_lider':
+            if (!puedeGestionarEstructuraPestana(obtenerUsuarioActual()['rol'], 'lideres')) {
+                header('Location: ' . $urlInicio);
+                exit;
+            }
             eliminarLider($id);
             break;
         case 'eliminar_casa':
+            if (!puedeGestionarEstructuraPestana(obtenerUsuarioActual()['rol'], 'casas')) {
+                header('Location: ' . $urlInicio);
+                exit;
+            }
             eliminarCasaVida($id);
             break;
         case 'eliminar_evento':
             eliminarEvento($id);
             break;
         case 'eliminar_evento_calendario':
-            if (!puedeGestionarCalendario(obtenerUsuarioActual()['rol'])) {
+            if (!puedeGestionarEventosCalendario(obtenerUsuarioActual()['rol'])) {
                 header('Location: ' . $urlInicio);
                 exit;
             }

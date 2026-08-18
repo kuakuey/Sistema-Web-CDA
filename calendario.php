@@ -16,9 +16,16 @@ if (!puedeGestionarCalendario($rol)) {
     exit;
 }
 
-$pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : 'calendario';
-if (!in_array($pestaña, ['calendario', 'gestionar', 'nuevo'], true)) {
-    $pestaña = 'calendario';
+$pestañasPermitidas = obtenerPestanasCalendarioPermitidas($rol);
+
+if ($pestañasPermitidas === []) {
+    header('Location: ' . obtenerUrlInicioPorRol($rol));
+    exit;
+}
+
+$pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : $pestañasPermitidas[0];
+if (!in_array($pestaña, $pestañasPermitidas, true)) {
+    $pestaña = $pestañasPermitidas[0];
 }
 
 $periodo = parsearMesCalendario($_GET);
@@ -46,6 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         switch ($accion) {
             case 'crear_evento_calendario':
+                if (!puedeCrearEventosCalendario($rol)) {
+                    header('Location: ' . obtenerUrlInicioPorRol($rol));
+                    exit;
+                }
                 $eventoId = crearEventoCalendario([
                     'titulo'      => $_POST['titulo'] ?? '',
                     'descripcion' => $_POST['descripcion'] ?? '',
@@ -56,6 +67,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 salirConActividad('calendario.php?pestaña=nuevo&ok=1', 'crear_evento_calendario', $eventoId);
 
             case 'actualizar_evento_calendario':
+                if (!puedeGestionarEventosCalendario($rol)) {
+                    header('Location: ' . obtenerUrlInicioPorRol($rol));
+                    exit;
+                }
                 $eventoId = (int) ($_POST['id'] ?? 0);
                 actualizarEventoCalendario($eventoId, [
                     'titulo'      => $_POST['titulo'] ?? '',
@@ -105,7 +120,10 @@ view('calendario/index', [
     'estadisticas'           => $estadisticas ?? [],
     'puedeGestionarUsuarios' => puedeGestionarUsuarios($rol),
     'puedeEliminar'          => puedeEliminarRegistros($rol),
-    'puedeEditar'            => puedeEditarRegistros($rol),
+    'puedeEditar'            => puedeGestionarEventosCalendario($rol),
+    'puedeVerCalendario'     => puedeVerCalendario($rol),
+    'puedeGestionarEventosCalendario' => puedeGestionarEventosCalendario($rol),
+    'puedeCrearEventosCalendario' => puedeCrearEventosCalendario($rol),
     'eventosMes'             => $eventosMes,
     'eventosTodos'           => $eventosTodos,
     'eventosPorFecha'        => agruparEventosCalendarioPorFecha($eventosMes),

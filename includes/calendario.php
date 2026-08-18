@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/esquema.php';
 
 const CALENDARIO_UPLOAD_DIR = 'uploads/calendario';
 const CALENDARIO_MAX_BYTES = 5242880; // 5 MB

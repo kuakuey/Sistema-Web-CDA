@@ -241,13 +241,7 @@ $fila = $filaEditar;
                           'es_gratis' => (int) ($tipo['es_gratis'] ?? 0),
                       ];
                   }, $eventoItem['tipos_entrada'] ?? []);
-                  $camposAdicionalesJson = array_map(static function (array $campo): array {
-                      return [
-                          'id'          => (int) ($campo['id'] ?? 0),
-                          'etiqueta'    => (string) ($campo['etiqueta'] ?? ''),
-                          'obligatorio' => (int) ($campo['obligatorio'] ?? 1),
-                      ];
-                  }, $eventoItem['campos_adicionales'] ?? []);
+                  $camposAdicionalesJson = array_map('serializarCampoAdicionalEventoParaJs', $eventoItem['campos_adicionales'] ?? []);
                 ?>
                 <option
                   value="<?= (int) $eventoItem['id'] ?>"

@@ -252,7 +252,7 @@ function obtenerEtiquetasSecciones(): array
     return [
         'generales'           => 'Registros generales',
         'escol'               => 'Escol',
-        'academia'            => 'Academia',
+        'academia'            => 'Academy',
         'bautismo'            => 'Bautismo',
         'conexion'            => "Conexi\u{00F3}n",
         'presentaciones'      => "Presentaci\u{00F3}n ni\u{00F1}os",

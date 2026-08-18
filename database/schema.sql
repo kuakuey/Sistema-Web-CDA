@@ -29,11 +29,15 @@ CREATE TABLE IF NOT EXISTS inscripciones (
     zona VARCHAR(50) DEFAULT NULL,
     direccion VARCHAR(255) DEFAULT NULL,
     contactado TINYINT(1) NOT NULL DEFAULT 0,
+    estado_bautismo VARCHAR(20) NOT NULL DEFAULT 'ingresado',
+    fecha_bautismo DATE DEFAULT NULL,
+    estado_bautismo_bloqueado TINYINT(1) NOT NULL DEFAULT 0,
     ip_cliente VARCHAR(45) DEFAULT NULL,
     agente_usuario VARCHAR(255) DEFAULT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_tipo_formulario (tipo_formulario),
-    INDEX idx_creado_en (creado_en)
+    INDEX idx_creado_en (creado_en),
+    INDEX idx_estado_bautismo (estado_bautismo)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS presentaciones_ninos (
@@ -165,6 +169,8 @@ CREATE TABLE IF NOT EXISTS eventos_campos_adicionales (
     id INT AUTO_INCREMENT PRIMARY KEY,
     evento_id INT NOT NULL,
     etiqueta VARCHAR(100) NOT NULL,
+    tipo VARCHAR(20) NOT NULL DEFAULT 'texto',
+    opciones TEXT NULL,
     obligatorio TINYINT(1) NOT NULL DEFAULT 1,
     orden INT NOT NULL DEFAULT 0,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/esquema.php';
 require_once __DIR__ . '/roles.php';
 require_once __DIR__ . '/submissions.php';
 require_once __DIR__ . '/valores_adicionales.php';

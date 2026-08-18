@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/esquema.php';
 
 const SECCION_PERMISOS_SUPERADMIN = 'superadmin';
 const SECCION_PERMISOS_ADMIN = 'administrador';
@@ -46,7 +46,7 @@ function obtenerCatalogoPermisosDetallados(): array
             ],
         ],
         'academia' => [
-            'etiqueta'  => 'Academia',
+            'etiqueta'  => 'Academy',
             'icono'     => 'bi-mortarboard',
             'permisos'  => [
                 'registros' => 'Registros',
@@ -227,7 +227,7 @@ function obtenerSeccionesConfigurablesPermisos(): array
     return [
         'generales'           => 'Registros generales',
         'escol'               => 'Escol',
-        'academia'            => 'Academia',
+        'academia'            => 'Academy',
         'bautismo'            => 'Bautismo',
         'conexion'            => "Conexi\u{00F3}n",
         'presentaciones'      => "Presentaci\u{00F3}n ni\u{00F1}os",
@@ -481,7 +481,7 @@ function asegurarTablaPermisos(): void
         return;
     }
 
-    require_once __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/esquema.php';
 
     $pdo = getConnection();
     migrarTablaRolPermisos($pdo);

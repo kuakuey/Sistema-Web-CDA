@@ -236,13 +236,7 @@
                     'es_gratis' => (int) ($tipo['es_gratis'] ?? 0),
                 ];
             }, $tiposVisibles);
-            $camposAdicionalesJson = array_map(static function (array $campo): array {
-                return [
-                    'id'          => (int) ($campo['id'] ?? 0),
-                    'etiqueta'    => (string) ($campo['etiqueta'] ?? ''),
-                    'obligatorio' => (int) ($campo['obligatorio'] ?? 1),
-                ];
-            }, $evento['campos_adicionales'] ?? []);
+            $camposAdicionalesJson = array_map('serializarCampoAdicionalEventoParaJs', $evento['campos_adicionales'] ?? []);
           ?>
           <option
             value="<?= (int) $evento['id'] ?>"

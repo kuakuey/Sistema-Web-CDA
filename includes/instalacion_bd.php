@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/esquema.php';
 
 /**
  * @return array<int, string>
@@ -18,6 +18,7 @@ function obtenerTablasEsperadasSistema(): array
         'sesiones_api',
         'eventos',
         'eventos_tipos_entrada',
+        'eventos_campos_adicionales',
         'valores_adicionales',
         'tipos_valor_adicional',
         'consejerias',
@@ -42,6 +43,8 @@ function obtenerCatalogoMigracionesBd(): array
         ['archivo' => '006_estructura.sql', 'etiqueta' => 'Territorios, líderes y casas de vida', 'tabla' => 'territorios'],
         ['archivo' => '007_sesiones_api.sql', 'etiqueta' => 'Tabla sesiones API', 'tabla' => 'sesiones_api'],
         ['archivo' => '008_eventos.sql', 'etiqueta' => 'Tablas de eventos', 'tabla' => 'eventos'],
+        ['archivo' => '016_eventos_tipos_entrada.sql', 'etiqueta' => 'Tipos de entrada eventos', 'tabla' => 'eventos_tipos_entrada'],
+        ['archivo' => '018_eventos_campos_adicionales.sql', 'etiqueta' => 'Campos adicionales de eventos', 'tabla' => 'eventos_campos_adicionales'],
         ['archivo' => '009_valores_adicionales.sql', 'etiqueta' => 'Valores adicionales', 'tabla' => 'valores_adicionales'],
         ['archivo' => '010_tipos_valor_adicional.sql', 'etiqueta' => 'Tipos valor adicional', 'tabla' => 'tipos_valor_adicional'],
         ['archivo' => '011_consejerias.sql', 'etiqueta' => 'Tabla consejerías', 'tabla' => 'consejerias'],
@@ -49,8 +52,6 @@ function obtenerCatalogoMigracionesBd(): array
         ['archivo' => '012_transporte_aniversario.sql', 'etiqueta' => 'Transporte aniversario', 'tabla' => 'transporte_aniversario'],
         ['archivo' => '013_rol_permisos.sql', 'etiqueta' => 'Permisos por rol', 'tabla' => 'rol_permisos'],
         ['archivo' => '014_actividad_log.sql', 'etiqueta' => 'Log de actividad', 'tabla' => 'actividad_log'],
-        ['archivo' => '015_columnas_espanol.sql', 'etiqueta' => 'Migración columnas en español', 'tabla' => 'inscripciones'],
-        ['archivo' => '016_eventos_tipos_entrada.sql', 'etiqueta' => 'Tipos de entrada eventos', 'tabla' => 'eventos_tipos_entrada'],
     ];
 }
 

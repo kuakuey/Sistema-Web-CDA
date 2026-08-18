@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/esquema.php';
 require_once __DIR__ . '/roles.php';
 
 const DURACION_SESION_API_HORAS = 8;

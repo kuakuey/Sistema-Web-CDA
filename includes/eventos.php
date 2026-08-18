@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/esquema.php';
 require_once __DIR__ . '/paginacion.php';
 require_once __DIR__ . '/valores_adicionales.php';
 
@@ -132,7 +132,7 @@ function obtenerCamposAdicionalesPorEventos(array $eventoIds): array
 
     $placeholders = implode(',', array_fill(0, count($eventoIds), '?'));
     $stmt = $pdo->prepare(
-        "SELECT id, evento_id, etiqueta, obligatorio, orden
+        "SELECT id, evento_id, etiqueta, tipo, opciones, obligatorio, orden
          FROM eventos_campos_adicionales
          WHERE evento_id IN ($placeholders)
          ORDER BY orden ASC, id ASC"
@@ -142,6 +142,8 @@ function obtenerCamposAdicionalesPorEventos(array $eventoIds): array
     $resultado = [];
     foreach ($stmt->fetchAll() as $fila) {
         $eventoId = (int) $fila['evento_id'];
+        $fila['tipo'] = normalizarTipoCampoAdicionalEvento($fila['tipo'] ?? 'texto');
+        $fila['opciones'] = decodificarOpcionesCampoAdicional($fila['opciones'] ?? null);
         $resultado[$eventoId][] = $fila;
     }
 
@@ -338,8 +340,94 @@ function guardarTiposEntradaEvento(int $eventoId, array $tiposEntrada): void
 }
 
 /**
+ * @return array<string, string>
+ */
+function obtenerTiposCampoAdicionalEvento(): array
+{
+    return [
+        'texto'  => 'Texto',
+        'lista'  => 'Lista desplegable',
+        'numero' => 'Número',
+        'fecha'  => 'Fecha',
+    ];
+}
+
+function normalizarTipoCampoAdicionalEvento($tipo): string
+{
+    $tipo = trim((string) $tipo);
+    $tipos = obtenerTiposCampoAdicionalEvento();
+
+    return array_key_exists($tipo, $tipos) ? $tipo : 'texto';
+}
+
+/**
+ * @param mixed $opciones
+ * @return array<int, string>
+ */
+function decodificarOpcionesCampoAdicional($opciones): array
+{
+    if (is_array($opciones)) {
+        $lista = $opciones;
+    } else {
+        $raw = trim((string) $opciones);
+        if ($raw === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            $lista = $decoded;
+        } else {
+            $lista = preg_split('/\r\n|\r|\n|,/', $raw) ?: [];
+        }
+    }
+
+    $resultado = [];
+    $vistos = [];
+    foreach ($lista as $opcion) {
+        $texto = trim((string) $opcion);
+        if ($texto === '') {
+            continue;
+        }
+
+        $longitud = function_exists('mb_strlen') ? mb_strlen($texto) : strlen($texto);
+        if ($longitud > 80) {
+            $texto = function_exists('mb_substr') ? mb_substr($texto, 0, 80) : substr($texto, 0, 80);
+        }
+
+        $clave = function_exists('mb_strtolower') ? mb_strtolower($texto, 'UTF-8') : strtolower($texto);
+        if (isset($vistos[$clave])) {
+            continue;
+        }
+        $vistos[$clave] = true;
+        $resultado[] = $texto;
+    }
+
+    return $resultado;
+}
+
+function formatearOpcionesCampoAdicionalParaTextarea($opciones): string
+{
+    return implode("\n", decodificarOpcionesCampoAdicional($opciones));
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function serializarCampoAdicionalEventoParaJs(array $campo): array
+{
+    return [
+        'id'          => (int) ($campo['id'] ?? 0),
+        'etiqueta'    => (string) ($campo['etiqueta'] ?? ''),
+        'obligatorio' => (int) ($campo['obligatorio'] ?? 1),
+        'tipo'        => normalizarTipoCampoAdicionalEvento($campo['tipo'] ?? 'texto'),
+        'opciones'    => decodificarOpcionesCampoAdicional($campo['opciones'] ?? []),
+    ];
+}
+
+/**
  * @param array<int, array<string, mixed>>|array<string, mixed> $camposAdicionales
- * @return array<int, array{etiqueta: string, obligatorio: int}>
+ * @return array<int, array{etiqueta: string, tipo: string, opciones: array<int, string>, obligatorio: int}>
  */
 function normalizarCamposAdicionalesCatalogo($camposAdicionales): array
 {
@@ -349,9 +437,11 @@ function normalizarCamposAdicionalesCatalogo($camposAdicionales): array
         return [];
     }
 
-    if (isset($camposAdicionales['etiqueta']) || isset($camposAdicionales['obligatorio'])) {
+    if (isset($camposAdicionales['etiqueta']) || isset($camposAdicionales['obligatorio']) || isset($camposAdicionales['tipo'])) {
         $etiquetas = $camposAdicionales['etiqueta'] ?? [];
         $obligatorios = $camposAdicionales['obligatorio'] ?? [];
+        $tipos = $camposAdicionales['tipo'] ?? [];
+        $opcionesLista = $camposAdicionales['opciones'] ?? [];
 
         if (!is_array($etiquetas)) {
             $etiquetas = [$etiquetas];
@@ -359,13 +449,21 @@ function normalizarCamposAdicionalesCatalogo($camposAdicionales): array
         if (!is_array($obligatorios)) {
             $obligatorios = [$obligatorios];
         }
+        if (!is_array($tipos)) {
+            $tipos = [$tipos];
+        }
+        if (!is_array($opcionesLista)) {
+            $opcionesLista = [$opcionesLista];
+        }
 
         $camposAdicionales = [];
-        $total = max(count($etiquetas), count($obligatorios));
+        $total = max(count($etiquetas), count($obligatorios), count($tipos), count($opcionesLista));
         for ($i = 0; $i < $total; $i++) {
             $camposAdicionales[] = [
                 'etiqueta'    => $etiquetas[$i] ?? '',
                 'obligatorio' => $obligatorios[$i] ?? 1,
+                'tipo'        => $tipos[$i] ?? 'texto',
+                'opciones'    => $opcionesLista[$i] ?? '',
             ];
         }
     }
@@ -393,8 +491,17 @@ function normalizarCamposAdicionalesCatalogo($camposAdicionales): array
         }
         $etiquetasVistas[$clave] = true;
 
+        $tipo = normalizarTipoCampoAdicionalEvento($campo['tipo'] ?? 'texto');
+        $opciones = $tipo === 'lista' ? decodificarOpcionesCampoAdicional($campo['opciones'] ?? '') : [];
+
+        if ($tipo === 'lista' && count($opciones) < 2) {
+            throw new InvalidArgumentException('La lista «' . $etiqueta . '» necesita al menos 2 opciones (una por línea).');
+        }
+
         $normalizados[] = [
             'etiqueta'    => $etiqueta,
+            'tipo'        => $tipo,
+            'opciones'    => $opciones,
             'obligatorio' => !empty($campo['obligatorio']) ? 1 : 0,
         ];
     }
@@ -407,7 +514,7 @@ function normalizarCamposAdicionalesCatalogo($camposAdicionales): array
 }
 
 /**
- * @param array<int, array{etiqueta: string, obligatorio: int}> $camposAdicionales
+ * @param array<int, array{etiqueta: string, tipo: string, opciones: array<int, string>, obligatorio: int}> $camposAdicionales
  */
 function guardarCamposAdicionalesEvento(int $eventoId, array $camposAdicionales): void
 {
@@ -423,14 +530,19 @@ function guardarCamposAdicionalesEvento(int $eventoId, array $camposAdicionales)
     }
 
     $stmt = $pdo->prepare(
-        'INSERT INTO eventos_campos_adicionales (evento_id, etiqueta, obligatorio, orden, creado_en)
-         VALUES (?, ?, ?, ?, NOW())'
+        'INSERT INTO eventos_campos_adicionales (evento_id, etiqueta, tipo, opciones, obligatorio, orden, creado_en)
+         VALUES (?, ?, ?, ?, ?, ?, NOW())'
     );
 
     foreach ($camposAdicionales as $orden => $campo) {
+        $tipo = normalizarTipoCampoAdicionalEvento($campo['tipo'] ?? 'texto');
+        $opciones = $tipo === 'lista' ? decodificarOpcionesCampoAdicional($campo['opciones'] ?? []) : [];
+
         $stmt->execute([
             $eventoId,
             $campo['etiqueta'],
+            $tipo,
+            $opciones === [] ? null : json_encode($opciones, JSON_UNESCAPED_UNICODE),
             (int) ($campo['obligatorio'] ?? 1),
             (int) $orden,
         ]);
@@ -539,10 +651,44 @@ function validarRespuestasCamposAdicionalesEvento(array $entrada, array $campos,
             $valorBruto = (string) $valoresPost[$etiqueta];
         }
 
-        $valor = normalizarTextoOrdenado($valorBruto);
-        $longitud = function_exists('mb_strlen') ? mb_strlen($valor) : strlen($valor);
-        if ($longitud > 255) {
-            throw new InvalidArgumentException('El dato «' . $etiqueta . '» no puede superar 255 caracteres.');
+        $valorBruto = trim($valorBruto);
+        $tipo = normalizarTipoCampoAdicionalEvento($campo['tipo'] ?? 'texto');
+        $valor = '';
+
+        if ($tipo === 'lista') {
+            $opciones = decodificarOpcionesCampoAdicional($campo['opciones'] ?? []);
+            if ($valorBruto !== '') {
+                foreach ($opciones as $opcion) {
+                    if (strcasecmp($opcion, $valorBruto) === 0) {
+                        $valor = $opcion;
+                        break;
+                    }
+                }
+                if ($valor === '') {
+                    throw new InvalidArgumentException('Selecciona una opción válida para «' . $etiqueta . '».');
+                }
+            }
+        } elseif ($tipo === 'numero') {
+            if ($valorBruto !== '') {
+                if (!is_numeric($valorBruto)) {
+                    throw new InvalidArgumentException('El dato «' . $etiqueta . '» debe ser un número.');
+                }
+                $valor = $valorBruto;
+            }
+        } elseif ($tipo === 'fecha') {
+            if ($valorBruto !== '') {
+                $fechaObj = DateTime::createFromFormat('Y-m-d', $valorBruto);
+                if (!$fechaObj || $fechaObj->format('Y-m-d') !== $valorBruto) {
+                    throw new InvalidArgumentException('El dato «' . $etiqueta . '» debe ser una fecha válida.');
+                }
+                $valor = $valorBruto;
+            }
+        } else {
+            $valor = normalizarTextoOrdenado($valorBruto);
+            $longitud = function_exists('mb_strlen') ? mb_strlen($valor) : strlen($valor);
+            if ($longitud > 255) {
+                throw new InvalidArgumentException('El dato «' . $etiqueta . '» no puede superar 255 caracteres.');
+            }
         }
 
         if ($exigirObligatorios && !empty($campo['obligatorio']) && $valor === '') {

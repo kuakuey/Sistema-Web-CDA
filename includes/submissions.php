@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/esquema.php';
 
 function obtenerZonasConexion(): array
 {
@@ -242,7 +242,7 @@ function obtenerEtiquetasTiposFormulario(): array
 {
     return [
         'escol'              => 'Escol',
-        'academia'           => 'Academia',
+        'academia'           => 'Academy',
         'bautismo'           => 'Bautismo',
         'conexion'           => 'Conexión',
         'presentacion_ninos' => 'Presentación niños',

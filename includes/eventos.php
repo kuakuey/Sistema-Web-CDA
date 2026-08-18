@@ -617,6 +617,77 @@ function formatearInfoAdicionalRegistro($infoAdicional): string
 }
 
 /**
+ * @return array<int, array{id: int, etiqueta: string}>
+ */
+function obtenerCamposAdicionalesParaInformeEvento(array $informe): array
+{
+    $vistos = [];
+    $columnas = [];
+
+    foreach (($informe['evento']['campos_adicionales'] ?? []) as $campo) {
+        $etiqueta = trim((string) ($campo['etiqueta'] ?? ''));
+        if ($etiqueta === '') {
+            continue;
+        }
+
+        $clave = mb_strtolower($etiqueta);
+        $vistos[$clave] = true;
+        $columnas[] = [
+            'id'       => (int) ($campo['id'] ?? 0),
+            'etiqueta' => $etiqueta,
+        ];
+    }
+
+    if ($columnas !== []) {
+        return $columnas;
+    }
+
+    foreach ($informe['registros'] ?? [] as $registro) {
+        foreach (decodificarInfoAdicionalRegistro($registro['info_adicional'] ?? '') as $item) {
+            $etiqueta = $item['etiqueta'] !== '' ? $item['etiqueta'] : 'Dato';
+            $clave = mb_strtolower($etiqueta);
+            if (isset($vistos[$clave])) {
+                continue;
+            }
+
+            $vistos[$clave] = true;
+            $columnas[] = [
+                'id'       => (int) ($item['id'] ?? 0),
+                'etiqueta' => $etiqueta,
+            ];
+        }
+    }
+
+    return $columnas;
+}
+
+/**
+ * @param array{id?: int, etiqueta?: string} $campo
+ */
+function valorInfoAdicionalPorCampoInforme($infoAdicional, array $campo): string
+{
+    $respuestas = decodificarInfoAdicionalRegistro($infoAdicional);
+    $campoId = (int) ($campo['id'] ?? 0);
+    $etiqueta = trim((string) ($campo['etiqueta'] ?? ''));
+
+    foreach ($respuestas as $item) {
+        if ($campoId > 0 && (int) ($item['id'] ?? 0) === $campoId) {
+            return $item['valor'] !== '' ? $item['valor'] : '—';
+        }
+    }
+
+    if ($etiqueta !== '') {
+        foreach ($respuestas as $item) {
+            if (strcasecmp((string) ($item['etiqueta'] ?? ''), $etiqueta) === 0) {
+                return $item['valor'] !== '' ? $item['valor'] : '—';
+            }
+        }
+    }
+
+    return '—';
+}
+
+/**
  * @param array<string, mixed> $entrada
  * @param array<int, array<string, mixed>> $campos
  * @return array<int, array{id: int, etiqueta: string, valor: string}>

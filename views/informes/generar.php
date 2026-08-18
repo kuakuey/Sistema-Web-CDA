@@ -143,7 +143,7 @@
 
         <div class="col-12">
           <div class="d-flex flex-wrap gap-2 pt-2">
-            <button type="button" class="btn btn-primary js-descargar-informe" data-formato="pdf">
+            <button type="button" class="btn btn-primary js-descargar-informe js-descargar-informe-pdf" data-formato="pdf" style="<?= $seccion === 'eventos' ? '' : 'display:none' ?>">
               <i class="bi bi-file-earmark-pdf me-1"></i>PDF
             </button>
             <button type="button" class="btn btn-success js-descargar-informe" data-formato="excel">
@@ -153,6 +153,9 @@
               <i class="bi bi-x-circle me-1"></i>Limpiar filtros
             </a>
           </div>
+          <p class="form-text mb-0 mt-2 js-ayuda-pdf-evento" style="<?= $seccion === 'eventos' ? 'display:none' : '' ?>">
+            El PDF (hoja horizontal, con información adicional) solo se descarga en el informe de eventos.
+          </p>
         </div>
       </form>
     </div>
@@ -172,6 +175,8 @@
   var checkboxSinEntregar = document.getElementById('mostrar_sin_entregar');
   var checkboxesEstadosPresentacion = document.querySelectorAll('.js-estado-presentacion-informe');
 
+  var botonPdf = document.querySelector('.js-descargar-informe-pdf');
+  var ayudaPdfEvento = document.querySelector('.js-ayuda-pdf-evento');
   var selectorEvento = document.getElementById('evento_id');
 
   if (!formulario || !campoFormato || (!selectorSeccion && !seccionInformeEventos)) {
@@ -213,6 +218,14 @@
     if (campoBautismosEstado) {
       campoBautismosEstado.style.display = seccion === 'bautismos' ? '' : 'none';
     }
+
+    if (botonPdf) {
+      botonPdf.style.display = seccion === 'eventos' ? '' : 'none';
+    }
+
+    if (ayudaPdfEvento) {
+      ayudaPdfEvento.style.display = seccion === 'eventos' ? 'none' : '';
+    }
   }
 
   if (selectorSeccion) {
@@ -223,6 +236,7 @@
   document.querySelectorAll('.js-descargar-informe').forEach(function (boton) {
     boton.addEventListener('click', function () {
       var seccionActual = obtenerSeccionActual();
+      var formato = boton.getAttribute('data-formato') || 'pdf';
 
       if (seccionActual === 'presentaciones') {
         var algunoMarcado = false;
@@ -244,7 +258,12 @@
         return;
       }
 
-      campoFormato.value = boton.getAttribute('data-formato') || 'pdf';
+      if (formato === 'pdf' && seccionActual !== 'eventos') {
+        window.alert('El PDF solo está disponible para el informe de eventos.');
+        return;
+      }
+
+      campoFormato.value = formato;
       formulario.submit();
     });
   });

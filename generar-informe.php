@@ -109,6 +109,11 @@ try {
             );
         }
         $informe['seccion_exportacion'] = $seccion;
+        $formato = normalizarFormatoInforme($formato);
+
+        if ($formato === 'pdf' && $seccion !== 'eventos') {
+            throw new InvalidArgumentException('El PDF solo está disponible para el informe de eventos. Usa Excel para los demás informes.');
+        }
 
         registrarActividad(
             'generar_informe',

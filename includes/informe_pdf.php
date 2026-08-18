@@ -43,7 +43,7 @@ function enviarInformePdf(array $informe, string $seccion = 'completo'): void
 
     $dompdf = new Dompdf($opciones);
     $dompdf->loadHtml(renderizarHtmlInformePdf($informe, $seccion));
-    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->setPaper('A4', $seccion === 'eventos' ? 'landscape' : 'portrait');
     $dompdf->render();
 
     $dompdf->stream(nombreArchivoInformePdf($informe, $seccion), [

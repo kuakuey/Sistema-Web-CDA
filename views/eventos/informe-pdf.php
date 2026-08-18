@@ -68,9 +68,10 @@
     table.datos th,
     table.datos td {
       border: 1px solid #dee2e6;
-      padding: 5px 6px;
+      padding: 4px 5px;
       text-align: left;
       vertical-align: top;
+      font-size: 8.5px;
     }
 
     table.datos th {

@@ -60,7 +60,10 @@
 <?php if (empty($informe['registros_por_tipo'])): ?>
 <p class="vacio">No hay participantes registrados para este evento.</p>
 <?php else: ?>
-  <?php foreach ($informe['registros_por_tipo'] as $grupo): ?>
+  <?php
+  $camposAdicionalesInforme = obtenerCamposAdicionalesParaInformeEvento($informe);
+  foreach ($informe['registros_por_tipo'] as $grupo):
+  ?>
   <h3><?= htmlspecialchars($grupo['tipo_entrada'] ?? 'Entrada') ?> (<?= count($grupo['registros'] ?? []) ?>)</h3>
   <table class="datos">
     <thead>
@@ -71,7 +74,9 @@
         <th>Estado</th>
         <th>Forma de pago</th>
         <th>Fecha</th>
-        <th>Información adicional</th>
+        <?php foreach ($camposAdicionalesInforme as $campoAdicional): ?>
+        <th><?= htmlspecialchars($campoAdicional['etiqueta']) ?></th>
+        <?php endforeach; ?>
         <th>Observación</th>
       </tr>
     </thead>
@@ -84,10 +89,9 @@
         <td><?= htmlspecialchars(etiquetaEstadoPagoRegistroEvento($registro)) ?></td>
         <td><?= htmlspecialchars(etiquetaFormaPagoEvento($registro['forma_pago'] ?? null)) ?></td>
         <td><?= htmlspecialchars(formatearFechaInforme($registro['fecha'])) ?></td>
-        <td><?php
-          $infoAdicionalTexto = formatearInfoAdicionalRegistro($registro['info_adicional'] ?? '');
-          echo $infoAdicionalTexto !== '' ? htmlspecialchars($infoAdicionalTexto) : '—';
-        ?></td>
+        <?php foreach ($camposAdicionalesInforme as $campoAdicional): ?>
+        <td><?= htmlspecialchars(valorInfoAdicionalPorCampoInforme($registro['info_adicional'] ?? '', $campoAdicional)) ?></td>
+        <?php endforeach; ?>
         <td><?= !empty($registro['observacion']) ? htmlspecialchars($registro['observacion']) : '—' ?></td>
       </tr>
       <?php endforeach; ?>

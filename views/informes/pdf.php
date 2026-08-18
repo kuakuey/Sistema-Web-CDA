@@ -73,6 +73,12 @@
       vertical-align: top;
     }
 
+    .informe-evento table.datos th,
+    .informe-evento table.datos td {
+      padding: 4px 5px;
+      font-size: 8.5px;
+    }
+
     table.datos th {
       background: #f8f9fa;
       font-size: 9px;
@@ -109,7 +115,6 @@
     }
   </style>
 </head>
-<body>
 <?php
 $resumen = $informe['resumen'];
 $seccionExportacion = normalizarSeccionInforme($informe['seccion_exportacion'] ?? 'completo');
@@ -120,6 +125,7 @@ $incluirValores = in_array($seccionExportacion, ['completo', 'valores'], true);
 $incluirPresentaciones = $seccionExportacion === 'presentaciones';
 $incluirBautismos = $seccionExportacion === 'bautismos';
 ?>
+<body class="<?= $esInformeEventoDedicado ? 'informe-evento' : '' ?>">
 
   <?php if ($esInformeEventoDedicado): ?>
   <h1>Informe de evento</h1>

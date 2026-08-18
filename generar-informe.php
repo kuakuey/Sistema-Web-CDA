@@ -70,8 +70,12 @@ try {
 
         if ($seccion !== 'eventos') {
             $eventoId = 0;
-        } elseif ($eventoId > 0 && !obtenerEvento($eventoId)) {
-            throw new InvalidArgumentException('Selecciona un evento válido.');
+        } elseif ($eventoId > 0) {
+            $eventoSeleccionado = obtenerEvento($eventoId);
+
+            if (!$eventoSeleccionado || (int) ($eventoSeleccionado['habilitado'] ?? 0) !== 1) {
+                throw new InvalidArgumentException('Selecciona un evento habilitado.');
+            }
         }
 
         if ($seccion === 'presentaciones') {
@@ -157,7 +161,12 @@ view('informes/generar', [
     'turno'                  => normalizarTurnoInforme($turno),
     'seccion'                => normalizarSeccionInforme($seccion),
     'eventoId'               => $eventoId,
-    'eventos'                => obtenerEventos(),
+    'eventos'                => array_values(array_filter(
+        obtenerEventos(),
+        static function (array $evento): bool {
+            return (int) ($evento['habilitado'] ?? 0) === 1;
+        }
+    )),
     'etiquetasTurno'         => obtenerEtiquetasTurnoInforme(),
     'etiquetasSeccionInforme'=> $etiquetasSeccionInforme,
     'soloInformeEventos'     => $soloInformeEventos,

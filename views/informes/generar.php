@@ -100,11 +100,11 @@
               value="<?= (int) $evento['id'] ?>"
               <?= (int) ($eventoId ?? 0) === (int) $evento['id'] ? 'selected' : '' ?>
             >
-              <?= htmlspecialchars($evento['nombre']) ?><?= (int) ($evento['habilitado'] ?? 0) !== 1 ? ' (Deshabilitado)' : '' ?> (<?= (int) ($evento['total_registros'] ?? 0) ?> registro(s))
+              <?= htmlspecialchars($evento['nombre']) ?> (<?= (int) ($evento['total_registros'] ?? 0) ?> registro(s))
             </option>
             <?php endforeach; ?>
           </select>
-          <p class="form-text mb-0">Obligatorio para el informe de eventos. Incluye eventos deshabilitados.</p>
+          <p class="form-text mb-0">Obligatorio para el informe de eventos. Solo se muestran eventos habilitados.</p>
         </div>
 
         <div class="col-12 js-campo-presentaciones-estados" style="<?= $seccion === 'presentaciones' ? '' : 'display:none' ?>">

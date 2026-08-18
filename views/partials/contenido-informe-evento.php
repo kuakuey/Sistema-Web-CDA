@@ -66,7 +66,19 @@
   foreach ($informe['registros_por_tipo'] as $grupo):
   ?>
   <h3><?= htmlspecialchars($grupo['tipo_entrada'] ?? 'Entrada') ?> (<?= count($grupo['registros'] ?? []) ?>)</h3>
-  <table class="datos">
+  <table class="datos datos-entradas">
+    <colgroup>
+      <col class="col-numeracion">
+      <col class="col-nombre">
+      <col class="col-valor">
+      <col class="col-estado">
+      <col class="col-forma-pago">
+      <col class="col-fecha">
+      <?php foreach ($camposAdicionalesInforme as $campoAdicional): ?>
+      <col>
+      <?php endforeach; ?>
+      <col>
+    </colgroup>
     <thead>
       <tr>
         <th>Numeración</th>

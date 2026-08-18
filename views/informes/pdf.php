@@ -118,6 +118,24 @@
       page-break-before: always;
       break-before: page;
     }
+
+    table.datos-entradas {
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    table.datos-entradas col.col-numeracion { width: 10%; }
+    table.datos-entradas col.col-nombre { width: 22%; }
+    table.datos-entradas col.col-valor { width: 10%; }
+    table.datos-entradas col.col-estado { width: 11%; }
+    table.datos-entradas col.col-forma-pago { width: 12%; }
+    table.datos-entradas col.col-fecha { width: 10%; }
+
+    table.datos-entradas th,
+    table.datos-entradas td {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
   </style>
 </head>
 <?php

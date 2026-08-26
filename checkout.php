@@ -15,46 +15,69 @@ if (!puedeUsarCheckoutEventos($rol)) {
     exit;
 }
 
-$eventoId = isset($_GET['evento_id']) ? max(0, (int) $_GET['evento_id']) : 0;
-$numeracion = isset($_GET['numeracion']) ? trim((string) $_GET['numeracion']) : '';
-$consultado = isset($_GET['consultar']);
-$error = null;
-$errorBd = null;
-$eventos = [];
-$registros = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json; charset=UTF-8');
 
-if ($consultado) {
-    if ($eventoId <= 0) {
-        $error = 'Selecciona un evento.';
-    } elseif ($numeracion === '') {
-        $error = 'Ingresa la numeración del ticket.';
+    $eventoId = max(0, (int) ($_POST['evento_id'] ?? 0));
+    $numeracion = trim((string) ($_POST['numeracion'] ?? ''));
+
+    try {
+        if ($eventoId <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Selecciona un evento.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if ($numeracion === '') {
+            echo json_encode(['ok' => false, 'error' => 'Ingresa la numeración del ticket.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $evento = obtenerEvento($eventoId);
+
+        if (!$evento || (int) ($evento['habilitado'] ?? 0) !== 1) {
+            echo json_encode(['ok' => false, 'error' => 'Solo se puede consultar eventos habilitados.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $registros = buscarRegistrosEventoPorNumeracion($eventoId, $numeracion);
+        $registro = $registros[0] ?? null;
+
+        if (!$registro) {
+            echo json_encode(['ok' => false, 'error' => 'No se encontró un ticket con esa numeración.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $tipoEntrada = trim((string) ($registro['tipo_entrada'] ?? ''));
+        $numeracionRegistro = trim((string) ($registro['numeracion'] ?? ''));
+
+        echo json_encode([
+            'ok'     => true,
+            'ticket' => [
+                'nombre'       => (string) ($registro['nombre'] ?? ''),
+                'numeracion'   => $numeracionRegistro,
+                'tipo_entrada' => $tipoEntrada,
+                'estado'       => etiquetaEstadoPagoRegistroEvento($registro),
+            ],
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (PDOException $e) {
+        echo json_encode(['ok' => false, 'error' => 'No se pudo consultar el ticket. Intenta de nuevo.'], JSON_UNESCAPED_UNICODE);
     }
+
+    exit;
 }
 
+$errorBd = null;
+$eventos = [];
+
 try {
-    $eventos = obtenerEventos();
-
-    if ($error === null && $consultado && $eventoId > 0 && $numeracion !== '') {
-        $eventoSeleccionado = obtenerEvento($eventoId);
-
-        if (!$eventoSeleccionado) {
-            $error = 'Evento no encontrado.';
-        } else {
-            $registros = buscarRegistrosEventoPorNumeracion($eventoId, $numeracion);
-        }
-    }
+    $eventos = obtenerEventosHabilitados();
 } catch (PDOException $e) {
-    $errorBd = 'No se pudieron cargar los datos. Intenta de nuevo.';
+    $errorBd = 'No se pudieron cargar los eventos. Intenta de nuevo.';
 }
 
 view('checkout/index', [
-    'tituloPagina' => 'Checkout',
-    'eventos'      => $eventos,
-    'eventoId'     => $eventoId,
-    'numeracion'   => $numeracion,
-    'consultado'   => $consultado && $error === null && $errorBd === null,
-    'registros'    => $registros,
-    'error'        => $error,
-    'errorBd'      => $errorBd,
-    'scriptsPagina'=> ['js/checkout.js'],
+    'tituloPagina'  => 'Checkout',
+    'eventos'       => $eventos,
+    'errorBd'       => $errorBd,
+    'scriptsPagina' => ['js/checkout.js'],
 ], 'blank');

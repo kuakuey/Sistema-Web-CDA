@@ -315,6 +315,11 @@ function puedeVerParticipantesEventos(string $rol): bool
     return tienePermisoDetalle($rol, 'eventos', 'participantes');
 }
 
+function puedeUsarCheckoutEventos(string $rol): bool
+{
+    return puedeGestionarEventos($rol);
+}
+
 function puedeGestionarEstadoConexion(string $rol): bool
 {
     return in_array($rol, [ROL_SUPERADMIN, ROL_ADMIN, ROL_CONEXION], true);

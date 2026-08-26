@@ -1,13 +1,18 @@
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
     <h2 class="h4 mb-1">Eventos</h2>
     <p class="text-muted small mb-0">Gestiona eventos y registra participantes</p>
   </div>
-  <?php if ($pestaña === 'tabla' || $pestaña === 'participantes'): ?>
-  <span class="badge bg-primary fs-6"><?= (int) $totalRegistros ?> registro(s)</span>
-  <?php else: ?>
-  <span class="badge bg-primary fs-6"><?= count($eventos) ?> evento(s)</span>
-  <?php endif; ?>
+  <div class="d-flex align-items-center gap-2">
+    <a href="checkout.php" class="btn btn-primary flex-shrink-0">
+      <i class="bi bi-ticket-perforated me-1"></i>Checkout
+    </a>
+    <?php if ($pestaña === 'tabla' || $pestaña === 'participantes'): ?>
+    <span class="badge bg-primary fs-6"><?= (int) $totalRegistros ?> registro(s)</span>
+    <?php else: ?>
+    <span class="badge bg-primary fs-6"><?= count($eventos) ?> evento(s)</span>
+    <?php endif; ?>
+  </div>
 </div>
 
 <?php if ($mensaje): ?>

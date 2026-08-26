@@ -1710,6 +1710,30 @@ function obtenerRegistrosPorEvento(int $eventoId): array
     return $stmt->fetchAll();
 }
 
+/**
+ * @return array<int, array<string, mixed>>
+ */
+function buscarRegistrosEventoPorNumeracion(int $eventoId, string $numeracion): array
+{
+    $numeracion = trim($numeracion);
+
+    if ($eventoId <= 0 || $numeracion === '') {
+        return [];
+    }
+
+    $pdo = getConnection();
+    $stmt = $pdo->prepare(
+        'SELECT v.*, e.nombre AS evento_nombre, e.requiere_numeracion
+         FROM valores_adicionales v
+         LEFT JOIN eventos e ON e.id = v.evento_id
+         WHERE v.tipo = ? AND v.evento_id = ? AND LOWER(TRIM(v.numeracion)) = LOWER(?)
+         ORDER BY v.nombre ASC, v.id ASC'
+    );
+    $stmt->execute([TIPO_VALOR_EVENTOS_INTERNO, $eventoId, $numeracion]);
+
+    return $stmt->fetchAll();
+}
+
 function etiquetaTipoEventoCatalogo(array $evento): string
 {
     return (float) ($evento['valor'] ?? 0) <= 0 ? 'Gratuito' : 'Pago';

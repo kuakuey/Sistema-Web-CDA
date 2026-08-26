@@ -306,6 +306,10 @@ function migrarTablaValoresAdicionales(PDO $pdo): void
             tipo_entrada VARCHAR(100) DEFAULT NULL,
             estado_pago VARCHAR(20) DEFAULT \'por_cancelar\',
             info_adicional TEXT DEFAULT NULL,
+            asistio TINYINT(1) NOT NULL DEFAULT 0,
+            asistio_en DATETIME DEFAULT NULL,
+            asistio_por_id INT DEFAULT NULL,
+            asistio_por_nombre VARCHAR(100) DEFAULT NULL,
             registrado_por_id INT DEFAULT NULL,
             registrado_por_nombre VARCHAR(100) DEFAULT NULL,
             creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -329,6 +333,10 @@ function asegurarColumnasValoresAdicionales(PDO $pdo): void
         'tipo_entrada'     => 'ADD COLUMN tipo_entrada VARCHAR(100) NULL AFTER tipo_entrada_id',
         'estado_pago'      => "ADD COLUMN estado_pago VARCHAR(20) NULL DEFAULT 'por_cancelar' AFTER tipo_entrada",
         'info_adicional'   => 'ADD COLUMN info_adicional TEXT NULL AFTER estado_pago',
+        'asistio'          => 'ADD COLUMN asistio TINYINT(1) NOT NULL DEFAULT 0 AFTER info_adicional',
+        'asistio_en'       => 'ADD COLUMN asistio_en DATETIME NULL AFTER asistio',
+        'asistio_por_id'   => 'ADD COLUMN asistio_por_id INT NULL AFTER asistio_en',
+        'asistio_por_nombre' => 'ADD COLUMN asistio_por_nombre VARCHAR(100) NULL AFTER asistio_por_id',
     ]);
 }
 

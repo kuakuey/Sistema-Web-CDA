@@ -4,6 +4,7 @@ require_once 'includes/auth.php';
 require_once 'includes/view.php';
 require_once 'includes/eventos.php';
 require_once 'includes/detalle_registro.php';
+require_once 'includes/actividad_log.php';
 
 requerirSesion();
 
@@ -18,10 +19,27 @@ if (!puedeUsarCheckoutEventos($rol)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json; charset=UTF-8');
 
-    $eventoId = max(0, (int) ($_POST['evento_id'] ?? 0));
-    $numeracion = trim((string) ($_POST['numeracion'] ?? ''));
+    $accion = trim((string) ($_POST['accion'] ?? 'consultar'));
 
     try {
+        if ($accion === 'marcar_asistencia') {
+            $ticketId = max(0, (int) ($_POST['id'] ?? 0));
+
+            if ($ticketId <= 0) {
+                echo json_encode(['ok' => false, 'error' => 'Ticket no válido.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $ticket = marcarAsistenciaRegistroEvento($ticketId, $usuario ?? []);
+            registrarActividadPorAccion('marcar_asistencia_evento', $ticketId);
+
+            echo json_encode(['ok' => true, 'ticket' => $ticket], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $eventoId = max(0, (int) ($_POST['evento_id'] ?? 0));
+        $numeracion = trim((string) ($_POST['numeracion'] ?? ''));
+
         if ($eventoId <= 0) {
             echo json_encode(['ok' => false, 'error' => 'Selecciona un evento.'], JSON_UNESCAPED_UNICODE);
             exit;
@@ -39,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        asegurarColumnasValoresAdicionales(getConnection());
         $registros = buscarRegistrosEventoPorNumeracion($eventoId, $numeracion);
 
         if ($registros === []) {
@@ -50,19 +69,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nombres = [];
 
         foreach ($registros as $registro) {
-            $nombre = trim((string) ($registro['nombre'] ?? ''));
-            $tipoEntrada = trim((string) ($registro['tipo_entrada'] ?? ''));
-            $numeracionRegistro = trim((string) ($registro['numeracion'] ?? ''));
+            $ticket = serializarTicketCheckout($registro);
+            $tickets[] = $ticket;
 
-            $tickets[] = [
-                'nombre'       => $nombre,
-                'numeracion'   => $numeracionRegistro,
-                'tipo_entrada' => $tipoEntrada,
-                'estado'       => etiquetaEstadoPagoRegistroEvento($registro),
-            ];
-
-            if ($nombre !== '') {
-                $nombres[] = $nombre;
+            if ($ticket['nombre'] !== '') {
+                $nombres[] = $ticket['nombre'];
             }
         }
 
@@ -72,8 +83,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'nombres'  => $nombres,
             'tickets'  => $tickets,
         ], JSON_UNESCAPED_UNICODE);
+    } catch (InvalidArgumentException $e) {
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
     } catch (PDOException $e) {
-        echo json_encode(['ok' => false, 'error' => 'No se pudo consultar el ticket. Intenta de nuevo.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['ok' => false, 'error' => 'No se pudo completar la operación. Intenta de nuevo.'], JSON_UNESCAPED_UNICODE);
     }
 
     exit;
@@ -83,6 +96,7 @@ $errorBd = null;
 $eventos = [];
 
 try {
+    asegurarColumnasValoresAdicionales(getConnection());
     $eventos = obtenerEventosHabilitados();
 } catch (PDOException $e) {
     $errorBd = 'No se pudieron cargar los eventos. Intenta de nuevo.';

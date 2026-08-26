@@ -22,13 +22,14 @@ $redireccionRegistros = construirUrlRegistros($archivoPagina, $filtros, $paginaA
         <th>Valor</th>
         <th>Forma de pago</th>
         <th>Estado</th>
+        <th>Asistencia</th>
         <th class="text-end">Acciones</th>
       </tr>
     </thead>
     <tbody>
       <?php if (empty($registros)): ?>
       <tr>
-        <td colspan="8" class="text-center text-muted py-5">
+        <td colspan="9" class="text-center text-muted py-5">
           <i class="bi bi-inbox display-6 d-block mb-2"></i>
           <?= htmlspecialchars($mensajeVacio) ?>
         </td>
@@ -86,6 +87,13 @@ $redireccionRegistros = construirUrlRegistros($archivoPagina, $filtros, $paginaA
           <span class="badge <?= htmlspecialchars(claseBadgeEstadoPagoRegistroEvento($fila)) ?>">
             <?= htmlspecialchars(etiquetaEstadoPagoRegistroEvento($fila)) ?>
           </span>
+          <?php endif; ?>
+        </td>
+        <td>
+          <?php if (registroEventoAsistio($fila)): ?>
+          <span class="badge bg-success"><?= htmlspecialchars(etiquetaAsistenciaRegistroEvento($fila)) ?></span>
+          <?php else: ?>
+          <span class="badge bg-secondary">No asistió</span>
           <?php endif; ?>
         </td>
         <td class="text-end">

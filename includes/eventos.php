@@ -1734,6 +1734,92 @@ function buscarRegistrosEventoPorNumeracion(int $eventoId, string $numeracion): 
     return $stmt->fetchAll();
 }
 
+function registroEventoAsistio(array $registro): bool
+{
+    return (int) ($registro['asistio'] ?? 0) === 1;
+}
+
+function etiquetaAsistenciaRegistroEvento(array $registro): string
+{
+    if (!registroEventoAsistio($registro)) {
+        return 'No asistió';
+    }
+
+    require_once __DIR__ . '/submissions.php';
+    $cuando = formatearFechaHora($registro['asistio_en'] ?? null);
+
+    return $cuando !== '—' ? 'Asistió · ' . $cuando : 'Asistió';
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function serializarTicketCheckout(array $registro): array
+{
+    $nombre = trim((string) ($registro['nombre'] ?? ''));
+    $tipoEntrada = trim((string) ($registro['tipo_entrada'] ?? ''));
+    $numeracionRegistro = trim((string) ($registro['numeracion'] ?? ''));
+    $asistio = registroEventoAsistio($registro);
+
+    return [
+        'id'           => (int) ($registro['id'] ?? 0),
+        'nombre'       => $nombre,
+        'numeracion'   => $numeracionRegistro,
+        'tipo_entrada' => $tipoEntrada,
+        'estado'       => etiquetaEstadoPagoRegistroEvento($registro),
+        'asistio'      => $asistio,
+        'asistencia'   => etiquetaAsistenciaRegistroEvento($registro),
+    ];
+}
+
+/**
+ * @param array{id?: int, nombre?: string, usuario?: string} $usuario
+ * @return array<string, mixed>
+ */
+function marcarAsistenciaRegistroEvento(int $id, array $usuario): array
+{
+    $registro = obtenerRegistroEventoPorId($id);
+
+    if (!$registro) {
+        throw new InvalidArgumentException('Registro de evento no encontrado.');
+    }
+
+    $eventoId = (int) ($registro['evento_id'] ?? 0);
+    $evento = $eventoId > 0 ? obtenerEvento($eventoId) : null;
+
+    if (!$evento || (int) ($evento['habilitado'] ?? 0) !== 1) {
+        throw new InvalidArgumentException('Solo se puede marcar asistencia en eventos habilitados.');
+    }
+
+    if (registroEventoAsistio($registro)) {
+        return serializarTicketCheckout($registro);
+    }
+
+    $pdo = getConnection();
+    asegurarColumnasValoresAdicionales($pdo);
+
+    $nombreUsuario = trim((string) (($usuario['nombre'] ?? '') !== '' ? $usuario['nombre'] : ($usuario['usuario'] ?? '')));
+    $stmt = $pdo->prepare(
+        'UPDATE valores_adicionales
+         SET asistio = 1, asistio_en = NOW(), asistio_por_id = ?, asistio_por_nombre = ?
+         WHERE id = ? AND tipo = ?'
+    );
+    $stmt->execute([
+        isset($usuario['id']) ? (int) $usuario['id'] : null,
+        $nombreUsuario !== '' ? mb_substr($nombreUsuario, 0, 100) : null,
+        $id,
+        TIPO_VALOR_EVENTOS_INTERNO,
+    ]);
+
+    $actualizado = obtenerRegistroEventoPorId($id);
+
+    if (!$actualizado) {
+        throw new InvalidArgumentException('No se pudo marcar la asistencia.');
+    }
+
+    return serializarTicketCheckout($actualizado);
+}
+
 function etiquetaTipoEventoCatalogo(array $evento): string
 {
     return (float) ($evento['valor'] ?? 0) <= 0 ? 'Gratuito' : 'Pago';

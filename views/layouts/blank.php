@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="blank-html">
 <head>
   <?php include __DIR__ . '/../partials/head.php'; ?>
 </head>

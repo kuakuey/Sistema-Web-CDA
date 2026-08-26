@@ -34,8 +34,8 @@
             </select>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label" for="numeracion">Numeración del ticket</label>
+          <div class="mb-4">
+            <label class="form-label" for="numeracion">Numeración</label>
             <input
               type="text"
               class="form-control form-control-lg"
@@ -49,30 +49,23 @@
             >
           </div>
 
-          <button type="submit" class="btn btn-primary w-100 py-2 mb-4 js-checkout-submit">
+          <button type="submit" class="btn btn-primary w-100 py-2 js-checkout-submit">
             <i class="bi bi-search me-1"></i>Consultar
           </button>
-
-          <div class="checkout-datos">
-            <div class="mb-3">
-              <label class="form-label" for="ticket_nombre">Nombre</label>
-              <input type="text" class="form-control" id="ticket_nombre" value="" readonly>
-            </div>
-            <div class="mb-3">
-              <label class="form-label" for="ticket_numeracion">Numeración</label>
-              <input type="text" class="form-control" id="ticket_numeracion" value="" readonly>
-            </div>
-            <div class="mb-3">
-              <label class="form-label" for="ticket_tipo">Tipo de entrada</label>
-              <input type="text" class="form-control" id="ticket_tipo" value="" readonly>
-            </div>
-            <div class="mb-0">
-              <label class="form-label" for="ticket_estado">Estado</label>
-              <input type="text" class="form-control" id="ticket_estado" value="" readonly>
-            </div>
-          </div>
         </form>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="checkoutResultado" tabindex="-1" aria-labelledby="checkoutResultadoTitulo" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content checkout-modal">
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="checkoutResultadoTitulo">Ticket</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body js-checkout-modal-cuerpo"></div>
     </div>
   </div>
 </div>

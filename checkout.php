@@ -40,24 +40,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $registros = buscarRegistrosEventoPorNumeracion($eventoId, $numeracion);
-        $registro = $registros[0] ?? null;
 
-        if (!$registro) {
+        if ($registros === []) {
             echo json_encode(['ok' => false, 'error' => 'No se encontró un ticket con esa numeración.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
-        $tipoEntrada = trim((string) ($registro['tipo_entrada'] ?? ''));
-        $numeracionRegistro = trim((string) ($registro['numeracion'] ?? ''));
+        $tickets = [];
+        $nombres = [];
 
-        echo json_encode([
-            'ok'     => true,
-            'ticket' => [
-                'nombre'       => (string) ($registro['nombre'] ?? ''),
+        foreach ($registros as $registro) {
+            $nombre = trim((string) ($registro['nombre'] ?? ''));
+            $tipoEntrada = trim((string) ($registro['tipo_entrada'] ?? ''));
+            $numeracionRegistro = trim((string) ($registro['numeracion'] ?? ''));
+
+            $tickets[] = [
+                'nombre'       => $nombre,
                 'numeracion'   => $numeracionRegistro,
                 'tipo_entrada' => $tipoEntrada,
                 'estado'       => etiquetaEstadoPagoRegistroEvento($registro),
-            ],
+            ];
+
+            if ($nombre !== '') {
+                $nombres[] = $nombre;
+            }
+        }
+
+        echo json_encode([
+            'ok'       => true,
+            'repetido' => count($tickets) > 1,
+            'nombres'  => $nombres,
+            'tickets'  => $tickets,
         ], JSON_UNESCAPED_UNICODE);
     } catch (PDOException $e) {
         echo json_encode(['ok' => false, 'error' => 'No se pudo consultar el ticket. Intenta de nuevo.'], JSON_UNESCAPED_UNICODE);

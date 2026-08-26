@@ -945,14 +945,35 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
   max-width: 480px;
 }
 
-.checkout-card {
+.checkout-card,
+.checkout-modal {
   background: var(--cda-surface);
   border-radius: 1rem;
 }
 
-.checkout-datos .form-control[readonly] {
-  background-color: var(--cda-surface-muted);
-  pointer-events: none;
+.checkout-modal__datos {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.checkout-modal__fila {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.checkout-modal__fila dt {
+  font-size: var(--cda-text-xs);
+  font-weight: var(--cda-font-medium);
+  color: var(--cda-muted);
+  margin: 0;
+}
+
+.checkout-modal__fila dd {
+  font-size: var(--cda-text-lg);
+  font-weight: var(--cda-font-semibold);
+  line-height: var(--cda-leading-tight);
+  margin: 0;
+  word-break: break-word;
 }
 
 .checkout-icon {

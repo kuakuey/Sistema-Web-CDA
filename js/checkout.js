@@ -10,10 +10,19 @@
   var numeracion = form.querySelector('#numeracion');
   var boton = form.querySelector('.js-checkout-submit');
   var alerta = document.querySelector('.js-checkout-error');
-  var campoNombre = document.getElementById('ticket_nombre');
-  var campoNumeracion = document.getElementById('ticket_numeracion');
-  var campoTipo = document.getElementById('ticket_tipo');
-  var campoEstado = document.getElementById('ticket_estado');
+  var modalEl = document.getElementById('checkoutResultado');
+  var modalTitulo = document.getElementById('checkoutResultadoTitulo');
+  var modalCuerpo = document.querySelector('.js-checkout-modal-cuerpo');
+  var modal = modalEl && window.bootstrap ? new bootstrap.Modal(modalEl) : null;
+
+  function escapeHtml(texto) {
+    return String(texto == null ? '' : texto)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
   function mostrarError(mensaje) {
     if (!alerta) {
@@ -24,24 +33,60 @@
     alerta.classList.toggle('d-none', !mensaje);
   }
 
-  function llenarTicket(ticket) {
-    var datos = ticket || {};
-    if (campoNombre) {
-      campoNombre.value = datos.nombre || '';
-    }
-    if (campoNumeracion) {
-      campoNumeracion.value = datos.numeracion || '';
-    }
-    if (campoTipo) {
-      campoTipo.value = datos.tipo_entrada || '';
-    }
-    if (campoEstado) {
-      campoEstado.value = datos.estado || '';
-    }
+  function filaDato(etiqueta, valor) {
+    return (
+      '<div class="checkout-modal__fila">' +
+        '<dt>' + escapeHtml(etiqueta) + '</dt>' +
+        '<dd>' + escapeHtml(valor || '—') + '</dd>' +
+      '</div>'
+    );
   }
 
-  function limpiarTicket() {
-    llenarTicket({});
+  function htmlTicket(ticket) {
+    return (
+      '<dl class="checkout-modal__datos mb-0">' +
+        filaDato('Nombre', ticket.nombre) +
+        filaDato('Numeración', ticket.numeracion) +
+        filaDato('Tipo de entrada', ticket.tipo_entrada) +
+        filaDato('Estado', ticket.estado) +
+      '</dl>'
+    );
+  }
+
+  function mostrarPopup(datos) {
+    var tickets = datos.tickets || [];
+    var repetido = !!datos.repetido;
+    var nombres = (datos.nombres || []).filter(Boolean);
+    var html = '';
+
+    if (modalTitulo) {
+      modalTitulo.textContent = repetido ? 'Numeración repetida' : 'Ticket';
+    }
+
+    if (repetido) {
+      html +=
+        '<div class="alert alert-warning mb-3">' +
+          '<strong>Esta numeración está repetida.</strong> ' +
+          (nombres.length
+            ? 'Corresponde a: ' + nombres.map(escapeHtml).join(', ') + '.'
+            : 'Hay más de un registro con el mismo número.') +
+        '</div>';
+    }
+
+    tickets.forEach(function (ticket, indice) {
+      if (indice > 0) {
+        html += '<hr class="my-3">';
+      }
+      html += htmlTicket(ticket);
+    });
+
+    if (modalCuerpo) {
+      modalCuerpo.innerHTML = html;
+    }
+
+    if (modal) {
+      modal.show();
+    }
   }
 
   function sincronizarNumeracion() {
@@ -59,10 +104,18 @@
   if (evento) {
     evento.addEventListener('change', function () {
       sincronizarNumeracion();
-      limpiarTicket();
       mostrarError('');
 
       if (evento.value && numeracion) {
+        numeracion.value = '';
+        numeracion.focus();
+      }
+    });
+  }
+
+  if (modalEl) {
+    modalEl.addEventListener('hidden.bs.modal', function () {
+      if (numeracion && !numeracion.disabled) {
         numeracion.value = '';
         numeracion.focus();
       }
@@ -99,19 +152,13 @@
       })
       .then(function (datos) {
         if (!datos || !datos.ok) {
-          limpiarTicket();
           mostrarError((datos && datos.error) || 'No se encontró el ticket.');
           return;
         }
 
-        llenarTicket(datos.ticket);
-        if (numeracion) {
-          numeracion.value = '';
-          numeracion.focus();
-        }
+        mostrarPopup(datos);
       })
       .catch(function () {
-        limpiarTicket();
         mostrarError('No se pudo consultar el ticket. Intenta de nuevo.');
       })
       .then(function () {

@@ -951,7 +951,15 @@ body.blank-body {
 }
 
 .checkout-page {
-  width: 60%;
+  width: 100%;
+  max-width: 480px;
+}
+
+@media (min-width: 768px) {
+  .checkout-page {
+    width: 60%;
+    max-width: none;
+  }
 }
 
 .checkout-card,

@@ -278,6 +278,31 @@ function componerCodigoNumeracionTipoEntrada(string $prefijo, string $numeracion
     return $codigo;
 }
 
+/**
+ * @param array<string, mixed> $evento
+ * @return array<int, string>
+ */
+function obtenerPrefijosTipoEntradaEvento(array $evento): array
+{
+    $prefijos = [];
+
+    foreach ($evento['tipos_entrada'] ?? [] as $tipo) {
+        if (!is_array($tipo)) {
+            continue;
+        }
+
+        $prefijo = normalizarPrefijoTipoEntrada($tipo['prefijo'] ?? '');
+        if ($prefijo !== '') {
+            $prefijos[$prefijo] = $prefijo;
+        }
+    }
+
+    $lista = array_values($prefijos);
+    sort($lista, SORT_NATURAL | SORT_FLAG_CASE);
+
+    return $lista;
+}
+
 function claveNombreTipoEntrada(string $nombre, int $tipoId = 0): string
 {
     $nombre = mb_strtolower(trim($nombre));

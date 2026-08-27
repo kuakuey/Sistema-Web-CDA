@@ -7,7 +7,9 @@
   }
 
   var evento = form.querySelector('#evento_id');
+  var prefijo = form.querySelector('#prefijo');
   var numeracion = form.querySelector('#numeracion');
+  var prefijoAddon = form.querySelector('.js-checkout-prefijo-addon');
   var boton = form.querySelector('.js-checkout-submit');
   var alerta = document.querySelector('.js-checkout-error');
   var modalEl = document.getElementById('checkoutResultado');
@@ -167,25 +169,127 @@
       });
   }
 
-  function sincronizarNumeracion() {
-    if (!numeracion) {
+  function obtenerPrefijosEvento() {
+    if (!evento || !evento.value) {
+      return [];
+    }
+
+    var opcion = evento.options[evento.selectedIndex];
+    if (!opcion) {
+      return [];
+    }
+
+    try {
+      var lista = JSON.parse(opcion.getAttribute('data-prefijos') || '[]');
+      return Array.isArray(lista) ? lista : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function actualizarPrefijoAddon() {
+    var valorPrefijo = prefijo && prefijo.value ? String(prefijo.value).toUpperCase() : '';
+    if (!prefijoAddon) {
       return;
     }
 
+    if (valorPrefijo) {
+      prefijoAddon.textContent = valorPrefijo;
+      prefijoAddon.classList.remove('d-none');
+    } else {
+      prefijoAddon.textContent = '';
+      prefijoAddon.classList.add('d-none');
+    }
+  }
+
+  function llenarPrefijosEvento() {
     var tieneEvento = !!(evento && evento.value);
-    numeracion.disabled = !tieneEvento;
-    numeracion.placeholder = tieneEvento
-      ? 'Ingrese el código (ej. G203)'
-      : 'Seleccione evento primero…';
+    var prefijos = obtenerPrefijosEvento();
+    var tienePrefijos = prefijos.length > 0;
+
+    if (!prefijo) {
+      return;
+    }
+
+    prefijo.innerHTML = '';
+    var opcionInicial = document.createElement('option');
+
+    if (!tieneEvento) {
+      opcionInicial.value = '';
+      opcionInicial.textContent = 'Seleccione evento primero…';
+      prefijo.appendChild(opcionInicial);
+      prefijo.disabled = true;
+      prefijo.required = false;
+      return;
+    }
+
+    if (!tienePrefijos) {
+      opcionInicial.value = '';
+      opcionInicial.textContent = 'Sin prefijo';
+      prefijo.appendChild(opcionInicial);
+      prefijo.disabled = true;
+      prefijo.required = false;
+      return;
+    }
+
+    opcionInicial.value = '';
+    opcionInicial.textContent = 'Seleccione prefijo…';
+    prefijo.appendChild(opcionInicial);
+    prefijos.forEach(function (texto) {
+      var opcion = document.createElement('option');
+      opcion.value = String(texto);
+      opcion.textContent = String(texto);
+      prefijo.appendChild(opcion);
+    });
+    prefijo.disabled = false;
+    prefijo.required = true;
+  }
+
+  function sincronizarNumeracion() {
+    var tieneEvento = !!(evento && evento.value);
+    var prefijos = obtenerPrefijosEvento();
+    var tienePrefijos = prefijos.length > 0;
+    var tienePrefijo = !!(prefijo && prefijo.value);
+
+    if (numeracion) {
+      var puedeNumerar = tieneEvento && (!tienePrefijos || tienePrefijo);
+      numeracion.disabled = !puedeNumerar;
+      numeracion.placeholder = !tieneEvento
+        ? 'Seleccione evento primero…'
+        : (tienePrefijos && !tienePrefijo
+          ? 'Seleccione prefijo primero…'
+          : 'Ingrese la numeración');
+    }
+
+    actualizarPrefijoAddon();
   }
 
   if (evento) {
     evento.addEventListener('change', function () {
+      llenarPrefijosEvento();
+      if (numeracion) {
+        numeracion.value = '';
+      }
       sincronizarNumeracion();
       mostrarError('');
 
-      if (evento.value && numeracion) {
+      if (evento.value && prefijo && !prefijo.disabled) {
+        prefijo.focus();
+      } else if (evento.value && numeracion && !numeracion.disabled) {
+        numeracion.focus();
+      }
+    });
+  }
+
+  if (prefijo) {
+    prefijo.addEventListener('change', function () {
+      if (numeracion) {
         numeracion.value = '';
+      }
+      sincronizarNumeracion();
+      mostrarError('');
+
+      if (numeracion && !numeracion.disabled) {
         numeracion.focus();
       }
     });
@@ -217,6 +321,11 @@
 
     if (!evento || !evento.value) {
       mostrarError('Selecciona un evento.');
+      return;
+    }
+
+    if (prefijo && prefijo.required && !prefijo.value) {
+      mostrarError('Selecciona un prefijo.');
       return;
     }
 
@@ -258,5 +367,6 @@
       });
   });
 
+  llenarPrefijosEvento();
   sincronizarNumeracion();
 })();

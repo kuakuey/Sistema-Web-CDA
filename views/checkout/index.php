@@ -7,7 +7,7 @@
             <i class="bi bi-ticket-perforated"></i>
           </div>
           <h1 class="h4 fw-bold mb-1">Checkout</h1>
-          <p class="text-muted small mb-0">Consulta un ticket por evento y numeración</p>
+          <p class="text-muted small mb-0">Consulta un ticket por prefijo y numeración</p>
         </div>
 
         <?php if (!empty($errorBd)): ?>
@@ -23,8 +23,13 @@
             <label class="form-label" for="evento_id">Evento</label>
             <select class="form-select form-select-lg" id="evento_id" name="evento_id" required>
               <option value="">Seleccione evento…</option>
-              <?php foreach ($eventos as $evento): ?>
-              <option value="<?= (int) $evento['id'] ?>">
+              <?php foreach ($eventos as $evento):
+                $prefijosEvento = obtenerPrefijosTipoEntradaEvento($evento);
+              ?>
+              <option
+                value="<?= (int) $evento['id'] ?>"
+                data-prefijos="<?= htmlspecialchars(json_encode($prefijosEvento, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') ?>"
+              >
                 <?= htmlspecialchars($evento['nombre']) ?>
                 <?php if (!empty($evento['fecha'])): ?>
                   (<?= htmlspecialchars(formatearFechaTabla($evento['fecha'])) ?>)
@@ -34,19 +39,29 @@
             </select>
           </div>
 
+          <div class="mb-3">
+            <label class="form-label" for="prefijo">Prefijo</label>
+            <select class="form-select form-select-lg" id="prefijo" name="prefijo" required disabled>
+              <option value="">Seleccione evento primero…</option>
+            </select>
+          </div>
+
           <div class="mb-4">
             <label class="form-label" for="numeracion">Numeración</label>
-            <input
-              type="text"
-              class="form-control form-control-lg"
-              id="numeracion"
-              name="numeracion"
-              maxlength="30"
-              value=""
-              placeholder="Seleccione evento primero…"
-              enterkeyhint="search"
-              disabled
-            >
+            <div class="input-group input-group-lg">
+              <span class="input-group-text js-checkout-prefijo-addon d-none"></span>
+              <input
+                type="text"
+                class="form-control"
+                id="numeracion"
+                name="numeracion"
+                maxlength="30"
+                value=""
+                placeholder="Seleccione evento primero…"
+                enterkeyhint="search"
+                disabled
+              >
+            </div>
           </div>
 
           <button type="submit" class="btn btn-primary w-100 py-2 js-checkout-submit">

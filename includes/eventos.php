@@ -377,7 +377,6 @@ function normalizarTiposEntradaCatalogo($tiposEntrada): array
     }
 
     $normalizados = [];
-    $prefijosUsados = [];
 
     foreach ($tiposEntrada as $tipo) {
         if (!is_array($tipo)) {
@@ -397,14 +396,6 @@ function normalizarTiposEntradaCatalogo($tiposEntrada): array
         }
 
         $prefijo = normalizarPrefijoTipoEntrada($tipo['prefijo'] ?? '');
-        if ($prefijo !== '') {
-            if (isset($prefijosUsados[$prefijo])) {
-                throw new InvalidArgumentException(
-                    'El prefijo «' . $prefijo . '» está repetido. Cada tipo de entrada debe tener un prefijo distinto.'
-                );
-            }
-            $prefijosUsados[$prefijo] = true;
-        }
 
         $normalizados[] = [
             'nombre'          => $nombre,

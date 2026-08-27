@@ -38,16 +38,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $eventoId = max(0, (int) ($_POST['evento_id'] ?? 0));
-        $prefijo = normalizarPrefijoTipoEntrada($_POST['prefijo'] ?? '');
-        $numeracion = trim((string) ($_POST['numeracion'] ?? ''));
+        $codigo = trim((string) ($_POST['codigo'] ?? $_POST['numeracion'] ?? ''));
 
         if ($eventoId <= 0) {
             echo json_encode(['ok' => false, 'error' => 'Selecciona un evento.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
-        if ($numeracion === '') {
-            echo json_encode(['ok' => false, 'error' => 'Ingresa la numeración del ticket.'], JSON_UNESCAPED_UNICODE);
+        if ($codigo === '') {
+            echo json_encode(['ok' => false, 'error' => 'Ingresa el código del ticket.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
@@ -58,13 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $codigo = componerCodigoNumeracionTipoEntrada($prefijo, $numeracion);
-
         asegurarColumnasValoresAdicionales(getConnection());
         $registros = buscarRegistrosEventoPorNumeracion($eventoId, $codigo);
 
         if ($registros === []) {
-            echo json_encode(['ok' => false, 'error' => 'No se encontró un ticket con esa numeración.'], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['ok' => false, 'error' => 'No se encontró un ticket con ese código.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
 

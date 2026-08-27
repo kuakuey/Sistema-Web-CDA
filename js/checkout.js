@@ -7,9 +7,7 @@
   }
 
   var evento = form.querySelector('#evento_id');
-  var prefijo = form.querySelector('#prefijo');
-  var numeracion = form.querySelector('#numeracion');
-  var prefijoAddon = form.querySelector('.js-checkout-prefijo-addon');
+  var codigo = form.querySelector('#codigo');
   var boton = form.querySelector('.js-checkout-submit');
   var alerta = document.querySelector('.js-checkout-error');
   var modalEl = document.getElementById('checkoutResultado');
@@ -67,7 +65,7 @@
       '<div class="checkout-modal__ticket js-checkout-ticket" data-id="' + escapeHtml(ticket.id) + '">' +
         '<dl class="checkout-modal__datos mb-3">' +
           filaDato('Nombre', ticket.nombre) +
-          filaDato('Numeración', ticket.numeracion) +
+          filaDato('Código', ticket.numeracion) +
           filaDato('Tipo de entrada', ticket.tipo_entrada) +
           filaDato('Estado', ticket.estado) +
           filaDato('Asistencia', ticket.asistencia) +
@@ -86,13 +84,13 @@
     var html = '';
 
     if (modalTitulo) {
-      modalTitulo.textContent = repetido ? 'Numeración repetida' : 'Ticket';
+      modalTitulo.textContent = repetido ? 'Código repetido' : 'Ticket';
     }
 
     if (repetido) {
       html +=
         '<div class="alert alert-warning mb-3">' +
-          '<strong>Esta numeración está repetida.</strong> ' +
+          '<strong>Este código está repetido.</strong> ' +
           (nombres.length
             ? 'Corresponde a: ' + nombres.map(escapeHtml).join(', ') + '.'
             : 'Hay más de un registro con el mismo número.') +
@@ -169,137 +167,35 @@
       });
   }
 
-  function obtenerPrefijosEvento() {
-    if (!evento || !evento.value) {
-      return [];
-    }
-
-    var opcion = evento.options[evento.selectedIndex];
-    if (!opcion) {
-      return [];
-    }
-
-    try {
-      var lista = JSON.parse(opcion.getAttribute('data-prefijos') || '[]');
-      return Array.isArray(lista) ? lista : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function actualizarPrefijoAddon() {
-    var valorPrefijo = prefijo && prefijo.value ? String(prefijo.value).toUpperCase() : '';
-    if (!prefijoAddon) {
+  function sincronizarCodigo() {
+    if (!codigo) {
       return;
     }
 
-    if (valorPrefijo) {
-      prefijoAddon.textContent = valorPrefijo;
-      prefijoAddon.classList.remove('d-none');
-    } else {
-      prefijoAddon.textContent = '';
-      prefijoAddon.classList.add('d-none');
-    }
-  }
-
-  function llenarPrefijosEvento() {
     var tieneEvento = !!(evento && evento.value);
-    var prefijos = obtenerPrefijosEvento();
-    var tienePrefijos = prefijos.length > 0;
-
-    if (!prefijo) {
-      return;
-    }
-
-    prefijo.innerHTML = '';
-    var opcionInicial = document.createElement('option');
-
-    if (!tieneEvento) {
-      opcionInicial.value = '';
-      opcionInicial.textContent = 'Seleccione evento primero…';
-      prefijo.appendChild(opcionInicial);
-      prefijo.disabled = true;
-      prefijo.required = false;
-      return;
-    }
-
-    if (!tienePrefijos) {
-      opcionInicial.value = '';
-      opcionInicial.textContent = 'Sin prefijo';
-      prefijo.appendChild(opcionInicial);
-      prefijo.disabled = true;
-      prefijo.required = false;
-      return;
-    }
-
-    opcionInicial.value = '';
-    opcionInicial.textContent = 'Seleccione prefijo…';
-    prefijo.appendChild(opcionInicial);
-    prefijos.forEach(function (texto) {
-      var opcion = document.createElement('option');
-      opcion.value = String(texto);
-      opcion.textContent = String(texto);
-      prefijo.appendChild(opcion);
-    });
-    prefijo.disabled = false;
-    prefijo.required = true;
-  }
-
-  function sincronizarNumeracion() {
-    var tieneEvento = !!(evento && evento.value);
-    var prefijos = obtenerPrefijosEvento();
-    var tienePrefijos = prefijos.length > 0;
-    var tienePrefijo = !!(prefijo && prefijo.value);
-
-    if (numeracion) {
-      var puedeNumerar = tieneEvento && (!tienePrefijos || tienePrefijo);
-      numeracion.disabled = !puedeNumerar;
-      numeracion.placeholder = !tieneEvento
-        ? 'Seleccione evento primero…'
-        : (tienePrefijos && !tienePrefijo
-          ? 'Seleccione prefijo primero…'
-          : 'Ingrese la numeración');
-    }
-
-    actualizarPrefijoAddon();
+    codigo.disabled = !tieneEvento;
+    codigo.placeholder = tieneEvento
+      ? 'Ej. G301'
+      : 'Seleccione evento primero…';
   }
 
   if (evento) {
     evento.addEventListener('change', function () {
-      llenarPrefijosEvento();
-      if (numeracion) {
-        numeracion.value = '';
-      }
-      sincronizarNumeracion();
+      sincronizarCodigo();
       mostrarError('');
 
-      if (evento.value && prefijo && !prefijo.disabled) {
-        prefijo.focus();
-      } else if (evento.value && numeracion && !numeracion.disabled) {
-        numeracion.focus();
-      }
-    });
-  }
-
-  if (prefijo) {
-    prefijo.addEventListener('change', function () {
-      if (numeracion) {
-        numeracion.value = '';
-      }
-      sincronizarNumeracion();
-      mostrarError('');
-
-      if (numeracion && !numeracion.disabled) {
-        numeracion.focus();
+      if (evento.value && codigo) {
+        codigo.value = '';
+        codigo.focus();
       }
     });
   }
 
   if (modalEl) {
     modalEl.addEventListener('hidden.bs.modal', function () {
-      if (numeracion && !numeracion.disabled) {
-        numeracion.value = '';
-        numeracion.focus();
+      if (codigo && !codigo.disabled) {
+        codigo.value = '';
+        codigo.focus();
       }
     });
   }
@@ -324,13 +220,8 @@
       return;
     }
 
-    if (prefijo && prefijo.required && !prefijo.value) {
-      mostrarError('Selecciona un prefijo.');
-      return;
-    }
-
-    if (!numeracion || numeracion.value.trim() === '') {
-      mostrarError('Ingresa la numeración del ticket.');
+    if (!codigo || codigo.value.trim() === '') {
+      mostrarError('Ingresa el código del ticket.');
       return;
     }
 
@@ -367,6 +258,5 @@
       });
   });
 
-  llenarPrefijosEvento();
-  sincronizarNumeracion();
+  sincronizarCodigo();
 })();

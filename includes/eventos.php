@@ -181,7 +181,7 @@ function obtenerTiposEntradaPorEventos(array $eventoIds): array
 
     $placeholders = implode(',', array_fill(0, count($eventoIds), '?'));
     $stmt = $pdo->prepare(
-        "SELECT id, evento_id, nombre, valor, orden, visible_publico, es_gratis
+        "SELECT id, evento_id, nombre, valor, orden, visible_publico, es_gratis, prefijo
          FROM eventos_tipos_entrada
          WHERE evento_id IN ($placeholders)
          ORDER BY orden ASC, id ASC"
@@ -208,7 +208,7 @@ function obtenerTipoEntradaPorId(int $id, ?int $eventoId = null): ?array
 
     if ($eventoId !== null && $eventoId > 0) {
         $stmt = $pdo->prepare(
-            'SELECT id, evento_id, nombre, valor, orden, visible_publico, es_gratis
+            'SELECT id, evento_id, nombre, valor, orden, visible_publico, es_gratis, prefijo
              FROM eventos_tipos_entrada
              WHERE id = ? AND evento_id = ?
              LIMIT 1'
@@ -216,7 +216,7 @@ function obtenerTipoEntradaPorId(int $id, ?int $eventoId = null): ?array
         $stmt->execute([$id, $eventoId]);
     } else {
         $stmt = $pdo->prepare(
-            'SELECT id, evento_id, nombre, valor, orden, visible_publico, es_gratis
+            'SELECT id, evento_id, nombre, valor, orden, visible_publico, es_gratis, prefijo
              FROM eventos_tipos_entrada
              WHERE id = ?
              LIMIT 1'
@@ -232,6 +232,50 @@ function obtenerTipoEntradaPorId(int $id, ?int $eventoId = null): ?array
 function nombresTipoEntradaEquivalentes(string $a, string $b): bool
 {
     return mb_strtolower(trim($a)) === mb_strtolower(trim($b));
+}
+
+function normalizarPrefijoTipoEntrada($prefijo): string
+{
+    $prefijo = strtoupper(trim((string) $prefijo));
+    $prefijo = preg_replace('/[^A-Z0-9]/', '', $prefijo) ?? '';
+
+    return mb_substr($prefijo, 0, 10);
+}
+
+function extraerNumeroSinPrefijoTipoEntrada(string $numeracion, string $prefijo): string
+{
+    $numeracion = trim($numeracion);
+    $prefijo = normalizarPrefijoTipoEntrada($prefijo);
+
+    if ($numeracion === '' || $prefijo === '') {
+        return $numeracion;
+    }
+
+    $patron = '/^' . preg_quote($prefijo, '/') . '-?/i';
+
+    return trim((string) preg_replace($patron, '', $numeracion, 1));
+}
+
+function componerCodigoNumeracionTipoEntrada(string $prefijo, string $numeracion): string
+{
+    $numeracion = extraerNumeroSinPrefijoTipoEntrada($numeracion, $prefijo);
+    $prefijo = normalizarPrefijoTipoEntrada($prefijo);
+
+    if ($numeracion === '') {
+        return '';
+    }
+
+    if ($prefijo === '') {
+        return $numeracion;
+    }
+
+    $codigo = $prefijo . $numeracion;
+
+    if (mb_strlen($codigo) > 30) {
+        throw new InvalidArgumentException('El código de numeración no puede superar 30 caracteres.');
+    }
+
+    return $codigo;
 }
 
 function claveNombreTipoEntrada(string $nombre, int $tipoId = 0): string
@@ -285,7 +329,7 @@ function buscarTipoEntradaEnLista(array $tipos, int $tipoId = 0, string $tipoNom
 
 /**
  * @param array<int, array<string, mixed>>|array<string, mixed> $tiposEntrada
- * @return array<int, array{nombre: string, valor: float, visible_publico: int, es_gratis: int}>
+ * @return array<int, array{nombre: string, valor: float, visible_publico: int, es_gratis: int, prefijo: string}>
  */
 function normalizarTiposEntradaCatalogo($tiposEntrada): array
 {
@@ -301,6 +345,7 @@ function normalizarTiposEntradaCatalogo($tiposEntrada): array
         $valores = $tiposEntrada['valor'] ?? [];
         $visiblesPublico = $tiposEntrada['visible_publico'] ?? [];
         $esGratisLista = $tiposEntrada['es_gratis'] ?? [];
+        $prefijos = $tiposEntrada['prefijo'] ?? [];
         $tiposEntrada = [];
 
         if (!is_array($nombres)) {
@@ -315,19 +360,24 @@ function normalizarTiposEntradaCatalogo($tiposEntrada): array
         if (!is_array($esGratisLista)) {
             $esGratisLista = [$esGratisLista];
         }
+        if (!is_array($prefijos)) {
+            $prefijos = [$prefijos];
+        }
 
-        $total = max(count($nombres), count($valores), count($visiblesPublico), count($esGratisLista));
+        $total = max(count($nombres), count($valores), count($visiblesPublico), count($esGratisLista), count($prefijos));
         for ($i = 0; $i < $total; $i++) {
             $tiposEntrada[] = [
                 'nombre'          => $nombres[$i] ?? '',
                 'valor'           => $valores[$i] ?? 0,
                 'visible_publico' => $visiblesPublico[$i] ?? 1,
                 'es_gratis'       => $esGratisLista[$i] ?? 0,
+                'prefijo'         => $prefijos[$i] ?? '',
             ];
         }
     }
 
     $normalizados = [];
+    $prefijosUsados = [];
 
     foreach ($tiposEntrada as $tipo) {
         if (!is_array($tipo)) {
@@ -346,11 +396,22 @@ function normalizarTiposEntradaCatalogo($tiposEntrada): array
             $valor = 0.0;
         }
 
+        $prefijo = normalizarPrefijoTipoEntrada($tipo['prefijo'] ?? '');
+        if ($prefijo !== '') {
+            if (isset($prefijosUsados[$prefijo])) {
+                throw new InvalidArgumentException(
+                    'El prefijo «' . $prefijo . '» está repetido. Cada tipo de entrada debe tener un prefijo distinto.'
+                );
+            }
+            $prefijosUsados[$prefijo] = true;
+        }
+
         $normalizados[] = [
             'nombre'          => $nombre,
             'valor'           => $valor,
             'visible_publico' => !empty($tipo['visible_publico']) ? 1 : 0,
             'es_gratis'       => $esGratis ? 1 : 0,
+            'prefijo'         => $prefijo,
         ];
     }
 
@@ -362,7 +423,7 @@ function normalizarTiposEntradaCatalogo($tiposEntrada): array
 }
 
 /**
- * @param array<int, array{nombre: string, valor: float, visible_publico: int, es_gratis: int}> $tiposEntrada
+ * @param array<int, array{nombre: string, valor: float, visible_publico: int, es_gratis: int, prefijo: string}> $tiposEntrada
  */
 function guardarTiposEntradaEvento(int $eventoId, array $tiposEntrada): void
 {
@@ -377,11 +438,12 @@ function guardarTiposEntradaEvento(int $eventoId, array $tiposEntrada): void
     $pdo->prepare('DELETE FROM eventos_tipos_entrada WHERE evento_id = ?')->execute([$eventoId]);
 
     $stmt = $pdo->prepare(
-        'INSERT INTO eventos_tipos_entrada (evento_id, nombre, valor, orden, visible_publico, es_gratis, creado_en)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())'
+        'INSERT INTO eventos_tipos_entrada (evento_id, nombre, valor, orden, visible_publico, es_gratis, prefijo, creado_en)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
     );
 
     foreach ($tiposEntrada as $orden => $tipo) {
+        $prefijo = normalizarPrefijoTipoEntrada($tipo['prefijo'] ?? '');
         $stmt->execute([
             $eventoId,
             $tipo['nombre'],
@@ -389,6 +451,7 @@ function guardarTiposEntradaEvento(int $eventoId, array $tiposEntrada): void
             (int) $orden,
             (int) ($tipo['visible_publico'] ?? 1),
             (int) ($tipo['es_gratis'] ?? 0),
+            $prefijo !== '' ? $prefijo : null,
         ]);
     }
 }
@@ -948,6 +1011,10 @@ function formatearTiposEntradaEvento(array $evento): string
         }
 
         $texto = $nombre . ': ' . $etiquetaValor;
+        $prefijoTipo = normalizarPrefijoTipoEntrada($tipo['prefijo'] ?? '');
+        if ($prefijoTipo !== '') {
+            $texto .= ' [' . $prefijoTipo . ']';
+        }
         if (!tipoEntradaEsVisiblePublico($tipo)) {
             $texto .= ' (solo admin)';
         }
@@ -1327,6 +1394,13 @@ function validarDatosRegistroEvento(array $entrada, ?array $evento = null, ?stri
 
     if ((int) ($evento['requiere_numeracion'] ?? 0) === 1 && $numeracion === '') {
         throw new InvalidArgumentException('La numeración es obligatoria para este evento.');
+    }
+
+    if ($numeracion !== '' && $tipoEntrada !== null) {
+        $numeracion = componerCodigoNumeracionTipoEntrada(
+            (string) ($tipoEntrada['prefijo'] ?? ''),
+            $numeracion
+        );
     }
 
     $camposAdicionales = $evento['campos_adicionales'] ?? [];

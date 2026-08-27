@@ -257,10 +257,11 @@
             $tiposVisibles = filtrarTiposEntradaEventoPorRol($evento['tipos_entrada'] ?? [], (string) ($usuario['rol'] ?? ''));
             $tiposJson = array_map(static function (array $tipo): array {
                 return [
-                    'id'       => (int) ($tipo['id'] ?? 0),
-                    'nombre'   => (string) ($tipo['nombre'] ?? ''),
-                    'valor'    => (float) ($tipo['valor'] ?? 0),
+                    'id'        => (int) ($tipo['id'] ?? 0),
+                    'nombre'    => (string) ($tipo['nombre'] ?? ''),
+                    'valor'     => (float) ($tipo['valor'] ?? 0),
                     'es_gratis' => (int) ($tipo['es_gratis'] ?? 0),
+                    'prefijo'   => normalizarPrefijoTipoEntrada($tipo['prefijo'] ?? ''),
                 ];
             }, $tiposVisibles);
             $camposAdicionalesJson = array_map('serializarCampoAdicionalEventoParaJs', $evento['campos_adicionales'] ?? []);
@@ -292,7 +293,10 @@
 
       <div class="col-md-6 js-campo-numeracion-evento">
         <label class="form-label" for="numeracion">Numeración</label>
-        <input type="text" class="form-control" id="numeracion" name="numeracion" maxlength="30" placeholder="Seleccione evento primero…" disabled>
+        <div class="input-group">
+          <span class="input-group-text js-prefijo-numeracion d-none"></span>
+          <input type="text" class="form-control" id="numeracion" name="numeracion" maxlength="30" placeholder="Seleccione evento primero…" disabled>
+        </div>
       </div>
 
       <?php if ($puedeGestionarEstadoRegistro): ?>

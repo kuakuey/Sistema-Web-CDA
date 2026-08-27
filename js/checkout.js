@@ -175,7 +175,7 @@
     var tieneEvento = !!(evento && evento.value);
     numeracion.disabled = !tieneEvento;
     numeracion.placeholder = tieneEvento
-      ? 'Ingrese la numeración'
+      ? 'Ingrese el código (ej. G203)'
       : 'Seleccione evento primero…';
   }
 

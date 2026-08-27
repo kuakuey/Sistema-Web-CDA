@@ -260,6 +260,7 @@ $fila = $filaEditar;
                           'nombre'    => (string) ($tipo['nombre'] ?? ''),
                           'valor'     => (float) ($tipo['valor'] ?? 0),
                           'es_gratis' => (int) ($tipo['es_gratis'] ?? 0),
+                          'prefijo'   => normalizarPrefijoTipoEntrada($tipo['prefijo'] ?? ''),
                       ];
                   }, is_array($tiposParaJson) ? $tiposParaJson : []);
                   $camposAdicionalesJson = array_map('serializarCampoAdicionalEventoParaJs', $eventoItem['campos_adicionales'] ?? []);
@@ -306,7 +307,10 @@ $fila = $filaEditar;
             </div>
             <div class="col-md-6 js-campo-numeracion-evento">
               <label class="form-label">Numeración</label>
-              <input type="text" class="form-control" name="numeracion" maxlength="30" value="<?= htmlspecialchars($fila['numeracion'] ?? '') ?>" <?= empty($fila['requiere_numeracion']) && empty($fila['numeracion']) ? 'disabled' : '' ?>>
+              <div class="input-group">
+                <span class="input-group-text js-prefijo-numeracion d-none"></span>
+                <input type="text" class="form-control" name="numeracion" maxlength="30" value="<?= htmlspecialchars($fila['numeracion'] ?? '') ?>" <?= empty($fila['requiere_numeracion']) && empty($fila['numeracion']) ? 'disabled' : '' ?>>
+              </div>
             </div>
             <?php if ($puedeGestionarEstadoRegistro): ?>
             <div class="col-md-6 js-bloque-estado-pago-evento"<?= $ocultarBloquesPago ? ' style="display:none"' : '' ?>>

@@ -25,6 +25,7 @@ $totalFilas = count($tiposEntradaEvento);
     <thead class="table-light">
       <tr>
         <th>Tipo de entrada</th>
+        <th style="width:7.5rem">Prefijo</th>
         <th style="width:9rem">Valor</th>
         <th class="text-center" style="width:14rem">Acciones</th>
       </tr>
@@ -45,6 +46,17 @@ $totalFilas = count($tiposEntradaEvento);
             maxlength="100"
             placeholder="Ej. General, VIP…"
             value="<?= htmlspecialchars((string) ($tipoEntrada['nombre'] ?? '')) ?>"
+          >
+        </td>
+        <td>
+          <input
+            type="text"
+            class="form-control form-control-sm js-prefijo-tipo-entrada"
+            name="tipo_entrada[prefijo][]"
+            maxlength="10"
+            placeholder="VIP"
+            value="<?= htmlspecialchars(normalizarPrefijoTipoEntrada($tipoEntrada['prefijo'] ?? '')) ?>"
+            autocomplete="off"
           >
         </td>
         <td>
@@ -95,4 +107,4 @@ $totalFilas = count($tiposEntradaEvento);
     </tbody>
   </table>
 </div>
-<p class="text-muted small mt-2 mb-0">Valor 0 sin «Gratis» = pendiente de pago. Sin «Visible» = solo admin y superadmin.</p>
+<p class="text-muted small mt-2 mb-0">El prefijo se concatena con la numeración (G + 203 = G203) para no mezclar tipos. Valor 0 sin «Gratis» = pendiente de pago. Sin «Visible» = solo admin y superadmin.</p>

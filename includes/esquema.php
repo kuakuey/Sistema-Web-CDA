@@ -232,6 +232,7 @@ function migrarTablaEventosTiposEntrada(PDO $pdo): void
             orden INT NOT NULL DEFAULT 0,
             visible_publico TINYINT(1) NOT NULL DEFAULT 1,
             es_gratis TINYINT(1) NOT NULL DEFAULT 0,
+            prefijo VARCHAR(10) DEFAULT NULL,
             creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_evento_id (evento_id),
             INDEX idx_orden (orden)
@@ -241,6 +242,7 @@ function migrarTablaEventosTiposEntrada(PDO $pdo): void
     asegurarColumnasTabla($pdo, 'eventos_tipos_entrada', [
         'visible_publico' => 'ADD COLUMN visible_publico TINYINT(1) NOT NULL DEFAULT 1 AFTER orden',
         'es_gratis'       => 'ADD COLUMN es_gratis TINYINT(1) NOT NULL DEFAULT 0 AFTER visible_publico',
+        'prefijo'         => 'ADD COLUMN prefijo VARCHAR(10) NULL AFTER es_gratis',
     ]);
 
     if (tablaExiste($pdo, 'eventos') && tablaExiste($pdo, 'eventos_tipos_entrada')) {

@@ -337,6 +337,18 @@
     sincronizarEsGratisFila(fila);
   }
 
+  function enlazarPrefijoTipoEntradaFila(fila) {
+    var input = fila.querySelector('.js-prefijo-tipo-entrada');
+    if (!input || input.dataset.boundPrefijoTipo) {
+      return;
+    }
+
+    input.dataset.boundPrefijoTipo = '1';
+    input.addEventListener('input', function () {
+      input.value = String(input.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+    });
+  }
+
   function leerValorNumerico(input, fallback) {
     if (!input || input.value === '') {
       return fallback;
@@ -452,6 +464,7 @@
         option.textContent = tipo.nombre || '';
         option.setAttribute('data-valor', String(tipo.valor != null ? tipo.valor : 0));
         option.setAttribute('data-es-gratis', String(tipo.es_gratis ? 1 : 0));
+        option.setAttribute('data-prefijo', String(tipo.prefijo || '').toUpperCase());
         if (tipoCoincideConGuardado(tipo, guardado)) {
           option.selected = true;
         }
@@ -464,6 +477,7 @@
         extra.textContent = guardado.nombre || 'Tipo actual';
         extra.setAttribute('data-valor', String(guardado.valor != null ? guardado.valor : 0));
         extra.setAttribute('data-es-gratis', String(guardado.esGratis === '1' ? 1 : 0));
+        extra.setAttribute('data-prefijo', String(guardado.prefijo || '').toUpperCase());
         extra.selected = true;
         tipoSelect.appendChild(extra);
       }
@@ -501,7 +515,7 @@
     inputNumeracion.required = requiere;
     inputNumeracion.placeholder = !hayEvento
       ? 'Seleccione evento primero…'
-      : (requiere ? 'Obligatoria para este evento' : 'No aplica para este evento');
+      : (requiere ? 'Número del ticket' : 'No aplica para este evento');
 
     if (!requiere && opciones.resetearCamposEvento) {
       inputNumeracion.value = '';
@@ -516,6 +530,54 @@
         marca.remove();
       }
     }
+
+    actualizarPrefijoNumeracion(contenedor);
+  }
+
+  function obtenerPrefijoTipoSeleccionado(contenedor) {
+    var tipoSelect = contenedor.querySelector('.js-tipo-entrada-evento');
+    if (!tipoSelect || !tipoSelect.value) {
+      return '';
+    }
+
+    var opcion = tipoSelect.options[tipoSelect.selectedIndex];
+    return String((opcion && opcion.getAttribute('data-prefijo')) || '').toUpperCase();
+  }
+
+  function extraerNumeroSinPrefijo(valor, prefijo) {
+    valor = String(valor || '').trim();
+    prefijo = String(prefijo || '').toUpperCase();
+    if (!prefijo || !valor) {
+      return valor;
+    }
+
+    var escapado = prefijo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return valor.replace(new RegExp('^' + escapado + '-?', 'i'), '');
+  }
+
+  function actualizarPrefijoNumeracion(contenedor) {
+    var addon = contenedor.querySelector('.js-prefijo-numeracion');
+    var inputNumeracion = contenedor.querySelector('input[name="numeracion"]');
+    if (!addon || !inputNumeracion) {
+      return;
+    }
+
+    var prefijoAnterior = String(addon.getAttribute('data-prefijo') || '');
+    var prefijo = obtenerPrefijoTipoSeleccionado(contenedor);
+
+    if (prefijoAnterior) {
+      inputNumeracion.value = extraerNumeroSinPrefijo(inputNumeracion.value, prefijoAnterior);
+    }
+    if (prefijo) {
+      inputNumeracion.value = extraerNumeroSinPrefijo(inputNumeracion.value, prefijo);
+      addon.textContent = prefijo;
+      addon.classList.remove('d-none');
+    } else {
+      addon.textContent = '';
+      addon.classList.add('d-none');
+    }
+
+    addon.setAttribute('data-prefijo', prefijo);
   }
 
   function actualizarBloquePagoEvento(contenedor, opciones) {
@@ -690,6 +752,7 @@
     lista.appendChild(nueva);
     enlazarVisiblePublicoFila(nueva);
     enlazarEsGratisFila(nueva);
+    enlazarPrefijoTipoEntradaFila(nueva);
     actualizarFilasTipoEntrada(contenedor);
   }
 
@@ -718,6 +781,7 @@
           var opcionTipo = tipoSelect.options[tipoSelect.selectedIndex];
           hiddenNombre.value = opcionTipo ? String(opcionTipo.textContent || '').trim() : '';
         }
+        actualizarPrefijoNumeracion(contenedor);
         actualizarBloquePagoEvento(contenedor, { sugerirValor: true });
       });
     }
@@ -813,6 +877,7 @@
     contenedor.querySelectorAll('.js-tipo-entrada-fila').forEach(function (fila) {
       enlazarVisiblePublicoFila(fila);
       enlazarEsGratisFila(fila);
+      enlazarPrefijoTipoEntradaFila(fila);
     });
     actualizarFilasTipoEntrada(contenedor);
 

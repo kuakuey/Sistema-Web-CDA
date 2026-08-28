@@ -17,6 +17,7 @@ $filasTotales = (int) ($diagnostico['filas_totales_hoja'] ?? 0);
 $filasValidas = (int) ($diagnostico['filas_validas'] ?? 0);
 $filasOmitidas = $diagnostico['filas_omitidas'] ?? [];
 $sugerencias = $diagnostico['sugerencias'] ?? [];
+$errorSql = trim((string) ($diagnostico['error_sql'] ?? ''));
 ?>
 <div class="card border-danger border-0 shadow-sm mt-4">
   <div class="card-header bg-danger-subtle py-3">
@@ -25,6 +26,9 @@ $sugerencias = $diagnostico['sugerencias'] ?? [];
   <div class="card-body">
     <?php if (!empty($errorImportEventos['mensaje'])): ?>
     <p class="mb-3"><strong><?= htmlspecialchars((string) $errorImportEventos['mensaje']) ?></strong></p>
+    <?php endif; ?>
+    <?php if ($errorSql !== ''): ?>
+    <p class="small text-muted mb-3">Detalle técnico: <code><?= htmlspecialchars($errorSql) ?></code></p>
     <?php endif; ?>
 
     <div class="row g-3 mb-4">

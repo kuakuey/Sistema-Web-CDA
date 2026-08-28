@@ -1091,6 +1091,33 @@ function extraerCeldasFilaSpreadsheetMl(DOMElement $fila): array
     return $densas;
 }
 
+function normalizarContenidoCsvImportEventos(string $contenido): string
+{
+    if (str_starts_with($contenido, "\xEF\xBB\xBF")) {
+        $contenido = substr($contenido, 3);
+    }
+
+    if (str_starts_with($contenido, "\xFF\xFE") || str_starts_with($contenido, "\xFE\xFF")) {
+        $convertido = function_exists('mb_convert_encoding')
+            ? @mb_convert_encoding($contenido, 'UTF-8', 'UTF-16')
+            : false;
+        if (is_string($convertido) && $convertido !== '') {
+            return $convertido;
+        }
+    }
+
+    if (function_exists('mb_check_encoding') && !mb_check_encoding($contenido, 'UTF-8')) {
+        $convertido = function_exists('mb_convert_encoding')
+            ? @mb_convert_encoding($contenido, 'UTF-8', 'Windows-1252')
+            : false;
+        if (is_string($convertido) && $convertido !== '') {
+            return $convertido;
+        }
+    }
+
+    return $contenido;
+}
+
 /**
  * @param array<string, mixed> $diagnostico
  * @return array<int, array<string, string>>
@@ -1104,11 +1131,12 @@ function leerFilasCsvImportEventos(string $ruta, array &$diagnostico): array
         throw new InvalidArgumentException('No se pudo leer el archivo CSV.');
     }
 
-    if (str_starts_with($contenido, "\xEF\xBB\xBF")) {
-        $contenido = substr($contenido, 3);
-    }
+    $contenido = normalizarContenidoCsvImportEventos($contenido);
 
-    $lineas = preg_split('/\R/u', $contenido) ?: [];
+    $lineas = preg_split('/\R/u', $contenido);
+    if (!is_array($lineas)) {
+        $lineas = preg_split('/\R/', $contenido) ?: [];
+    }
     $lineas = array_values(array_filter($lineas, static fn (string $linea): bool => trim($linea) !== ''));
 
     $diagnostico['filas_totales_hoja'] = count($lineas);
@@ -1348,7 +1376,12 @@ function resolverEventoImportPorNombre(string $nombreEvento): ?array
         return null;
     }
 
-    foreach (obtenerEventos() as $evento) {
+    static $eventosCache = null;
+    if ($eventosCache === null) {
+        $eventosCache = obtenerEventos();
+    }
+
+    foreach ($eventosCache as $evento) {
         if (strcasecmp(trim((string) ($evento['nombre'] ?? '')), $nombreEvento) === 0) {
             if (!isset($evento['tipos_entrada'])) {
                 $evento['tipos_entrada'] = obtenerTiposEntradaPorEvento((int) ($evento['id'] ?? 0));
@@ -1362,6 +1395,29 @@ function resolverEventoImportPorNombre(string $nombreEvento): ?array
     }
 
     return null;
+}
+
+function mensajeErrorPdoImportEvento(PDOException $e): string
+{
+    $mensaje = $e->getMessage();
+
+    if (str_contains($mensaje, 'There is no active transaction')) {
+        return 'No se pudo confirmar la importación. Intenta de nuevo.';
+    }
+
+    if (str_contains($mensaje, 'Data too long')) {
+        return 'Un dato supera el tamaño permitido (nombre, teléfono o numeración).';
+    }
+
+    if (str_contains($mensaje, 'Incorrect string value')) {
+        return 'Hay caracteres que la base de datos no acepta. Guarda el CSV como UTF-8.';
+    }
+
+    if (str_contains($mensaje, 'Incorrect date') || str_contains($mensaje, 'Incorrect datetime')) {
+        return 'La fecha no es válida para la base de datos. Usa AAAA-MM-DD o DD/MM/AAAA.';
+    }
+
+    return 'No se pudo guardar esta fila.';
 }
 
 /**
@@ -1541,6 +1597,9 @@ function procesarImportacionRegistrosEventos(array $archivo, array $usuario): ar
     $importados = 0;
     $errores = [];
     $pdo = getConnection();
+    asegurarColumnasEventos($pdo);
+    asegurarColumnasValoresAdicionales($pdo);
+
     $pdo->beginTransaction();
 
     try {
@@ -1591,23 +1650,46 @@ function procesarImportacionRegistrosEventos(array $archivo, array $usuario): ar
                 $importados++;
             } catch (InvalidArgumentException $e) {
                 $errores[] = [
-                    'fila'     => $numeroFila,
-                    'mensaje'  => $e->getMessage(),
+                    'fila'    => $numeroFila,
+                    'mensaje' => $e->getMessage(),
+                ];
+            } catch (PDOException $e) {
+                $diagnostico['error_sql'] = $e->getMessage();
+                $errores[] = [
+                    'fila'    => $numeroFila,
+                    'mensaje' => mensajeErrorPdoImportEvento($e),
                 ];
             }
         }
 
-        if ($importados === 0) {
-            $pdo->rollBack();
-        } else {
-            $pdo->commit();
+        if ($pdo->inTransaction()) {
+            if ($importados === 0) {
+                $pdo->rollBack();
+            } else {
+                $pdo->commit();
+            }
         }
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        throw $e;
+
+        if ($importados === 0 && $errores === []) {
+            if ($e instanceof PDOException) {
+                $diagnostico['error_sql'] = $e->getMessage();
+                $diagnostico['sugerencias'][] = mensajeErrorPdoImportEvento($e);
+                guardarDiagnosticoImportEventos($diagnostico);
+            }
+            throw $e;
+        }
+
+        $errores[] = [
+            'fila'    => 0,
+            'mensaje' => $e instanceof PDOException ? mensajeErrorPdoImportEvento($e) : $e->getMessage(),
+        ];
     }
+
+    guardarDiagnosticoImportEventos($diagnostico);
 
     return [
         'importados'  => $importados,

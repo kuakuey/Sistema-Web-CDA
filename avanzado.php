@@ -64,9 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: avanzado.php?pestaña=importar&error=1');
             exit;
         } catch (PDOException $e) {
+            $diagnostico = obtenerUltimoDiagnosticoImportEventos();
+            $diagnostico['error_sql'] = $e->getMessage();
+            $diagnostico['sugerencias'][] = mensajeErrorPdoImportEvento($e);
             $_SESSION['import_eventos_error'] = [
                 'mensaje'     => 'No se pudieron importar los registros.',
-                'diagnostico' => obtenerUltimoDiagnosticoImportEventos(),
+                'diagnostico' => $diagnostico,
             ];
             header('Location: avanzado.php?pestaña=importar&error=1');
             exit;

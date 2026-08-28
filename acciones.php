@@ -644,6 +644,7 @@ $accionesEliminar = [
     'eliminar_ofrenda',
     'eliminar_valor_adicional',
     'eliminar_registro_evento',
+    'eliminar_registros_evento',
     'eliminar_consejeria',
     'eliminar_transporte_aniversario',
     'eliminar_usuario',
@@ -686,6 +687,23 @@ if (in_array($accion, $accionesEliminar, true)) {
                 exit;
             }
             eliminarValorAdicional($id);
+            break;
+        case 'eliminar_registros_evento':
+            if (!$registroEliminado) {
+                header('Location: ' . ($redireccion ?: 'eventos.php?pestaña=catalogo'));
+                exit;
+            }
+            try {
+                $eliminados = eliminarRegistrosPorEvento($id);
+                $destino = $redireccion !== '' ? $redireccion : 'eventos.php?pestaña=catalogo';
+                $sep = strpos($destino, '?') !== false ? '&' : '?';
+                $redireccion = $destino . $sep . 'ok=registros_eliminados&eliminados=' . $eliminados;
+            } catch (InvalidArgumentException $e) {
+                $destino = $redireccion !== '' ? $redireccion : 'eventos.php?pestaña=catalogo';
+                $sep = strpos($destino, '?') !== false ? '&' : '?';
+                header('Location: ' . $destino . $sep . 'error=' . urlencode($e->getMessage()));
+                exit;
+            }
             break;
         case 'eliminar_consejeria':
             eliminarConsejeria($id);

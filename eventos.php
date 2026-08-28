@@ -57,10 +57,16 @@ $pagina = parsearPaginaRegistros($_GET);
 
 $mensaje = null;
 if (isset($_GET['ok'])) {
+    $ok = (string) $_GET['ok'];
     if ($pestaña === 'registrar') {
         $mensaje = 'Participante registrado correctamente.';
     } elseif ($pestaña === 'agregar') {
         $mensaje = 'Evento creado correctamente.';
+    } elseif ($pestaña === 'catalogo' && $ok === 'registros_eliminados') {
+        $eliminados = max(0, (int) ($_GET['eliminados'] ?? 0));
+        $mensaje = $eliminados === 1
+            ? 'Se eliminó 1 registro del evento. El evento se conservó.'
+            : 'Se eliminaron ' . $eliminados . ' registro(s) del evento. El evento se conservó.';
     } elseif ($pestaña === 'catalogo') {
         $mensaje = 'Evento actualizado correctamente.';
     } else {

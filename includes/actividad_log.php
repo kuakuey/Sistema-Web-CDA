@@ -48,6 +48,7 @@ function mapaMetadatosActividad(): array
         'eliminar_ofrenda'                 => ['seccion' => 'ofrendas', 'entidad' => 'ofrenda', 'etiqueta' => 'Eliminar ofrenda'],
         'eliminar_valor_adicional'         => ['seccion' => 'valores_adicionales', 'entidad' => 'valor_adicional', 'etiqueta' => 'Eliminar valor adicional'],
         'eliminar_registro_evento'         => ['seccion' => 'eventos', 'entidad' => 'registro_evento', 'etiqueta' => 'Eliminar registro de evento'],
+        'eliminar_registros_evento'        => ['seccion' => 'eventos', 'entidad' => 'evento', 'etiqueta' => 'Eliminar registros de evento'],
         'eliminar_consejeria'              => ['seccion' => 'consejeria', 'entidad' => 'consejeria', 'etiqueta' => 'Eliminar consejería'],
         'eliminar_transporte_aniversario'  => ['seccion' => 'transporte_aniversario', 'entidad' => 'transporte', 'etiqueta' => 'Eliminar transporte aniversario'],
         'eliminar_usuario'                 => ['seccion' => 'usuarios', 'entidad' => 'usuario', 'etiqueta' => 'Eliminar usuario'],
@@ -811,6 +812,16 @@ function obtenerSnapshotEliminacion(string $accion, int $id): ?array
             require_once __DIR__ . '/eventos.php';
             return obtenerRegistroEventoPorId($id);
 
+        case 'eliminar_registros_evento':
+            require_once __DIR__ . '/eventos.php';
+            $evento = obtenerEvento($id);
+            if (!$evento) {
+                return null;
+            }
+            $evento['registros_a_eliminar'] = contarRegistrosPorEvento($id);
+
+            return $evento;
+
         case 'eliminar_inscripcion':
             return obtenerFilaSimplePorId('inscripciones', $id);
 
@@ -912,6 +923,16 @@ function construirCamposDetalleEliminacion(string $accion, array $registro): arr
                 $campos['Información adicional'] = implode(' · ', $partesExtra);
             }
         }
+
+        return $campos;
+    }
+
+    if ($accion === 'eliminar_registros_evento') {
+        require_once __DIR__ . '/eventos.php';
+        $campos['Evento'] = $valorTexto($registro['nombre'] ?? '');
+        $campos['Fecha'] = formatearFechaActividadLog($registro['fecha'] ?? null);
+        $campos['Registros eliminados'] = (string) (int) ($registro['registros_a_eliminar'] ?? 0);
+        $campos['Nota'] = 'El evento se conservó en el catálogo.';
 
         return $campos;
     }

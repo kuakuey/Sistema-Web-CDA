@@ -13,12 +13,13 @@ $diagnosticoImport = $errorImportEventos['diagnostico'] ?? ($resultadoImportEven
       </div>
       <div class="card-body">
         <p class="text-muted small">
-          El archivo tiene <strong>dos pestañas</strong>: «Datos» (solo encabezados, para llenar) y
-          «Guía y ejemplos» (instrucciones, casos de uso y referencia de eventos).
+        El archivo tiene <strong>dos pestañas</strong>: «Datos» (encabezados, incluidos los datos adicionales de sus eventos) y
+        «Guía y ejemplos» (instrucciones, casos, tipos con prefijo/gratis y referencia de información adicional).
         </p>
         <ul class="small text-muted mb-4">
           <li>Complete sus registros en la pestaña <strong>Datos</strong>.</li>
-          <li>Consulte la pestaña <strong>Guía y ejemplos</strong> para ver 7 casos y la tabla de referencia.</li>
+          <li>Copie Evento y Tipo entrada desde la referencia. Si el tipo tiene prefijo, escriba solo el número.</li>
+          <li>Llene las columnas de información adicional que correspondan a ese evento.</li>
           <li>Al importar, el sistema lee únicamente la pestaña «Datos».</li>
           <li>Si Excel convierte el archivo a <code>.xlsx</code>, guárdelo como <code>.csv</code> o use la plantilla .xls descargada.</li>
         </ul>

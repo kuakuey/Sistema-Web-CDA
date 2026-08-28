@@ -485,6 +485,26 @@
                 <i class="bi bi-people"></i>
               </a>
               <?php endif; ?>
+              <?php if ($puedeEliminar && (int) ($evento['total_registros'] ?? 0) > 0): ?>
+              <?php
+                $nombreEvento = (string) ($evento['nombre'] ?? '');
+                $totalRegistrosEvento = (int) ($evento['total_registros'] ?? 0);
+              ?>
+              <form
+                method="POST"
+                action="acciones.php"
+                class="d-inline js-form-confirmar"
+                data-confirm-title="Eliminar registros"
+                data-confirm="¿Eliminar los <?= $totalRegistrosEvento ?> registro(s) de «<?= htmlspecialchars($nombreEvento, ENT_QUOTES, 'UTF-8') ?>»? El evento no se borra; solo se limpian los participantes de este evento. Esta acción no se puede deshacer."
+              >
+                <input type="hidden" name="accion" value="eliminar_registros_evento">
+                <input type="hidden" name="id" value="<?= (int) $evento['id'] ?>">
+                <input type="hidden" name="redireccion" value="eventos.php?pestaña=catalogo">
+                <button type="submit" class="btn btn-sm btn-outline-warning" title="Eliminar registros">
+                  <i class="bi bi-eraser"></i>
+                </button>
+              </form>
+              <?php endif; ?>
               <?php if ($puedeAgregar): ?>
               <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalEditarEvento<?= (int) $evento['id'] ?>" title="Editar">
                 <i class="bi bi-pencil"></i>

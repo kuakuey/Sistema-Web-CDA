@@ -1621,6 +1621,43 @@ function eliminarEvento(int $id): bool
     }
 }
 
+function contarRegistrosPorEvento(int $eventoId): int
+{
+    if ($eventoId <= 0) {
+        return 0;
+    }
+
+    $pdo = getConnection();
+    asegurarColumnasValoresAdicionales($pdo);
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM valores_adicionales WHERE evento_id = ? AND tipo = ?'
+    );
+    $stmt->execute([$eventoId, TIPO_VALOR_EVENTOS_INTERNO]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function eliminarRegistrosPorEvento(int $eventoId): int
+{
+    if ($eventoId <= 0) {
+        throw new InvalidArgumentException('Evento no válido.');
+    }
+
+    $evento = obtenerEvento($eventoId);
+    if (!$evento) {
+        throw new InvalidArgumentException('Evento no encontrado.');
+    }
+
+    $pdo = getConnection();
+    asegurarColumnasValoresAdicionales($pdo);
+    $stmt = $pdo->prepare(
+        'DELETE FROM valores_adicionales WHERE evento_id = ? AND tipo = ?'
+    );
+    $stmt->execute([$eventoId, TIPO_VALOR_EVENTOS_INTERNO]);
+
+    return $stmt->rowCount();
+}
+
 function contarEventos(): int
 {
     $pdo = getConnection();

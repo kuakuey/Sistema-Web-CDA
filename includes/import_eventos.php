@@ -8,7 +8,7 @@ require_once __DIR__ . '/submissions.php';
 /**
  * @return array<string, string>
  */
-function columnasPlantillaImportEventos(): array
+function columnasBasePlantillaImportEventos(): array
 {
     return [
         'evento'       => 'Evento',
@@ -22,6 +22,24 @@ function columnasPlantillaImportEventos(): array
         'forma_pago'   => 'Forma de pago',
         'observacion'  => 'Observación',
     ];
+}
+
+/**
+ * @param array<int, array<string, mixed>>|null $eventos
+ * @return array<string, string>
+ */
+function columnasPlantillaImportEventos(?array $eventos = null): array
+{
+    $columnas = columnasBasePlantillaImportEventos();
+    if ($eventos === null) {
+        return $columnas;
+    }
+
+    foreach (obtenerCamposAdicionalesUnicosImportEventos($eventos) as $campo) {
+        $columnas[$campo['clave']] = $campo['columna'];
+    }
+
+    return $columnas;
 }
 
 function enviarPlantillaImportEventos(): void
@@ -48,23 +66,58 @@ function construirWorkbookXmlPlantillaImportEventos(array $eventos, array $ejemp
         . ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"'
         . ' xmlns:html="http://www.w3.org/TR/REC-html40">';
     $xml .= '<Styles>';
-    $xml .= '<Style ss:ID="Header"><Font ss:Bold="1"/></Style>';
+    $xml .= '<Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#D9E2F3" ss:Pattern="Solid"/></Style>';
     $xml .= '<Style ss:ID="Titulo"><Font ss:Bold="1" ss:Size="12"/></Style>';
     $xml .= '<Style ss:ID="Subtitulo"><Font ss:Bold="1" ss:Size="10"/></Style>';
+    $xml .= '<Style ss:ID="Texto"><NumberFormat ss:Format="@"/></Style>';
     $xml .= '</Styles>';
-    $xml .= construirHojaDatosXmlPlantillaImportEventos();
+    $xml .= construirHojaDatosXmlPlantillaImportEventos($eventos);
     $xml .= construirHojaGuiaXmlPlantillaImportEventos($eventos, $ejemplos, $fechaHoy);
     $xml .= '</Workbook>';
 
     return $xml;
 }
 
-function construirHojaDatosXmlPlantillaImportEventos(): string
+/**
+ * @param array<int, array<string, mixed>> $eventos
+ */
+function construirHojaDatosXmlPlantillaImportEventos(array $eventos = []): string
 {
-    $columnas = columnasPlantillaImportEventos();
+    $columnas = columnasPlantillaImportEventos($eventos);
     $xml = '<Worksheet ss:Name="Datos"><Table>';
+    $xml .= columnasAnchoXmlPlantillaImportEventos($columnas);
     $xml .= filaXmlExcel(array_values($columnas), 'Header');
     $xml .= '</Table></Worksheet>';
+
+    return $xml;
+}
+
+/**
+ * @param array<string, string> $columnas
+ */
+function columnasAnchoXmlPlantillaImportEventos(array $columnas): string
+{
+    $anchos = [
+        'evento'       => 160,
+        'tipo_entrada' => 130,
+        'nombre'       => 140,
+        'telefono'     => 95,
+        'fecha'        => 90,
+        'valor'        => 75,
+        'numeracion'   => 95,
+        'estado_pago'  => 95,
+        'forma_pago'   => 110,
+        'observacion'  => 240,
+    ];
+
+    $xml = '';
+    $indice = 1;
+    foreach (array_keys($columnas) as $clave) {
+        $ancho = $anchos[$clave] ?? 120;
+        $estilo = $clave === 'valor' ? '' : ' ss:StyleID="Texto"';
+        $xml .= '<Column ss:Index="' . $indice . '" ss:AutoFitWidth="0" ss:Width="' . $ancho . '"' . $estilo . '/>';
+        $indice++;
+    }
 
     return $xml;
 }
@@ -75,10 +128,16 @@ function construirHojaDatosXmlPlantillaImportEventos(): string
  */
 function construirHojaGuiaXmlPlantillaImportEventos(array $eventos, array $ejemplos, string $fechaHoy): string
 {
-    $columnas = columnasPlantillaImportEventos();
+    $columnas = columnasPlantillaImportEventos($eventos);
     $claves = array_keys($columnas);
+    $camposExtra = obtenerCamposAdicionalesUnicosImportEventos($eventos);
+    $tiposCampo = obtenerTiposCampoAdicionalEvento();
 
     $xml = '<Worksheet ss:Name="Guía y ejemplos"><Table>';
+    $xml .= '<Column ss:Index="1" ss:AutoFitWidth="0" ss:Width="180"/>';
+    $xml .= '<Column ss:Index="2" ss:AutoFitWidth="0" ss:Width="140"/>';
+    $xml .= '<Column ss:Index="3" ss:AutoFitWidth="0" ss:Width="140"/>';
+    $xml .= '<Column ss:Index="4" ss:AutoFitWidth="0" ss:Width="220"/>';
 
     $xml .= filaXmlExcel(['PLANTILLA · REGISTROS DE EVENTOS'], 'Titulo');
     $xml .= filaXmlExcel(['']);
@@ -90,9 +149,11 @@ function construirHojaGuiaXmlPlantillaImportEventos(array $eventos, array $ejemp
         '1. Vaya a la pestaña «Datos» (primera pestaña).',
         '2. Complete una fila por participante debajo del encabezado.',
         '3. No modifique los nombres de las columnas en la fila 1.',
-        '4. Copie nombres de Evento y Tipo entrada desde la tabla Referencia (abajo).',
-        '5. Guarde el archivo y súbalo en Avanzado → Importar registros.',
-        '6. El sistema importa únicamente la pestaña «Datos».',
+        '4. Copie Evento y Tipo entrada desde Referencia (abajo). El evento debe estar habilitado.',
+        '5. Si el tipo tiene prefijo, escriba solo el número en Numeración (G + 203 = G203).',
+        '6. Complete las columnas de información adicional que apliquen a ese evento.',
+        '7. Guarde el archivo y súbalo en Avanzado → Importar registros.',
+        '8. El sistema importa únicamente la pestaña «Datos».',
     ] as $linea) {
         $xml .= filaXmlExcel([$linea]);
     }
@@ -101,18 +162,25 @@ function construirHojaGuiaXmlPlantillaImportEventos(array $eventos, array $ejemp
     $xml .= filaXmlExcel(['DESCRIPCIÓN DE COLUMNAS'], 'Subtitulo');
     $xml .= filaXmlExcel(['Columna', 'Obligatorio', 'Valores permitidos / Notas'], 'Header');
     foreach ([
-        ['Evento', 'Sí', 'Nombre exacto del evento (ver Referencia).'],
+        ['Evento', 'Sí', 'Nombre exacto del evento habilitado (ver Referencia).'],
         ['Tipo entrada', 'Sí', 'Nombre exacto del tipo dentro del evento.'],
         ['Nombre', 'Sí', 'Nombre completo del participante.'],
-        ['Teléfono', 'Sí', 'Número de contacto.'],
-        ['Fecha', 'Sí', 'Formato AAAA-MM-DD (ej. ' . $fechaHoy . ').'],
-        ['Valor', 'Sí*', 'Monto numérico. En entradas gratis use 0.'],
-        ['Numeración', 'Condicional', 'Obligatoria si el evento requiere numeración.'],
-        ['Estado', 'Sí', 'por_cancelar o pagado. Gratis: pagado.'],
+        ['Teléfono', 'Sí', 'Número de contacto. Déjelo como texto, no como fórmula.'],
+        ['Fecha', 'Sí', 'AAAA-MM-DD (ej. ' . $fechaHoy . '). También se acepta DD/MM/AAAA.'],
+        ['Valor', 'Sí*', 'Número sin $ ni miles (ej. 50000). Vacío = valor del catálogo. Gratis = 0.'],
+        ['Numeración', 'Condicional', 'Obligatoria si el evento requiere numeración. Sin prefijo: solo el número.'],
+        ['Estado', 'Sí', 'por_cancelar o pagado (también: Por cancelar / Pagado). Gratis: pagado (en pantalla se ve Completado).'],
         ['Forma de pago', 'Sí', 'pendiente, efectivo, transferencia o gratuito.'],
         ['Observación', 'No', 'Texto libre opcional.'],
     ] as $fila) {
         $xml .= filaXmlExcel($fila);
+    }
+    if ($camposExtra !== []) {
+        $xml .= filaXmlExcel([
+            'Datos adicionales',
+            'Según evento',
+            'Hay una columna por cada dato configurado en el catálogo. Obligatorios solo para el evento que los define.',
+        ]);
     }
     $xml .= filaXmlExcel(['']);
 
@@ -122,8 +190,9 @@ function construirHojaGuiaXmlPlantillaImportEventos(array $eventos, array $ejemp
         ['Aún no ha pagado', 'por_cancelar', 'pendiente', 'Inscripción pendiente.'],
         ['Pagó en efectivo', 'pagado', 'efectivo', 'Indique el valor cobrado.'],
         ['Pagó por transferencia', 'pagado', 'transferencia', 'Indique el valor recibido.'],
-        ['Entrada gratuita', 'pagado', 'gratuito', 'Valor 0. Estado: completado.'],
-        ['Promoción / descuento', 'pagado o por_cancelar', 'según caso', 'Valor puede ser menor al catálogo.'],
+        ['Entrada gratuita (marca Gratis)', 'pagado', 'gratuito', 'Valor 0. En el sistema se muestra como Completado.'],
+        ['Valor 0 sin marca Gratis', 'por_cancelar', 'pendiente', 'Pendiente de pago; no es entrada gratuita.'],
+        ['Promoción / descuento', 'pagado o por_cancelar', 'según caso', 'El valor puede ser menor al catálogo.'],
     ] as $fila) {
         $xml .= filaXmlExcel($fila);
     }
@@ -141,12 +210,23 @@ function construirHojaGuiaXmlPlantillaImportEventos(array $eventos, array $ejemp
     $xml .= filaXmlExcel(['']);
 
     $xml .= filaXmlExcel(['REFERENCIA · EVENTOS Y TIPOS DE ENTRADA'], 'Subtitulo');
-    $xml .= filaXmlExcel(['Evento', 'Tipo entrada', 'Valor catálogo', 'Gratis', 'Requiere numeración', 'Habilitado'], 'Header');
+    $xml .= filaXmlExcel([
+        'Evento',
+        'Tipo entrada',
+        'Valor catálogo',
+        'Gratis',
+        'Prefijo',
+        'Visible',
+        'Requiere numeración',
+        'Habilitado',
+    ], 'Header');
     if ($eventos === []) {
         $xml .= filaXmlExcel(['No hay eventos registrados. Cree eventos en el módulo Eventos antes de importar.']);
     } else {
         foreach ($eventos as $evento) {
             $tipos = $evento['tipos_entrada'] ?? [];
+            $habilitado = (int) ($evento['habilitado'] ?? 0) === 1 ? 'Sí' : 'No';
+            $requiereNumeracion = (int) ($evento['requiere_numeracion'] ?? 0) === 1 ? 'Sí' : 'No';
             if ($tipos === []) {
                 $xml .= filaXmlExcel([
                     (string) ($evento['nombre'] ?? ''),
@@ -154,21 +234,60 @@ function construirHojaGuiaXmlPlantillaImportEventos(array $eventos, array $ejemp
                     '',
                     '',
                     '',
-                    (int) ($evento['habilitado'] ?? 0) === 1 ? 'Sí' : 'No',
+                    '',
+                    $requiereNumeracion,
+                    $habilitado,
                 ]);
                 continue;
             }
             foreach ($tipos as $indice => $tipo) {
+                $prefijo = normalizarPrefijoTipoEntrada($tipo['prefijo'] ?? '');
                 $xml .= filaXmlExcel([
                     $indice === 0 ? (string) ($evento['nombre'] ?? '') : '',
                     (string) ($tipo['nombre'] ?? ''),
-                    formatearMonto((float) ($tipo['valor'] ?? 0)),
-                    (int) ($tipo['es_gratis'] ?? 0) === 1 ? 'Sí' : 'No',
-                    (int) ($evento['requiere_numeracion'] ?? 0) === 1 ? 'Sí' : 'No',
-                    (int) ($evento['habilitado'] ?? 0) === 1 ? 'Sí' : 'No',
+                    number_format((float) ($tipo['valor'] ?? 0), 2, '.', ''),
+                    tipoEntradaEsGratis($tipo) ? 'Sí' : 'No',
+                    $prefijo !== '' ? $prefijo : '—',
+                    tipoEntradaEsVisiblePublico($tipo) ? 'Sí' : 'Solo admin',
+                    $requiereNumeracion,
+                    $habilitado,
                 ]);
             }
         }
+    }
+    $xml .= filaXmlExcel(['']);
+    $xml .= filaXmlExcel(['No importe en eventos con Habilitado = No. Los tipos «Solo admin» sí se pueden importar (superadmin).']);
+
+    $xml .= filaXmlExcel(['']);
+    $xml .= filaXmlExcel(['REFERENCIA · INFORMACIÓN ADICIONAL'], 'Subtitulo');
+    $xml .= filaXmlExcel(['Evento', 'Columna en Datos', 'Tipo', 'Obligatorio', 'Opciones / notas'], 'Header');
+    $hayCampos = false;
+    foreach ($eventos as $evento) {
+        foreach ($evento['campos_adicionales'] ?? [] as $indice => $campo) {
+            $etiqueta = trim((string) ($campo['etiqueta'] ?? ''));
+            if ($etiqueta === '') {
+                continue;
+            }
+            $hayCampos = true;
+            $tipo = normalizarTipoCampoAdicionalEvento($campo['tipo'] ?? 'texto');
+            $opciones = decodificarOpcionesCampoAdicional($campo['opciones'] ?? []);
+            $notas = match ($tipo) {
+                'lista'  => $opciones !== [] ? implode(' | ', $opciones) : 'Defina opciones en el catálogo.',
+                'fecha'  => 'Formato AAAA-MM-DD.',
+                'numero' => 'Solo números.',
+                default  => 'Texto (máx. 255).',
+            };
+            $xml .= filaXmlExcel([
+                $indice === 0 ? (string) ($evento['nombre'] ?? '') : '',
+                etiquetaColumnaCampoAdicionalImport($etiqueta),
+                $tiposCampo[$tipo] ?? $tipo,
+                !empty($campo['obligatorio']) ? 'Sí' : 'No',
+                $notas,
+            ]);
+        }
+    }
+    if (!$hayCampos) {
+        $xml .= filaXmlExcel(['Ningún evento tiene datos adicionales. Si los agrega en el catálogo, vuelva a descargar esta plantilla.']);
     }
 
     $xml .= '</Table></Worksheet>';
@@ -203,6 +322,110 @@ function escaparXmlExcel(string $texto): string
     return htmlspecialchars($texto, ENT_XML1 | ENT_QUOTES, 'UTF-8');
 }
 
+function claveColumnaCampoAdicionalImport(string $etiqueta): string
+{
+    $clave = normalizarEncabezadoImportEvento($etiqueta);
+    $reservadas = array_keys(columnasBasePlantillaImportEventos());
+    $aliasReservados = ['estado', 'forma', 'tipo', 'tel', 'obs'];
+
+    if (in_array($clave, $reservadas, true) || in_array($clave, $aliasReservados, true)) {
+        return 'extra_' . $clave;
+    }
+
+    return $clave;
+}
+
+function etiquetaColumnaCampoAdicionalImport(string $etiqueta): string
+{
+    $clave = claveColumnaCampoAdicionalImport($etiqueta);
+
+    return str_starts_with($clave, 'extra_') ? 'Extra: ' . $etiqueta : $etiqueta;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $eventos
+ * @return array<int, array{clave: string, columna: string, etiqueta: string}>
+ */
+function obtenerCamposAdicionalesUnicosImportEventos(array $eventos): array
+{
+    $campos = [];
+    foreach ($eventos as $evento) {
+        foreach ($evento['campos_adicionales'] ?? [] as $campo) {
+            $etiqueta = trim((string) ($campo['etiqueta'] ?? ''));
+            if ($etiqueta === '') {
+                continue;
+            }
+
+            $clave = claveColumnaCampoAdicionalImport($etiqueta);
+            if ($clave === '' || isset($campos[$clave])) {
+                continue;
+            }
+
+            $campos[$clave] = [
+                'clave'    => $clave,
+                'columna'  => etiquetaColumnaCampoAdicionalImport($etiqueta),
+                'etiqueta' => $etiqueta,
+            ];
+        }
+    }
+
+    return array_values($campos);
+}
+
+/**
+ * @param array<int, array<string, mixed>> $eventos
+ * @param array<int, array{clave: string, columna: string, etiqueta: string}> $camposExtra
+ * @return array<string, string>
+ */
+function valoresEjemploCamposAdicionalesImport(array $eventos, string $nombreEvento, array $camposExtra): array
+{
+    $valores = [];
+    foreach ($camposExtra as $extra) {
+        $valores[$extra['clave']] = '';
+    }
+
+    $evento = null;
+    foreach ($eventos as $item) {
+        if (strcasecmp(trim((string) ($item['nombre'] ?? '')), trim($nombreEvento)) === 0) {
+            $evento = $item;
+            break;
+        }
+    }
+
+    if ($evento === null) {
+        return $valores;
+    }
+
+    $porEtiqueta = [];
+    foreach ($evento['campos_adicionales'] ?? [] as $campo) {
+        $etiqueta = trim((string) ($campo['etiqueta'] ?? ''));
+        if ($etiqueta !== '') {
+            $porEtiqueta[claveColumnaCampoAdicionalImport($etiqueta)] = $campo;
+        }
+    }
+
+    foreach ($camposExtra as $extra) {
+        $campo = $porEtiqueta[$extra['clave']] ?? null;
+        if ($campo === null) {
+            continue;
+        }
+
+        $tipo = normalizarTipoCampoAdicionalEvento($campo['tipo'] ?? 'texto');
+        if ($tipo === 'lista') {
+            $opciones = decodificarOpcionesCampoAdicional($campo['opciones'] ?? []);
+            $valores[$extra['clave']] = $opciones[0] ?? 'Opción 1';
+        } elseif ($tipo === 'numero') {
+            $valores[$extra['clave']] = '1';
+        } elseif ($tipo === 'fecha') {
+            $valores[$extra['clave']] = date('Y-m-d');
+        } else {
+            $valores[$extra['clave']] = 'Dato de ejemplo';
+        }
+    }
+
+    return $valores;
+}
+
 /**
  * @param array<int, array<string, mixed>> $eventos
  * @return array{
@@ -211,8 +434,11 @@ function escaparXmlExcel(string $texto): string
  *   valor_pago: string,
  *   evento_gratis: string,
  *   tipo_gratis: string,
+ *   tiene_gratis: bool,
  *   evento_numeracion: string,
  *   tipo_numeracion: string,
+ *   valor_numeracion: string,
+ *   prefijo_numeracion: string,
  *   requiere_numeracion: bool
  * }
  */
@@ -224,9 +450,13 @@ function obtenerContextoEjemplosPlantillaImportEventos(array $eventos): array
         'valor_pago'          => '50000',
         'evento_gratis'       => 'Conferencia Anual',
         'tipo_gratis'         => 'Invitado',
+        'tiene_gratis'        => false,
         'evento_numeracion'   => 'Concierto',
         'tipo_numeracion'     => 'General',
-        'requiere_numeracion' => true,
+        'valor_numeracion'    => '50000',
+        'prefijo_numeracion'  => '',
+        'gratis_numeracion'   => false,
+        'requiere_numeracion' => false,
     ];
 
     $eventoPago = null;
@@ -236,9 +466,19 @@ function obtenerContextoEjemplosPlantillaImportEventos(array $eventos): array
     $eventoNumeracion = null;
     $tipoNumeracion = null;
 
+    $candidatos = [];
     foreach ($eventos as $evento) {
+        if ((int) ($evento['habilitado'] ?? 0) === 1) {
+            $candidatos[] = $evento;
+        }
+    }
+    if ($candidatos === []) {
+        $candidatos = $eventos;
+    }
+
+    foreach ($candidatos as $evento) {
         foreach ($evento['tipos_entrada'] ?? [] as $tipo) {
-            $esGratis = (int) ($tipo['es_gratis'] ?? 0) === 1;
+            $esGratis = tipoEntradaEsGratis($tipo);
 
             if (!$tipoPago && !$esGratis) {
                 $eventoPago = $evento;
@@ -260,24 +500,28 @@ function obtenerContextoEjemplosPlantillaImportEventos(array $eventos): array
     if ($eventoPago !== null && $tipoPago !== null) {
         $contexto['evento_pago'] = (string) ($eventoPago['nombre'] ?? $contexto['evento_pago']);
         $contexto['tipo_pago'] = (string) ($tipoPago['nombre'] ?? $contexto['tipo_pago']);
-        $contexto['valor_pago'] = (string) ((float) ($tipoPago['valor'] ?? 50000));
+        $contexto['valor_pago'] = number_format((float) ($tipoPago['valor'] ?? 50000), 2, '.', '');
     }
 
     if ($eventoGratis !== null && $tipoGratis !== null) {
         $contexto['evento_gratis'] = (string) ($eventoGratis['nombre'] ?? $contexto['evento_gratis']);
         $contexto['tipo_gratis'] = (string) ($tipoGratis['nombre'] ?? $contexto['tipo_gratis']);
-    } elseif ($eventoPago !== null) {
-        $contexto['evento_gratis'] = (string) ($eventoPago['nombre'] ?? $contexto['evento_gratis']);
+        $contexto['tiene_gratis'] = true;
     }
 
     if ($eventoNumeracion !== null && $tipoNumeracion !== null) {
         $contexto['evento_numeracion'] = (string) ($eventoNumeracion['nombre'] ?? $contexto['evento_numeracion']);
         $contexto['tipo_numeracion'] = (string) ($tipoNumeracion['nombre'] ?? $contexto['tipo_numeracion']);
+        $contexto['valor_numeracion'] = tipoEntradaEsGratis($tipoNumeracion)
+            ? '0'
+            : number_format((float) ($tipoNumeracion['valor'] ?? $contexto['valor_pago']), 2, '.', '');
+        $contexto['prefijo_numeracion'] = normalizarPrefijoTipoEntrada($tipoNumeracion['prefijo'] ?? '');
+        $contexto['gratis_numeracion'] = tipoEntradaEsGratis($tipoNumeracion);
         $contexto['requiere_numeracion'] = true;
     } else {
-        $contexto['requiere_numeracion'] = false;
         $contexto['evento_numeracion'] = $contexto['evento_pago'];
         $contexto['tipo_numeracion'] = $contexto['tipo_pago'];
+        $contexto['valor_numeracion'] = $contexto['valor_pago'];
     }
 
     return $contexto;
@@ -290,12 +534,21 @@ function obtenerContextoEjemplosPlantillaImportEventos(array $eventos): array
 function obtenerFilasEjemploPlantillaImportEventos(array $eventos): array
 {
     $ctx = obtenerContextoEjemplosPlantillaImportEventos($eventos);
+    $camposExtra = obtenerCamposAdicionalesUnicosImportEventos($eventos);
     $fecha = date('Y-m-d');
     $valorPago = $ctx['valor_pago'];
-    $valorPromo = (string) max(0, (float) $valorPago - 10000);
+    $valorPromo = number_format(max(0, (float) $valorPago - 10000), 2, '.', '');
+
+    $completarExtras = static function (array $fila) use ($eventos, $camposExtra): array {
+        return array_merge($fila, valoresEjemploCamposAdicionalesImport(
+            $eventos,
+            (string) ($fila['evento'] ?? ''),
+            $camposExtra
+        ));
+    };
 
     $filas = [
-        [
+        $completarExtras([
             'evento'       => $ctx['evento_pago'],
             'tipo_entrada' => $ctx['tipo_pago'],
             'nombre'       => 'María González',
@@ -306,8 +559,8 @@ function obtenerFilasEjemploPlantillaImportEventos(array $eventos): array
             'estado_pago'  => 'por_cancelar',
             'forma_pago'   => 'pendiente',
             'observacion'  => 'EJEMPLO: Caso 1 — Inscripción pendiente de pago (estado por_cancelar + forma pendiente).',
-        ],
-        [
+        ]),
+        $completarExtras([
             'evento'       => $ctx['evento_pago'],
             'tipo_entrada' => $ctx['tipo_pago'],
             'nombre'       => 'Carlos Rodríguez',
@@ -318,8 +571,8 @@ function obtenerFilasEjemploPlantillaImportEventos(array $eventos): array
             'estado_pago'  => 'pagado',
             'forma_pago'   => 'efectivo',
             'observacion'  => 'EJEMPLO: Caso 2 — Pagado en efectivo (estado pagado + forma efectivo).',
-        ],
-        [
+        ]),
+        $completarExtras([
             'evento'       => $ctx['evento_pago'],
             'tipo_entrada' => $ctx['tipo_pago'],
             'nombre'       => 'Ana Lucía Vargas',
@@ -330,8 +583,11 @@ function obtenerFilasEjemploPlantillaImportEventos(array $eventos): array
             'estado_pago'  => 'pagado',
             'forma_pago'   => 'transferencia',
             'observacion'  => 'EJEMPLO: Caso 3 — Pagado por transferencia (estado pagado + forma transferencia).',
-        ],
-        [
+        ]),
+    ];
+
+    if ($ctx['tiene_gratis']) {
+        $filas[] = $completarExtras([
             'evento'       => $ctx['evento_gratis'],
             'tipo_entrada' => $ctx['tipo_gratis'],
             'nombre'       => 'Pedro Martínez',
@@ -341,51 +597,57 @@ function obtenerFilasEjemploPlantillaImportEventos(array $eventos): array
             'numeracion'   => '',
             'estado_pago'  => 'pagado',
             'forma_pago'   => 'gratuito',
-            'observacion'  => 'EJEMPLO: Caso 4 — Entrada gratuita (valor 0, forma gratuito). Estado interno: completado.',
-        ],
-        [
-            'evento'       => $ctx['evento_pago'],
-            'tipo_entrada' => $ctx['tipo_pago'],
-            'nombre'       => 'Laura Sánchez',
-            'telefono'     => '3189990011',
-            'fecha'        => $fecha,
-            'valor'        => $valorPromo,
-            'numeracion'   => '',
-            'estado_pago'  => 'pagado',
-            'forma_pago'   => 'efectivo',
-            'observacion'  => 'EJEMPLO: Caso 5 — Valor con descuento/promoción (puede ser menor al catálogo).',
-        ],
-    ];
+            'observacion'  => 'EJEMPLO: Caso 4 — Entrada gratuita (marca Gratis). Valor 0, forma gratuito. En pantalla: Completado.',
+        ]);
+    }
+
+    $filas[] = $completarExtras([
+        'evento'       => $ctx['evento_pago'],
+        'tipo_entrada' => $ctx['tipo_pago'],
+        'nombre'       => 'Laura Sánchez',
+        'telefono'     => '3189990011',
+        'fecha'        => $fecha,
+        'valor'        => $valorPromo,
+        'numeracion'   => '',
+        'estado_pago'  => 'pagado',
+        'forma_pago'   => 'efectivo',
+        'observacion'  => 'EJEMPLO: Caso 5 — Valor con descuento/promoción (puede ser menor al catálogo).',
+    ]);
 
     if ($ctx['requiere_numeracion']) {
-        $filas[] = [
+        $numeroEjemplo = $ctx['prefijo_numeracion'] !== '' ? '203' : 'A-015';
+        $notaPrefijo = $ctx['prefijo_numeracion'] !== ''
+            ? ' Prefijo del tipo «' . $ctx['prefijo_numeracion'] . '»: escriba solo el número; el sistema guarda '
+                . $ctx['prefijo_numeracion'] . '203.'
+            : '';
+        $filas[] = $completarExtras([
             'evento'       => $ctx['evento_numeracion'],
             'tipo_entrada' => $ctx['tipo_numeracion'],
             'nombre'       => 'Diego Herrera',
             'telefono'     => '3012223344',
             'fecha'        => $fecha,
-            'valor'        => $valorPago,
-            'numeracion'   => 'A-015',
+            'valor'        => $ctx['valor_numeracion'],
+            'numeracion'   => $numeroEjemplo,
             'estado_pago'  => 'pagado',
-            'forma_pago'   => 'efectivo',
-            'observacion'  => 'EJEMPLO: Caso 6 — Evento con numeración obligatoria (llene la columna Numeración).',
-        ];
+            'forma_pago'   => $ctx['gratis_numeracion'] ? 'gratuito' : 'efectivo',
+            'observacion'  => 'EJEMPLO: Caso 6 — Evento con numeración obligatoria.' . $notaPrefijo,
+        ]);
     } else {
-        $filas[] = [
+        $filas[] = $completarExtras([
             'evento'       => $ctx['evento_pago'],
             'tipo_entrada' => $ctx['tipo_pago'],
             'nombre'       => 'Sofía Ramírez',
             'telefono'     => '3145556677',
             'fecha'        => $fecha,
             'valor'        => $valorPago,
-            'numeracion'   => 'B-042',
+            'numeracion'   => '',
             'estado_pago'  => 'pagado',
             'forma_pago'   => 'transferencia',
-            'observacion'  => 'EJEMPLO: Caso 6 — Con numeración opcional (solo si el evento la requiere; si no, déjela vacía).',
-        ];
+            'observacion'  => 'EJEMPLO: Caso 6 — Sin numeración (el evento no la exige; déjela vacía).',
+        ]);
     }
 
-    $filas[] = [
+    $filas[] = $completarExtras([
         'evento'       => $ctx['evento_pago'],
         'tipo_entrada' => $ctx['tipo_pago'],
         'nombre'       => 'Jorge Castillo',
@@ -396,7 +658,7 @@ function obtenerFilasEjemploPlantillaImportEventos(array $eventos): array
         'estado_pago'  => 'por_cancelar',
         'forma_pago'   => 'pendiente',
         'observacion'  => 'EJEMPLO: Caso 7 — Con observación personalizada para el equipo (texto libre).',
-    ];
+    ]);
 
     return $filas;
 }
@@ -422,10 +684,11 @@ function normalizarEncabezadoImportEvento(string $encabezado): string
     return match ($encabezado) {
         'estado', 'estado_pago' => 'estado_pago',
         'forma', 'forma_de_pago', 'forma_pago' => 'forma_pago',
-        'tipo', 'tipo_de_entrada', 'tipo_entrada' => 'tipo_entrada',
+        'tipo', 'tipo_de_entrada', 'tipo_entrada', 'tipo_de_evento' => 'tipo_entrada',
         'numeracion', 'numeracion_evento' => 'numeracion',
         'telefono', 'tel' => 'telefono',
         'observacion', 'obs' => 'observacion',
+        'fecha', 'fecha_registro' => 'fecha',
         default => $encabezado,
     };
 }
@@ -569,7 +832,7 @@ function completarDiagnosticoColumnasImportEventos(array $encabezados, array &$d
     $mapa = mapearEncabezadosImportEventos($encabezados);
     $diagnostico['columnas_mapeadas'] = array_keys($mapa);
 
-    $requeridas = ['evento', 'nombre', 'telefono', 'fecha'];
+    $requeridas = ['evento', 'tipo_entrada', 'nombre', 'telefono', 'fecha'];
     $diagnostico['columnas_faltantes'] = array_values(array_diff($requeridas, array_keys($mapa)));
 }
 
@@ -1022,14 +1285,15 @@ function extraerCeldasFilaHtml(DOMElement $fila): array
  */
 function mapearEncabezadosImportEventos(array $encabezados): array
 {
-    $columnasValidas = array_keys(columnasPlantillaImportEventos());
     $mapa = [];
 
     foreach ($encabezados as $indice => $encabezado) {
-        $clave = normalizarEncabezadoImportEvento($encabezado);
-        if (in_array($clave, $columnasValidas, true)) {
-            $mapa[$clave] = $indice;
+        $clave = normalizarEncabezadoImportEvento((string) $encabezado);
+        if ($clave === '' || isset($mapa[$clave])) {
+            continue;
         }
+
+        $mapa[$clave] = $indice;
     }
 
     return $mapa;
@@ -1089,6 +1353,9 @@ function resolverEventoImportPorNombre(string $nombreEvento): ?array
             if (!isset($evento['tipos_entrada'])) {
                 $evento['tipos_entrada'] = obtenerTiposEntradaPorEvento((int) ($evento['id'] ?? 0));
             }
+            if (!isset($evento['campos_adicionales'])) {
+                $evento['campos_adicionales'] = obtenerCamposAdicionalesPorEvento((int) ($evento['id'] ?? 0));
+            }
 
             return $evento;
         }
@@ -1116,6 +1383,110 @@ function resolverTipoEntradaImportPorNombre(array $evento, string $nombreTipo): 
     return null;
 }
 
+function extraerInfoAdicionalDesdeFilaImport(array $fila, array $evento): array
+{
+    $info = [];
+
+    foreach ($evento['campos_adicionales'] ?? [] as $campo) {
+        $etiqueta = trim((string) ($campo['etiqueta'] ?? ''));
+        if ($etiqueta === '') {
+            continue;
+        }
+
+        $clave = claveColumnaCampoAdicionalImport($etiqueta);
+        $valor = trim((string) ($fila[$clave] ?? ''));
+        if ($valor === '') {
+            continue;
+        }
+
+        $campoId = (int) ($campo['id'] ?? 0);
+        if ($campoId > 0) {
+            $info[$campoId] = $valor;
+            $info[(string) $campoId] = $valor;
+        }
+        $info[$etiqueta] = $valor;
+    }
+
+    return $info;
+}
+
+function normalizarFechaImportEvento(string $fecha): string
+{
+    $fecha = trim($fecha);
+    if ($fecha === '') {
+        return '';
+    }
+
+    if (preg_match('/^(\d{4}-\d{2}-\d{2})(?:[T\s].*)?$/', $fecha, $coincidencias) === 1) {
+        return $coincidencias[1];
+    }
+
+    foreach (['d/m/Y', 'd-m-Y', 'Y/m/d'] as $formato) {
+        $objeto = DateTime::createFromFormat('!' . $formato, $fecha);
+        $errores = DateTime::getLastErrors();
+        if ($objeto && ($errores === false || ((int) ($errores['warning_count'] ?? 0) === 0 && (int) ($errores['error_count'] ?? 0) === 0))) {
+            if ($objeto->format($formato) === $fecha) {
+                return $objeto->format('Y-m-d');
+            }
+        }
+    }
+
+    if (is_numeric($fecha)) {
+        $serial = (float) $fecha;
+        if ($serial > 20000 && $serial < 80000) {
+            $unix = (int) (($serial - 25569) * 86400);
+
+            return gmdate('Y-m-d', $unix);
+        }
+    }
+
+    return $fecha;
+}
+
+function normalizarEstadoPagoImportEvento(string $estado): string
+{
+    $clave = normalizarEncabezadoImportEvento($estado);
+
+    return match ($clave) {
+        'por_cancelar', 'porcancelar' => 'por_cancelar',
+        'pagado', 'completado' => 'pagado',
+        default => normalizarEstadoPagoEvento($estado),
+    };
+}
+
+function normalizarFormaPagoImportEvento(string $formaPago): string
+{
+    $clave = normalizarEncabezadoImportEvento($formaPago);
+
+    return match ($clave) {
+        'pendiente' => 'pendiente',
+        'efectivo' => 'efectivo',
+        'transferencia' => 'transferencia',
+        'gratuito', 'gratis' => 'gratuito',
+        default => normalizarFormaPagoEvento($formaPago),
+    };
+}
+
+function normalizarValorImportEvento(string $valor): string
+{
+    $valor = trim($valor);
+    if ($valor === '') {
+        return '';
+    }
+
+    $valor = str_replace(['$', ' ', "\u{00A0}"], '', $valor);
+    if (str_contains($valor, ',') && str_contains($valor, '.')) {
+        $valor = str_replace(',', '', $valor);
+    } elseif (preg_match('/,\d{1,2}$/', $valor) === 1) {
+        $valor = str_replace('.', '', $valor);
+        $valor = str_replace(',', '.', $valor);
+    } else {
+        $valor = str_replace(',', '', $valor);
+    }
+
+    return $valor;
+}
+
 /**
  * @param array<string, string> $fila
  * @return array<string, mixed>
@@ -1127,12 +1498,13 @@ function prepararEntradaImportEvento(array $fila, array $evento, array $tipoEntr
         'tipo_entrada_id' => (int) ($tipoEntrada['id'] ?? 0),
         'nombre'          => $fila['nombre'] ?? '',
         'telefono'        => $fila['telefono'] ?? '',
-        'fecha'           => $fila['fecha'] ?? '',
-        'valor'           => $fila['valor'] ?? '',
+        'fecha'           => normalizarFechaImportEvento((string) ($fila['fecha'] ?? '')),
+        'valor'           => normalizarValorImportEvento((string) ($fila['valor'] ?? '')),
         'numeracion'      => $fila['numeracion'] ?? '',
-        'estado_pago'     => $fila['estado_pago'] ?? '',
-        'forma_pago'      => $fila['forma_pago'] ?? '',
+        'estado_pago'     => normalizarEstadoPagoImportEvento((string) ($fila['estado_pago'] ?? '')),
+        'forma_pago'      => normalizarFormaPagoImportEvento((string) ($fila['forma_pago'] ?? '')),
         'observacion'     => $fila['observacion'] ?? '',
+        'info_adicional'  => extraerInfoAdicionalDesdeFilaImport($fila, $evento),
     ];
 }
 
@@ -1182,13 +1554,22 @@ function procesarImportacionRegistrosEventos(array $archivo, array $usuario): ar
                     throw new InvalidArgumentException('Evento no encontrado: «' . ($fila['evento'] ?? '') . '».');
                 }
 
+                if ((int) ($evento['habilitado'] ?? 0) !== 1) {
+                    throw new InvalidArgumentException('El evento «' . ($evento['nombre'] ?? '') . '» está deshabilitado.');
+                }
+
                 $tipoEntrada = resolverTipoEntradaImportPorNombre($evento, $fila['tipo_entrada'] ?? '');
                 if (!$tipoEntrada) {
-                    throw new InvalidArgumentException('Tipo de entrada no encontrado: «' . ($fila['tipo_entrada'] ?? '') . '».');
+                    $nombreTipo = trim((string) ($fila['tipo_entrada'] ?? ''));
+                    throw new InvalidArgumentException(
+                        $nombreTipo === ''
+                            ? 'Falta el tipo de entrada.'
+                            : 'Tipo de entrada no encontrado: «' . $nombreTipo . '».'
+                    );
                 }
 
                 $entrada = prepararEntradaImportEvento($fila, $evento, $tipoEntrada);
-                $validados = validarDatosRegistroEvento($entrada, $evento, $rol, false);
+                $validados = validarDatosRegistroEvento($entrada, $evento, $rol, true);
 
                 insertarValorAdicional([
                     'tipo'                  => TIPO_VALOR_EVENTOS_INTERNO,

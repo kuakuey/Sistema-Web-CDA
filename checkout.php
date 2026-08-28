@@ -37,6 +37,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        if ($accion === 'reversar_asistencia') {
+            $ticketId = max(0, (int) ($_POST['id'] ?? 0));
+
+            if ($ticketId <= 0) {
+                echo json_encode(['ok' => false, 'error' => 'Ticket no válido.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $ticket = reversarAsistenciaRegistroEvento($ticketId, $usuario ?? []);
+            registrarActividadPorAccion('reversar_asistencia_evento', $ticketId);
+
+            echo json_encode(['ok' => true, 'ticket' => $ticket], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
         $eventoId = max(0, (int) ($_POST['evento_id'] ?? 0));
         $codigo = trim((string) ($_POST['codigo'] ?? $_POST['numeracion'] ?? ''));
 
@@ -69,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nombres = [];
 
         foreach ($registros as $registro) {
-            $ticket = serializarTicketCheckout($registro);
+            $ticket = serializarTicketCheckout($registro, $rol);
             $tickets[] = $ticket;
 
             if ($ticket['nombre'] !== '') {

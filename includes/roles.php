@@ -320,6 +320,11 @@ function puedeUsarCheckoutEventos(string $rol): bool
     return puedeGestionarEventos($rol);
 }
 
+function puedeReversarAsistenciaEvento(string $rol): bool
+{
+    return esRolConControlTotal($rol);
+}
+
 function puedeGestionarEstadoConexion(string $rol): bool
 {
     return in_array($rol, [ROL_SUPERADMIN, ROL_ADMIN, ROL_CONEXION], true);

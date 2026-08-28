@@ -1881,21 +1881,29 @@ function etiquetaAsistenciaRegistroEvento(array $registro): string
 /**
  * @return array<string, mixed>
  */
-function serializarTicketCheckout(array $registro): array
+function serializarTicketCheckout(array $registro, ?string $rol = null): array
 {
     $nombre = trim((string) ($registro['nombre'] ?? ''));
     $tipoEntrada = trim((string) ($registro['tipo_entrada'] ?? ''));
     $numeracionRegistro = trim((string) ($registro['numeracion'] ?? ''));
     $asistio = registroEventoAsistio($registro);
 
+    if ($rol === null) {
+        require_once __DIR__ . '/auth.php';
+        $rol = (string) (obtenerUsuarioActual()['rol'] ?? '');
+    }
+
+    require_once __DIR__ . '/roles.php';
+
     return [
-        'id'           => (int) ($registro['id'] ?? 0),
-        'nombre'       => $nombre,
-        'numeracion'   => $numeracionRegistro,
-        'tipo_entrada' => $tipoEntrada,
-        'estado'       => etiquetaEstadoPagoRegistroEvento($registro),
-        'asistio'      => $asistio,
-        'asistencia'   => etiquetaAsistenciaRegistroEvento($registro),
+        'id'             => (int) ($registro['id'] ?? 0),
+        'nombre'         => $nombre,
+        'numeracion'     => $numeracionRegistro,
+        'tipo_entrada'   => $tipoEntrada,
+        'estado'         => etiquetaEstadoPagoRegistroEvento($registro),
+        'asistio'        => $asistio,
+        'asistencia'     => etiquetaAsistenciaRegistroEvento($registro),
+        'puede_reversar' => $asistio && puedeReversarAsistenciaEvento($rol),
     ];
 }
 
@@ -1919,7 +1927,7 @@ function marcarAsistenciaRegistroEvento(int $id, array $usuario): array
     }
 
     if (registroEventoAsistio($registro)) {
-        return serializarTicketCheckout($registro);
+        return serializarTicketCheckout($registro, (string) ($usuario['rol'] ?? ''));
     }
 
     $pdo = getConnection();
@@ -1944,7 +1952,49 @@ function marcarAsistenciaRegistroEvento(int $id, array $usuario): array
         throw new InvalidArgumentException('No se pudo marcar la asistencia.');
     }
 
-    return serializarTicketCheckout($actualizado);
+    return serializarTicketCheckout($actualizado, (string) ($usuario['rol'] ?? ''));
+}
+
+/**
+ * @param array{id?: int, nombre?: string, usuario?: string, rol?: string} $usuario
+ * @return array<string, mixed>
+ */
+function reversarAsistenciaRegistroEvento(int $id, array $usuario): array
+{
+    require_once __DIR__ . '/roles.php';
+
+    $rol = (string) ($usuario['rol'] ?? '');
+    if (!puedeReversarAsistenciaEvento($rol)) {
+        throw new InvalidArgumentException('Solo un administrador puede reversar la asistencia.');
+    }
+
+    $registro = obtenerRegistroEventoPorId($id);
+
+    if (!$registro) {
+        throw new InvalidArgumentException('Registro de evento no encontrado.');
+    }
+
+    if (!registroEventoAsistio($registro)) {
+        return serializarTicketCheckout($registro, $rol);
+    }
+
+    $pdo = getConnection();
+    asegurarColumnasValoresAdicionales($pdo);
+
+    $stmt = $pdo->prepare(
+        'UPDATE valores_adicionales
+         SET asistio = 0, asistio_en = NULL, asistio_por_id = NULL, asistio_por_nombre = NULL
+         WHERE id = ? AND tipo = ?'
+    );
+    $stmt->execute([$id, TIPO_VALOR_EVENTOS_INTERNO]);
+
+    $actualizado = obtenerRegistroEventoPorId($id);
+
+    if (!$actualizado) {
+        throw new InvalidArgumentException('No se pudo reversar la asistencia.');
+    }
+
+    return serializarTicketCheckout($actualizado, $rol);
 }
 
 function etiquetaTipoEventoCatalogo(array $evento): string

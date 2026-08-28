@@ -44,11 +44,21 @@
 
   function htmlBotonAsistencia(ticket) {
     if (ticket.asistio) {
-      return (
+      var html =
         '<button type="button" class="btn btn-success w-100" disabled>' +
           '<i class="bi bi-check2-circle me-1"></i>Asistencia marcada' +
-        '</button>'
-      );
+        '</button>';
+
+      if (ticket.puede_reversar) {
+        html +=
+          '<button type="button" class="btn btn-outline-warning w-100 mt-2 js-reversar-asistencia" data-id="' +
+            escapeHtml(ticket.id) +
+          '">' +
+            '<i class="bi bi-arrow-counterclockwise me-1"></i>Reversar asistencia' +
+          '</button>';
+      }
+
+      return html;
     }
 
     return (
@@ -131,16 +141,16 @@
     }
   }
 
-  function marcarAsistencia(botonAsistencia) {
-    var ticketId = botonAsistencia.getAttribute('data-id');
+  function enviarAccionAsistencia(boton, accion, mensajeError) {
+    var ticketId = boton.getAttribute('data-id');
     if (!ticketId) {
       return;
     }
 
-    botonAsistencia.disabled = true;
+    boton.disabled = true;
 
     var cuerpo = new FormData();
-    cuerpo.append('accion', 'marcar_asistencia');
+    cuerpo.append('accion', accion);
     cuerpo.append('id', ticketId);
 
     fetch('checkout.php', {
@@ -154,17 +164,29 @@
       })
       .then(function (datos) {
         if (!datos || !datos.ok || !datos.ticket) {
-          botonAsistencia.disabled = false;
-          window.alert((datos && datos.error) || 'No se pudo marcar la asistencia.');
+          boton.disabled = false;
+          window.alert((datos && datos.error) || mensajeError);
           return;
         }
 
         actualizarTicketEnPopup(datos.ticket);
       })
       .catch(function () {
-        botonAsistencia.disabled = false;
-        window.alert('No se pudo marcar la asistencia. Intenta de nuevo.');
+        boton.disabled = false;
+        window.alert(mensajeError);
       });
+  }
+
+  function marcarAsistencia(botonAsistencia) {
+    enviarAccionAsistencia(botonAsistencia, 'marcar_asistencia', 'No se pudo marcar la asistencia.');
+  }
+
+  function reversarAsistencia(botonReversar) {
+    if (!window.confirm('¿Reversar la asistencia de este ticket? Quedará como no asistió.')) {
+      return;
+    }
+
+    enviarAccionAsistencia(botonReversar, 'reversar_asistencia', 'No se pudo reversar la asistencia.');
   }
 
   function sincronizarCodigo() {
@@ -203,11 +225,15 @@
   if (modalCuerpo) {
     modalCuerpo.addEventListener('click', function (e) {
       var botonAsistencia = e.target.closest('.js-marcar-asistencia');
-      if (!botonAsistencia) {
+      if (botonAsistencia) {
+        marcarAsistencia(botonAsistencia);
         return;
       }
 
-      marcarAsistencia(botonAsistencia);
+      var botonReversar = e.target.closest('.js-reversar-asistencia');
+      if (botonReversar) {
+        reversarAsistencia(botonReversar);
+      }
     });
   }
 

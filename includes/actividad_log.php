@@ -64,6 +64,7 @@ function mapaMetadatosActividad(): array
         'actualizar_estado_bautismo'       => ['seccion' => 'bautismo', 'entidad' => 'inscripcion', 'etiqueta' => 'Cambiar estado de bautismo'],
         'actualizar_estado_pago_evento'    => ['seccion' => 'eventos', 'entidad' => 'registro_evento', 'etiqueta' => 'Cambiar estado de pago de evento'],
         'marcar_asistencia_evento'         => ['seccion' => 'eventos', 'entidad' => 'registro_evento', 'etiqueta' => 'Marcar asistencia a evento'],
+        'reversar_asistencia_evento'       => ['seccion' => 'eventos', 'entidad' => 'registro_evento', 'etiqueta' => 'Reversar asistencia de evento'],
         'restablecer_estado_bautismo'      => ['seccion' => 'bautismo', 'entidad' => 'inscripcion', 'etiqueta' => 'Restablecer estado de bautismo'],
         'restablecer_estado_presentacion'  => ['seccion' => 'presentaciones', 'entidad' => 'presentacion', 'etiqueta' => 'Restablecer estado de presentación'],
         'crear_evento'                     => ['seccion' => 'eventos', 'entidad' => 'evento', 'etiqueta' => 'Crear evento'],

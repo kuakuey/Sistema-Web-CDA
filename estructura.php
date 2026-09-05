@@ -45,7 +45,6 @@ if ($pestaña === 'importar' && isset($_GET['descargar']) && $_GET['descargar'] 
 
 $mensaje = null;
 $error = null;
-$abrirListaMiembros = isset($_GET['ver']) && $_GET['ver'] === 'miembros';
 
 $resultadoImportEstructura = $_SESSION['import_estructura_resultado'] ?? null;
 $errorImportEstructura = $_SESSION['import_estructura_error'] ?? null;
@@ -177,7 +176,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 registrarActividadPorAccion('eliminar_parentesco', $miembroId, 'Quitar parentesco');
                 $mensaje = 'Parentesco eliminado.';
                 $pestaña = 'lideres';
-                $abrirListaMiembros = true;
                 break;
 
             case 'eliminar_todos_lideres':
@@ -291,8 +289,6 @@ if ($error !== null && isset($accion)) {
     } elseif ($accion === 'conectar_parentesco') {
         $modalEstructura = 'parentesco';
     }
-} elseif ($abrirListaMiembros) {
-    $modalEstructura = 'lista-miembros';
 }
 $etiquetasRoles = obtenerEtiquetasRoles();
 $seccionesPermitidas = obtenerSeccionesPermitidas($usuario['rol']);

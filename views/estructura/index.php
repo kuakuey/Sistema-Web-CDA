@@ -67,19 +67,98 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
     Paso 1: crea los miembros. El parentesco y el borrado masivo están en
     <a href="estructura.php?pestaña=importar">Carga masiva</a>.
   </p>
-  <div class="d-flex flex-wrap gap-2">
-    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalListaMiembros">
-      <i class="bi bi-list-ul me-1"></i>Ver miembros (<?= (int) $totalMiembros ?>)
-    </button>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoMiembro">
-      <i class="bi bi-plus-lg me-1"></i>Nuevo miembro
-    </button>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoMiembro">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo miembro
+  </button>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body py-3">
+    <p class="mb-0">Hay <strong><?= (int) $totalMiembros ?></strong> miembro(s) registrado(s). Se muestran 20 por página.</p>
   </div>
 </div>
 
 <div class="card border-0 shadow-sm">
-  <div class="card-body">
-    <p class="mb-0">Hay <strong><?= (int) $totalMiembros ?></strong> miembro(s) registrado(s). Ábrelos para verlos de 20 en 20.</p>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-dashboard mb-0 align-middle">
+        <thead class="table-light">
+          <tr><th>#</th><th>Nombre</th><th>Género</th><th>Cédula</th><th>Parentesco</th><th>Territorios</th><th></th></tr>
+        </thead>
+        <tbody>
+          <?php foreach ($lideresPagina as $l): ?>
+          <?php
+          $conteo = $conteoAsignaciones[(int) $l['id']] ?? ['coordinador' => 0, 'encargado' => 0];
+          $parentesco = $parentescoPorMiembro[(int) $l['id']] ?? null;
+          ?>
+          <tr>
+            <td class="text-muted"><?= (int) $l['id'] ?></td>
+            <td>
+              <?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?>
+              <?php if (!empty($l['celular'])): ?>
+              <div class="text-muted small"><?= htmlspecialchars((string) $l['celular']) ?></div>
+              <?php endif; ?>
+            </td>
+            <td><?= htmlspecialchars(etiquetaGeneroMiembro($l['genero'] ?? '')) ?></td>
+            <td><?= htmlspecialchars(($l['cedula'] ?? '') !== '' ? (string) $l['cedula'] : '—') ?></td>
+            <td class="small">
+              <?php if ($parentesco): ?>
+              <?= htmlspecialchars(etiquetaParentescoMiembro((string) $parentesco['parentesco'])) ?>
+              de <?= htmlspecialchars(trim($parentesco['pariente_nombre'] . ' ' . $parentesco['pariente_apellido'])) ?>
+              <form method="POST" action="estructura.php?pestaña=lideres&amp;pagina=<?= (int) $paginaMiembros ?>" class="d-inline">
+                <input type="hidden" name="accion" value="eliminar_parentesco">
+                <input type="hidden" name="miembro_id" value="<?= (int) $parentesco['miembro_id'] ?>">
+                <input type="hidden" name="pariente_id" value="<?= (int) $parentesco['pariente_id'] ?>">
+                <button type="submit" class="btn btn-link btn-sm p-0 ms-1">Quitar</button>
+              </form>
+              <?php else: ?>
+              <span class="text-muted">Sin conectar</span>
+              <?php endif; ?>
+            </td>
+            <td class="small">
+              <?php if ((int) $conteo['coordinador'] > 0): ?>
+              <div>Coord. <?= (int) $conteo['coordinador'] ?></div>
+              <?php endif; ?>
+              <?php if ((int) $conteo['encargado'] > 0): ?>
+              <div>Enc. <?= (int) $conteo['encargado'] ?></div>
+              <?php endif; ?>
+              <?php if ((int) $conteo['coordinador'] === 0 && (int) $conteo['encargado'] === 0): ?>
+              <span class="text-muted">Sin asignar</span>
+              <?php endif; ?>
+            </td>
+            <td>
+              <?php if ($puedeEliminar): ?>
+              <form
+                method="POST"
+                action="acciones.php"
+                class="d-inline js-form-confirmar"
+                data-confirm-title="Eliminar miembro"
+                data-confirm="¿Eliminar miembro?"
+              >
+                <input type="hidden" name="accion" value="eliminar_lider">
+                <input type="hidden" name="id" value="<?= (int) $l['id'] ?>">
+                <input type="hidden" name="redireccion" value="estructura.php?pestaña=lideres&amp;pagina=<?= (int) $paginaMiembros ?>">
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+              <?php endif; ?>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+          <?php if (empty($lideresPagina)): ?>
+          <tr><td colspan="7" class="text-center text-muted py-4">No hay miembros registrados.</td></tr>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+    <?php
+    $paginaActual = (int) $paginaMiembros;
+    $totalPaginas = (int) $totalPaginasMiembros;
+    $totalRegistros = (int) $totalMiembros;
+    $archivoPagina = 'estructura.php';
+    $filtros = [];
+    $pestañaPaginacion = 'lideres';
+    include __DIR__ . '/../partials/paginacion-registros.php';
+    ?>
   </div>
 </div>
 
@@ -135,105 +214,10 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
   </div>
 </div>
 
-<div class="modal fade" id="modalListaMiembros" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Miembros · <?= (int) $totalMiembros ?></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body p-0">
-        <div class="px-3 py-3 border-bottom">
-          Hay <strong><?= (int) $totalMiembros ?></strong> miembro(s). Se muestran 20 por página.
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover table-dashboard mb-0 align-middle">
-            <thead class="table-light">
-              <tr><th>#</th><th>Nombre</th><th>Género</th><th>Cédula</th><th>Parentesco</th><th>Territorios</th><th></th></tr>
-            </thead>
-            <tbody>
-              <?php foreach ($lideresPagina as $l): ?>
-              <?php
-              $conteo = $conteoAsignaciones[(int) $l['id']] ?? ['coordinador' => 0, 'encargado' => 0];
-              $parentesco = $parentescoPorMiembro[(int) $l['id']] ?? null;
-              ?>
-              <tr>
-                <td class="text-muted"><?= (int) $l['id'] ?></td>
-                <td>
-                  <?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?>
-                  <?php if (!empty($l['celular'])): ?>
-                  <div class="text-muted small"><?= htmlspecialchars((string) $l['celular']) ?></div>
-                  <?php endif; ?>
-                </td>
-                <td><?= htmlspecialchars(etiquetaGeneroMiembro($l['genero'] ?? '')) ?></td>
-                <td><?= htmlspecialchars(($l['cedula'] ?? '') !== '' ? (string) $l['cedula'] : '—') ?></td>
-                <td class="small">
-                  <?php if ($parentesco): ?>
-                  <?= htmlspecialchars(etiquetaParentescoMiembro((string) $parentesco['parentesco'])) ?>
-                  de <?= htmlspecialchars(trim($parentesco['pariente_nombre'] . ' ' . $parentesco['pariente_apellido'])) ?>
-                  <form method="POST" action="estructura.php?pestaña=lideres&amp;ver=miembros&amp;pagina=<?= (int) $paginaMiembros ?>" class="d-inline">
-                    <input type="hidden" name="accion" value="eliminar_parentesco">
-                    <input type="hidden" name="miembro_id" value="<?= (int) $parentesco['miembro_id'] ?>">
-                    <input type="hidden" name="pariente_id" value="<?= (int) $parentesco['pariente_id'] ?>">
-                    <button type="submit" class="btn btn-link btn-sm p-0 ms-1">Quitar</button>
-                  </form>
-                  <?php else: ?>
-                  <span class="text-muted">Sin conectar</span>
-                  <?php endif; ?>
-                </td>
-                <td class="small">
-                  <?php if ((int) $conteo['coordinador'] > 0): ?>
-                  <div>Coord. <?= (int) $conteo['coordinador'] ?></div>
-                  <?php endif; ?>
-                  <?php if ((int) $conteo['encargado'] > 0): ?>
-                  <div>Enc. <?= (int) $conteo['encargado'] ?></div>
-                  <?php endif; ?>
-                  <?php if ((int) $conteo['coordinador'] === 0 && (int) $conteo['encargado'] === 0): ?>
-                  <span class="text-muted">Sin asignar</span>
-                  <?php endif; ?>
-                </td>
-                <td>
-                  <?php if ($puedeEliminar): ?>
-                  <form
-                    method="POST"
-                    action="acciones.php"
-                    class="d-inline js-form-confirmar"
-                    data-confirm-title="Eliminar miembro"
-                    data-confirm="¿Eliminar miembro?"
-                  >
-                    <input type="hidden" name="accion" value="eliminar_lider">
-                    <input type="hidden" name="id" value="<?= (int) $l['id'] ?>">
-                    <input type="hidden" name="redireccion" value="estructura.php?pestaña=lideres&amp;ver=miembros&amp;pagina=<?= (int) $paginaMiembros ?>">
-                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                  </form>
-                  <?php endif; ?>
-                </td>
-              </tr>
-              <?php endforeach; ?>
-              <?php if (empty($lideresPagina)): ?>
-              <tr><td colspan="7" class="text-center text-muted py-4">No hay miembros registrados.</td></tr>
-              <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-        <?php
-        $paginaActual = (int) $paginaMiembros;
-        $totalPaginas = (int) $totalPaginasMiembros;
-        $totalRegistros = (int) $totalMiembros;
-        $archivoPagina = 'estructura.php';
-        $filtros = ['ver' => 'miembros'];
-        $pestañaPaginacion = 'lideres';
-        include __DIR__ . '/../partials/paginacion-registros.php';
-        ?>
-      </div>
-    </div>
-  </div>
-</div>
-<?php if ($modalEstructura === 'miembro' || $modalEstructura === 'lista-miembros'): ?>
+<?php if ($modalEstructura === 'miembro'): ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  var id = <?= json_encode($modalEstructura === 'lista-miembros' ? 'modalListaMiembros' : 'modalNuevoMiembro') ?>;
-  var el = document.getElementById(id);
+  var el = document.getElementById('modalNuevoMiembro');
   if (el && window.bootstrap) {
     window.bootstrap.Modal.getOrCreateInstance(el).show();
   }

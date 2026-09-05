@@ -79,6 +79,20 @@ $modalEstructura = $modalEstructura ?? null;
     >
       <i class="bi bi-people me-1"></i>Conectar parentesco
     </button>
+    <?php if ($puedeEliminar && !empty($lideres)): ?>
+    <form
+      method="POST"
+      action="estructura.php?pestaña=lideres"
+      class="d-inline js-form-confirmar"
+      data-confirm-title="Eliminar todos los miembros"
+      data-confirm="Se eliminarán todos los miembros, sus parentescos, asignaciones a territorios y casas de vida. ¿Continuar?"
+    >
+      <input type="hidden" name="accion" value="eliminar_todos_lideres">
+      <button type="submit" class="btn btn-outline-danger">
+        <i class="bi bi-trash me-1"></i>Borrar todos
+      </button>
+    </form>
+    <?php endif; ?>
   </div>
 </div>
 

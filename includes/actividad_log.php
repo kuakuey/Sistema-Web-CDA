@@ -56,6 +56,7 @@ function mapaMetadatosActividad(): array
         'sincronizar_bd'                   => ['seccion' => 'avanzado', 'entidad' => 'base_datos', 'etiqueta' => 'Sincronizar base de datos'],
         'eliminar_territorio'              => ['seccion' => 'estructura', 'entidad' => 'territorio', 'etiqueta' => 'Eliminar territorio'],
         'eliminar_lider'                   => ['seccion' => 'estructura', 'entidad' => 'lider', 'etiqueta' => 'Eliminar líder'],
+        'eliminar_todos_lideres'           => ['seccion' => 'estructura', 'entidad' => 'lider', 'etiqueta' => 'Eliminar todos los miembros'],
         'eliminar_casa'                    => ['seccion' => 'estructura', 'entidad' => 'casa', 'etiqueta' => 'Eliminar casa de vida'],
         'eliminar_evento'                  => ['seccion' => 'eventos', 'entidad' => 'evento', 'etiqueta' => 'Eliminar evento'],
         'eliminar_evento_calendario'       => ['seccion' => 'calendario', 'entidad' => 'evento_calendario', 'etiqueta' => 'Eliminar evento del calendario'],

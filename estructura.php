@@ -66,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'actualizar_lider'             => 'lideres',
         'conectar_parentesco'          => 'lideres',
         'eliminar_parentesco'          => 'lideres',
+        'eliminar_todos_lideres'       => 'lideres',
         'crear_casa'            => 'casas',
         'actualizar_casa'       => 'casas',
         'importar_estructura'   => 'importar',
@@ -173,6 +174,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 registrarActividadPorAccion('eliminar_parentesco', $miembroId, 'Quitar parentesco');
                 $mensaje = 'Parentesco eliminado.';
+                $pestaña = 'lideres';
+                break;
+
+            case 'eliminar_todos_lideres':
+                if (!puedeEliminarRegistros($usuario['rol'])) {
+                    throw new InvalidArgumentException('No tienes permiso para eliminar miembros.');
+                }
+                $eliminados = eliminarTodosLideres();
+                registrarActividadPorAccion(
+                    'eliminar_todos_lideres',
+                    0,
+                    'Eliminar todos los miembros · ' . $eliminados
+                );
+                $mensaje = $eliminados === 0
+                    ? 'No había miembros para eliminar.'
+                    : 'Se eliminaron ' . $eliminados . ' miembro(s), sus parentescos, asignaciones y casas de vida.';
                 $pestaña = 'lideres';
                 break;
 

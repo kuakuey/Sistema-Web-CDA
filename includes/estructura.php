@@ -297,6 +297,32 @@ function eliminarLider(int $id): bool
     return $stmt->execute([$id]) && $stmt->rowCount() > 0;
 }
 
+function eliminarTodosLideres(): int
+{
+    asegurarTablasEstructura();
+    $pdo = getConnection();
+    $total = (int) $pdo->query('SELECT COUNT(*) FROM lideres')->fetchColumn();
+
+    if ($total === 0) {
+        return 0;
+    }
+
+    $pdo->beginTransaction();
+
+    try {
+        $pdo->exec('DELETE FROM territorio_asignaciones');
+        $pdo->exec('DELETE FROM miembro_parentescos');
+        $pdo->exec('DELETE FROM casas_vida');
+        $pdo->exec('DELETE FROM lideres');
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+
+    return $total;
+}
+
 /**
  * @return array<string, string>
  */

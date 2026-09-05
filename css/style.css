@@ -1018,6 +1018,96 @@ body.blank-body {
   font-size: var(--cda-text-2xl);
 }
 
+.cdv-pasos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.cdv-paso {
+  flex: 1 1 180px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--cda-border);
+  border-radius: 0.75rem;
+  background: var(--cda-surface, #fff);
+  color: inherit;
+  text-decoration: none;
+}
+
+.cdv-paso:hover {
+  border-color: var(--cda-primary);
+  color: inherit;
+}
+
+.cdv-paso.is-active {
+  border-color: var(--cda-primary);
+  background: rgba(var(--cda-primary-rgb, 231, 126, 53), 0.08);
+}
+
+.cdv-paso__num {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: var(--cda-text-xs);
+  font-weight: var(--cda-font-semibold);
+  background: var(--cda-surface-muted, #f1f3f5);
+  color: var(--cda-text);
+}
+
+.cdv-paso.is-active .cdv-paso__num,
+.cdv-paso.is-done .cdv-paso__num {
+  background: var(--cda-primary);
+  color: #fff;
+}
+
+.cdv-paso.is-done:not(.is-active) .cdv-paso__num {
+  background: #198754;
+}
+
+.cdv-paso__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cdv-paso__label {
+  font-weight: var(--cda-font-semibold);
+  font-size: var(--cda-text-sm);
+  line-height: var(--cda-leading-tight);
+}
+
+.cdv-paso__meta {
+  color: var(--cda-muted);
+  font-size: var(--cda-text-xs);
+}
+
+.cdv-territorios-check {
+  max-height: 220px;
+  overflow: auto;
+  background: var(--cda-surface, #fff);
+}
+
+.cdv-territorios-check .form-check {
+  margin-bottom: 0.35rem;
+}
+
+.cdv-territorios-check .form-check:last-child {
+  margin-bottom: 0;
+}
+
+html[data-theme="dark"] .cdv-paso {
+  background: var(--cda-surface);
+  border-color: var(--cda-border);
+}
+
 @media print {
   .no-print,
   .app-sidebar,

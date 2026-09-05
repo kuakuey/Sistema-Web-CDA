@@ -558,6 +558,25 @@ function migrateEstructuraTables(PDO $pdo): void
             INDEX idx_lider (lider_id)
         ) ENGINE=InnoDB'
     );
+
+    asegurarColumnasTabla($pdo, 'lideres', [
+        'pareja' => "ADD COLUMN pareja VARCHAR(20) NOT NULL DEFAULT 'esposo' AFTER apellido",
+    ]);
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS territorio_asignaciones (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            territorio_id INT NOT NULL,
+            miembro_id INT NOT NULL,
+            rol VARCHAR(20) NOT NULL,
+            pareja VARCHAR(20) NOT NULL,
+            creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_territorio_rol_pareja (territorio_id, rol, pareja),
+            INDEX idx_miembro (miembro_id),
+            INDEX idx_territorio (territorio_id),
+            INDEX idx_rol (rol)
+        ) ENGINE=InnoDB'
+    );
 }
 
 function getDatabaseStatus(): array

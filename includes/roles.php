@@ -216,6 +216,13 @@ function puedeGestionarEstructura(string $rol): bool
 
 function puedeGestionarEstructuraPestana(string $rol, string $pestana): bool
 {
+    if ($pestana === 'importar') {
+        return tienePermisoDetalleOAcceso($rol, 'estructura', 'importar')
+            || tienePermisoDetalleOAcceso($rol, 'estructura', 'lideres')
+            || tienePermisoDetalleOAcceso($rol, 'estructura', 'territorios')
+            || tienePermisoDetalleOAcceso($rol, 'estructura', 'casas');
+    }
+
     if (!in_array($pestana, ['territorios', 'casas', 'lideres'], true)) {
         return false;
     }
@@ -230,7 +237,7 @@ function obtenerPestanasEstructuraPermitidas(string $rol): array
 {
     $permitidas = [];
 
-    foreach (['territorios', 'casas', 'lideres'] as $pestana) {
+    foreach (['lideres', 'territorios', 'casas', 'importar'] as $pestana) {
         if (puedeGestionarEstructuraPestana($rol, $pestana)) {
             $permitidas[] = $pestana;
         }

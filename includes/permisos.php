@@ -139,9 +139,10 @@ function obtenerCatalogoPermisosDetallados(): array
             'etiqueta'  => 'Estructura CDV',
             'icono'     => 'bi-diagram-3',
             'permisos'  => [
+                'lideres'     => 'Miembros',
                 'territorios' => 'Territorios',
                 'casas'       => 'Casas de vida',
-                'lideres'     => "L\u{00ED}deres",
+                'importar'    => 'Carga masiva',
             ],
         ],
     ];
@@ -220,7 +221,7 @@ function normalizarPermisosParaUi(array $permisos): array
     $activos = [];
     $legacyAccesoPorModulo = [
         'generar_informe' => ['completo', 'ofrendas', 'valores', 'eventos', 'presentaciones', 'bautismos'],
-        'estructura'      => ['territorios', 'casas', 'lideres'],
+        'estructura'      => ['lideres', 'territorios', 'casas', 'importar'],
     ];
 
     foreach (obtenerCatalogoPermisosDetallados() as $modulo => $info) {

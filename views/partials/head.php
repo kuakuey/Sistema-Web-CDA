@@ -16,6 +16,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-<link href="css/theme.css" rel="stylesheet">
-<link href="css/style.css" rel="stylesheet">
+<?php
+$cssTheme = dirname(__DIR__, 2) . '/css/theme.css';
+$cssStyle = dirname(__DIR__, 2) . '/css/style.css';
+$cssThemeVersion = is_file($cssTheme) ? (string) filemtime($cssTheme) : '1';
+$cssStyleVersion = is_file($cssStyle) ? (string) filemtime($cssStyle) : '1';
+?>
+<link href="css/theme.css?v=<?= htmlspecialchars($cssThemeVersion) ?>" rel="stylesheet">
+<link href="css/style.css?v=<?= htmlspecialchars($cssStyleVersion) ?>" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">

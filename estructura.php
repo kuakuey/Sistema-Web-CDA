@@ -5,6 +5,7 @@ require_once 'includes/view.php';
 require_once 'includes/estructura.php';
 require_once 'includes/import_estructura.php';
 require_once 'includes/submissions.php';
+require_once 'includes/paginacion.php';
 
 requerirSesion();
 
@@ -44,6 +45,7 @@ if ($pestaña === 'importar' && isset($_GET['descargar']) && $_GET['descargar'] 
 
 $mensaje = null;
 $error = null;
+$abrirListaMiembros = isset($_GET['ver']) && $_GET['ver'] === 'miembros';
 
 $resultadoImportEstructura = $_SESSION['import_estructura_resultado'] ?? null;
 $errorImportEstructura = $_SESSION['import_estructura_error'] ?? null;
@@ -163,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 registrarActividadPorAccion('conectar_parentesco', (int) ($_POST['miembro_id'] ?? 0), 'Conectar parentesco');
                 $mensaje = 'Parentesco conectado correctamente.';
-                $pestaña = 'lideres';
+                $pestaña = 'importar';
                 break;
 
             case 'eliminar_parentesco':
@@ -175,6 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 registrarActividadPorAccion('eliminar_parentesco', $miembroId, 'Quitar parentesco');
                 $mensaje = 'Parentesco eliminado.';
                 $pestaña = 'lideres';
+                $abrirListaMiembros = true;
                 break;
 
             case 'eliminar_todos_lideres':
@@ -190,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mensaje = $eliminados === 0
                     ? 'No había miembros para eliminar.'
                     : 'Se eliminaron ' . $eliminados . ' miembro(s), sus parentescos, asignaciones y casas de vida.';
-                $pestaña = 'lideres';
+                $pestaña = 'importar';
                 break;
 
             case 'actualizar_lider':
@@ -277,6 +280,10 @@ $miembrosMasculinos = obtenerMiembrosPorGenero('masculino');
 $miembrosFemeninos = obtenerMiembrosPorGenero('femenino');
 $resumenParejas = obtenerResumenParejasTerritorio();
 $conteoAsignaciones = obtenerConteoAsignacionesPorMiembro();
+$totalMiembros = count($lideres);
+$paginaMiembros = ajustarPaginaRegistros(parsearPaginaRegistros($_GET), $totalMiembros);
+$lideresPagina = array_slice($lideres, calcularOffsetRegistros($paginaMiembros), obtenerRegistrosPorPagina());
+$totalPaginasMiembros = calcularTotalPaginasRegistros($totalMiembros);
 $modalEstructura = null;
 if ($error !== null && isset($accion)) {
     if ($accion === 'crear_lider') {
@@ -284,6 +291,8 @@ if ($error !== null && isset($accion)) {
     } elseif ($accion === 'conectar_parentesco') {
         $modalEstructura = 'parentesco';
     }
+} elseif ($abrirListaMiembros) {
+    $modalEstructura = 'lista-miembros';
 }
 $etiquetasRoles = obtenerEtiquetasRoles();
 $seccionesPermitidas = obtenerSeccionesPermitidas($usuario['rol']);
@@ -302,6 +311,10 @@ view('estructura/index', [
     'pestaña'             => $pestaña,
     'territorios'         => $territorios,
     'lideres'             => $lideres,
+    'lideresPagina'       => $lideresPagina,
+    'totalMiembros'       => $totalMiembros,
+    'paginaMiembros'      => $paginaMiembros,
+    'totalPaginasMiembros' => $totalPaginasMiembros,
     'casas'               => $casas,
     'parejasParentesco'   => $parejasParentesco,
     'parentescoPorMiembro' => $parentescoPorMiembro,

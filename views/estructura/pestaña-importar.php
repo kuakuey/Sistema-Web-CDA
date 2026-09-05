@@ -1,9 +1,10 @@
 <?php
 $catalogoPasos = catalogoPasosImportEstructura();
 $conteos = [
-    'personas'    => count($lideres ?? []),
-    'territorios' => count($territorios ?? []),
-    'casas'       => count($casas ?? []),
+    'miembros'     => count($lideres ?? []),
+    'territorios'  => count($territorios ?? []),
+    'asignaciones' => count($parejasParentesco ?? []),
+    'casas'        => count($casas ?? []),
 ];
 $pasoActual = $catalogoPasos[$pasoImportar] ?? null;
 $clavesPasos = array_values($pasosImportar);
@@ -12,9 +13,36 @@ $pasoAnterior = ($indicePaso !== false && $indicePaso > 0) ? $clavesPasos[$indic
 $pasoSiguiente = ($indicePaso !== false && isset($clavesPasos[$indicePaso + 1])) ? $clavesPasos[$indicePaso + 1] : null;
 ?>
 
-<p class="text-muted small mb-3">
-  Importa la estructura en este orden: miembros, territorios, asignaciones (coordinadores y encargados) y casas de vida. Cada archivo debe usar la plantilla del paso correspondiente.
-</p>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <p class="text-muted small mb-0">
+    Importa la estructura en este orden: miembros, territorios, asignaciones y casas de vida.
+  </p>
+  <div class="d-flex flex-wrap gap-2">
+    <button
+      type="button"
+      class="btn btn-outline-primary"
+      data-bs-toggle="modal"
+      data-bs-target="#modalParentesco"
+      <?= (count($miembrosMasculinos ?? []) < 1 || count($miembrosFemeninos ?? []) < 1) ? 'disabled' : '' ?>
+    >
+      <i class="bi bi-people me-1"></i>Conectar parentesco
+    </button>
+    <?php if (!empty($puedeEliminar) && !empty($lideres)): ?>
+    <form
+      method="POST"
+      action="estructura.php?pestaña=importar"
+      class="d-inline js-form-confirmar"
+      data-confirm-title="Eliminar todos los miembros"
+      data-confirm="Se eliminarán todos los miembros, sus parentescos, asignaciones a territorios y casas de vida. ¿Continuar?"
+    >
+      <input type="hidden" name="accion" value="eliminar_todos_lideres">
+      <button type="submit" class="btn btn-outline-danger">
+        <i class="bi bi-trash me-1"></i>Borrar todos
+      </button>
+    </form>
+    <?php endif; ?>
+  </div>
+</div>
 
 <div class="cdv-pasos mb-4" role="navigation" aria-label="Pasos de carga masiva">
   <?php foreach ($pasosImportar as $clavePaso): ?>
@@ -216,3 +244,54 @@ $pasoSiguiente = ($indicePaso !== false && isset($clavesPasos[$indicePaso + 1]))
   </div>
 </div>
 <?php endif; ?>
+
+<div class="modal fade" id="modalParentesco" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="estructura.php?pestaña=importar">
+        <div class="modal-header">
+          <h5 class="modal-title">Conectar parentesco</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="accion" value="conectar_parentesco">
+          <input type="hidden" name="parentesco" value="esposo">
+          <p class="text-muted small">Conecta un miembro masculino y uno femenino ya registrados.</p>
+          <div class="mb-3">
+            <label class="form-label">Esposo</label>
+            <select class="form-select" name="miembro_id" required>
+              <option value="">Seleccione…</option>
+              <?php foreach ($miembrosMasculinos ?? [] as $m): ?>
+              <option value="<?= (int) $m['id'] ?>"><?= htmlspecialchars($m['nombre'] . ' ' . $m['apellido']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="mb-0">
+            <label class="form-label">Esposa</label>
+            <select class="form-select" name="pariente_id" required>
+              <option value="">Seleccione…</option>
+              <?php foreach ($miembrosFemeninos ?? [] as $m): ?>
+              <option value="<?= (int) $m['id'] ?>"><?= htmlspecialchars($m['nombre'] . ' ' . $m['apellido']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Conectar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<?php if (($modalEstructura ?? null) === 'parentesco'): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var el = document.getElementById('modalParentesco');
+  if (el && window.bootstrap) {
+    window.bootstrap.Modal.getOrCreateInstance(el).show();
+  }
+});
+</script>
+<?php endif; ?>
+

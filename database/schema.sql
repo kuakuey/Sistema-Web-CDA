@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS lideres (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
+    genero VARCHAR(20) NOT NULL DEFAULT '',
     pareja VARCHAR(20) NOT NULL DEFAULT 'esposo',
     cedula VARCHAR(30) DEFAULT NULL,
     celular VARCHAR(30) DEFAULT NULL,
@@ -90,6 +91,17 @@ CREATE TABLE IF NOT EXISTS territorio_asignaciones (
     INDEX idx_miembro (miembro_id),
     INDEX idx_territorio (territorio_id),
     INDEX idx_rol (rol)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS miembro_parentescos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    miembro_id INT NOT NULL,
+    pariente_id INT NOT NULL,
+    parentesco VARCHAR(30) NOT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_miembro_pariente (miembro_id, pariente_id),
+    INDEX idx_pariente (pariente_id),
+    INDEX idx_parentesco (parentesco)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS casas_vida (

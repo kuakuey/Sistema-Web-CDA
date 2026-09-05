@@ -77,6 +77,8 @@ function mapaMetadatosActividad(): array
         'crear_territorio'                 => ['seccion' => 'estructura', 'entidad' => 'territorio', 'etiqueta' => 'Crear territorio'],
         'actualizar_territorio'            => ['seccion' => 'estructura', 'entidad' => 'territorio', 'etiqueta' => 'Editar territorio'],
         'asignar_pareja_territorio'        => ['seccion' => 'estructura', 'entidad' => 'territorio', 'etiqueta' => 'Asignar pareja a territorios'],
+        'conectar_parentesco'              => ['seccion' => 'estructura', 'entidad' => 'lider', 'etiqueta' => 'Conectar parentesco'],
+        'eliminar_parentesco'              => ['seccion' => 'estructura', 'entidad' => 'lider', 'etiqueta' => 'Quitar parentesco'],
         'quitar_asignacion_territorio'     => ['seccion' => 'estructura', 'entidad' => 'territorio', 'etiqueta' => 'Quitar asignación de territorio'],
         'crear_lider'                      => ['seccion' => 'estructura', 'entidad' => 'lider', 'etiqueta' => 'Crear líder'],
         'actualizar_lider'                 => ['seccion' => 'estructura', 'entidad' => 'lider', 'etiqueta' => 'Editar líder'],

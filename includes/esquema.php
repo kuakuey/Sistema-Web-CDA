@@ -561,7 +561,17 @@ function migrateEstructuraTables(PDO $pdo): void
 
     asegurarColumnasTabla($pdo, 'lideres', [
         'pareja' => "ADD COLUMN pareja VARCHAR(20) NOT NULL DEFAULT 'esposo' AFTER apellido",
+        'genero' => "ADD COLUMN genero VARCHAR(20) NOT NULL DEFAULT '' AFTER apellido",
     ]);
+
+    if (tablaExiste($pdo, 'lideres')) {
+        $pdo->exec(
+            "UPDATE lideres SET genero = 'masculino' WHERE (genero = '' OR genero IS NULL) AND pareja = 'esposo'"
+        );
+        $pdo->exec(
+            "UPDATE lideres SET genero = 'femenino' WHERE (genero = '' OR genero IS NULL) AND pareja = 'esposa'"
+        );
+    }
 
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS territorio_asignaciones (
@@ -575,6 +585,19 @@ function migrateEstructuraTables(PDO $pdo): void
             INDEX idx_miembro (miembro_id),
             INDEX idx_territorio (territorio_id),
             INDEX idx_rol (rol)
+        ) ENGINE=InnoDB'
+    );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS miembro_parentescos (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            miembro_id INT NOT NULL,
+            pariente_id INT NOT NULL,
+            parentesco VARCHAR(30) NOT NULL,
+            creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_miembro_pariente (miembro_id, pariente_id),
+            INDEX idx_pariente (pariente_id),
+            INDEX idx_parentesco (parentesco)
         ) ENGINE=InnoDB'
     );
 }

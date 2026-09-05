@@ -15,6 +15,7 @@ function obtenerTablasEsperadasSistema(): array
         'territorios',
         'lideres',
         'territorio_asignaciones',
+        'miembro_parentescos',
         'casas_vida',
         'sesiones_api',
         'eventos',

@@ -64,6 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'quitar_asignacion_territorio' => 'territorios',
         'crear_lider'                  => 'lideres',
         'actualizar_lider'             => 'lideres',
+        'conectar_parentesco'          => 'lideres',
+        'eliminar_parentesco'          => 'lideres',
         'crear_casa'            => 'casas',
         'actualizar_casa'       => 'casas',
         'importar_estructura'   => 'importar',
@@ -97,10 +99,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             case 'asignar_pareja_territorio':
+                $esposoId = (int) ($_POST['esposo_id'] ?? 0);
+                $esposaId = (int) ($_POST['esposa_id'] ?? 0);
+                $clavePareja = trim((string) ($_POST['pareja_clave'] ?? ''));
+                if ($clavePareja !== '' && str_contains($clavePareja, ':')) {
+                    [$esposoId, $esposaId] = array_map('intval', explode(':', $clavePareja, 2));
+                }
                 $cantidad = asignarParejaATerritorios(
                     (string) ($_POST['rol'] ?? ''),
-                    (int) ($_POST['esposo_id'] ?? 0),
-                    (int) ($_POST['esposa_id'] ?? 0),
+                    $esposoId,
+                    $esposaId,
                     $_POST['territorio_ids'] ?? []
                 );
                 $rolEtiqueta = etiquetaRolTerritorio(normalizarRolTerritorio((string) ($_POST['rol'] ?? '')));
@@ -133,6 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (trim($_POST['nombre'] ?? '') === '' || trim($_POST['apellido'] ?? '') === '') {
                     throw new InvalidArgumentException('Nombre y apellido del miembro son obligatorios.');
                 }
+                if (trim((string) ($_POST['genero'] ?? '')) === '') {
+                    throw new InvalidArgumentException('Selecciona el género del miembro.');
+                }
                 crearLider($_POST);
                 registrarActividadPorAccion(
                     'crear_lider',
@@ -140,6 +151,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'Crear miembro · ' . trim((string) $_POST['nombre']) . ' ' . trim((string) $_POST['apellido'])
                 );
                 $mensaje = 'Miembro creado correctamente.';
+                $pestaña = 'lideres';
+                break;
+
+            case 'conectar_parentesco':
+                conectarParentescoMiembros(
+                    (int) ($_POST['miembro_id'] ?? 0),
+                    (int) ($_POST['pariente_id'] ?? 0),
+                    (string) ($_POST['parentesco'] ?? '')
+                );
+                registrarActividadPorAccion('conectar_parentesco', (int) ($_POST['miembro_id'] ?? 0), 'Conectar parentesco');
+                $mensaje = 'Parentesco conectado correctamente.';
+                $pestaña = 'lideres';
+                break;
+
+            case 'eliminar_parentesco':
+                $miembroId = (int) ($_POST['miembro_id'] ?? 0);
+                $parienteId = (int) ($_POST['pariente_id'] ?? 0);
+                if (!eliminarParentescoMiembro($miembroId, $parienteId)) {
+                    throw new InvalidArgumentException('No se pudo quitar el parentesco.');
+                }
+                registrarActividadPorAccion('eliminar_parentesco', $miembroId, 'Quitar parentesco');
+                $mensaje = 'Parentesco eliminado.';
                 $pestaña = 'lideres';
                 break;
 
@@ -221,10 +254,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $territorios = obtenerTerritoriosConAsignaciones();
 $lideres = obtenerLideres();
 $casas = obtenerCasasVida();
-$miembrosEsposo = obtenerMiembrosPorPareja('esposo');
-$miembrosEsposa = obtenerMiembrosPorPareja('esposa');
+$parejasParentesco = obtenerParejasParentesco();
+$parentescoPorMiembro = obtenerParentescoPorMiembro();
+$miembrosMasculinos = obtenerMiembrosPorGenero('masculino');
+$miembrosFemeninos = obtenerMiembrosPorGenero('femenino');
 $resumenParejas = obtenerResumenParejasTerritorio();
 $conteoAsignaciones = obtenerConteoAsignacionesPorMiembro();
+$modalEstructura = null;
+if ($error !== null && isset($accion)) {
+    if ($accion === 'crear_lider') {
+        $modalEstructura = 'miembro';
+    } elseif ($accion === 'conectar_parentesco') {
+        $modalEstructura = 'parentesco';
+    }
+}
 $etiquetasRoles = obtenerEtiquetasRoles();
 $seccionesPermitidas = obtenerSeccionesPermitidas($usuario['rol']);
 $etiquetasSecciones = obtenerEtiquetasSecciones();
@@ -243,9 +286,12 @@ view('estructura/index', [
     'territorios'         => $territorios,
     'lideres'             => $lideres,
     'casas'               => $casas,
-    'miembrosEsposo'      => $miembrosEsposo,
-    'miembrosEsposa'      => $miembrosEsposa,
+    'parejasParentesco'   => $parejasParentesco,
+    'parentescoPorMiembro' => $parentescoPorMiembro,
+    'miembrosMasculinos'  => $miembrosMasculinos,
+    'miembrosFemeninos'   => $miembrosFemeninos,
     'resumenParejas'      => $resumenParejas,
+    'modalEstructura'     => $modalEstructura,
     'conteoAsignaciones'  => $conteoAsignaciones,
     'mensaje'             => $mensaje,
     'error'               => $error,

@@ -15,18 +15,18 @@ function catalogoPasosImportEstructura(): array
             'clave'            => 'miembros',
             'etiqueta'         => 'Miembros',
             'pestana_permiso'  => 'lideres',
-            'descripcion'      => 'Carga todos los miembros e indica si son esposo o esposa.',
-            'ayuda'            => 'Una fila por miembro. Nombres, apellidos y pareja son obligatorios. La cédula ayuda a evitar duplicados y a asignarlos después.',
+            'descripcion'      => 'Carga todos los miembros con su género. El parentesco se conecta después, cuando ya estén registrados.',
+            'ayuda'            => 'Una fila por miembro. Nombres, apellidos y género son obligatorios. La cédula ayuda a evitar duplicados.',
             'columnas'         => [
                 'nombre'   => 'Nombres',
                 'apellido' => 'Apellidos',
-                'pareja'   => 'Pareja',
+                'genero'   => 'Genero',
                 'cedula'   => 'Cedula',
                 'celular'  => 'Celular',
                 'email'    => 'Email',
                 'notas'    => 'Notas',
             ],
-            'requeridas'       => ['nombre', 'apellido', 'pareja'],
+            'requeridas'       => ['nombre', 'apellido', 'genero'],
             'archivo_xls'      => 'plantilla-estructura-miembros.xls',
             'archivo_csv'      => 'plantilla-estructura-miembros.csv',
         ],
@@ -244,7 +244,7 @@ function descripcionesColumnasPasoImportEstructura(string $paso): array
         'miembros' => [
             ['Nombres', 'Sí', 'Nombre de pila. Se normaliza a formato título.'],
             ['Apellidos', 'Sí', 'Apellidos del miembro.'],
-            ['Pareja', 'Sí', 'esposo o esposa.'],
+            ['Genero', 'Sí', 'masculino o femenino.'],
             ['Cedula', 'No', 'Documento. Si se repite, la fila se omite.'],
             ['Celular', 'No', 'Número de contacto.'],
             ['Email', 'No', 'Correo electrónico.'],
@@ -278,7 +278,7 @@ function descripcionesColumnasPasoImportEstructura(string $paso): array
 function ejemploFilaPasoImportEstructura(string $paso): array
 {
     return match ($paso) {
-        'miembros' => ['Juan Carlos', 'Pérez Gómez', 'esposo', '1234567890', '3001234567', 'juan@correo.com', 'Coordinador'],
+        'miembros' => ['Juan Carlos', 'Pérez Gómez', 'masculino', '1234567890', '3001234567', 'juan@correo.com', 'Coordinador'],
         'territorios' => ['Norte'],
         'asignaciones' => ['Norte', 'coordinador', 'Juan Carlos Pérez Gómez', 'Ana María Pérez Gómez', '1234567890', '0987654321'],
         'casas' => ['Casa Esperanza', 'Cra 10 #20-30', 'Norte', 'Ana María Pérez Gómez', '1234567890'],
@@ -347,7 +347,7 @@ function aliasEncabezadosPasoImportEstructura(string $paso): array
         'miembros' => [
             'nombre'   => ['nombre', 'nombres', 'nombre persona', 'nombres persona', 'nombre miembro'],
             'apellido' => ['apellido', 'apellidos', 'apellido persona', 'apellidos persona'],
-            'pareja'   => ['pareja', 'esposo esposa', 'genero', 'sexo', 'tipo'],
+            'genero'   => ['genero', 'sexo', 'genero miembro'],
             'cedula'   => ['cedula', 'documento', 'identificacion', 'cc', 'dni'],
             'celular'  => ['celular', 'telefono', 'tel', 'movil', 'whatsapp'],
             'email'    => ['email', 'correo', 'correo electronico', 'mail'],
@@ -464,7 +464,7 @@ function importarPersonasEstructura(array $filas): array
                 $datos = [
                     'nombre'   => trim((string) ($fila['nombre'] ?? '')),
                     'apellido' => trim((string) ($fila['apellido'] ?? '')),
-                    'pareja'   => trim((string) ($fila['pareja'] ?? '')),
+                    'genero'   => trim((string) ($fila['genero'] ?? '')),
                     'cedula'   => trim((string) ($fila['cedula'] ?? '')),
                     'celular'  => trim((string) ($fila['celular'] ?? '')),
                     'email'    => trim((string) ($fila['email'] ?? '')),
@@ -585,6 +585,7 @@ function importarAsignacionesEstructura(array $filas): array
                     continue;
                 }
 
+                asegurarParentescoEsposos((int) $esposo['id'], (int) $esposa['id']);
                 asignarParejaATerritorios($rol, (int) $esposo['id'], (int) $esposa['id'], [(int) $territorio['id']]);
                 $existentes[$claveEsposo] = (int) $esposo['id'];
                 $existentes[$claveEsposa] = (int) $esposa['id'];

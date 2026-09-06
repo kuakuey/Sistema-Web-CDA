@@ -91,49 +91,17 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
     <div class="table-responsive">
       <table class="table table-hover table-dashboard mb-0 align-middle">
         <thead class="table-light">
-          <tr><th>#</th><th>Nombre</th><th>Género</th><th>Cédula</th><th>Parentesco</th><th>Territorios</th><th>Acciones</th></tr>
+          <tr>
+            <th style="width: 70%">Nombre</th>
+            <th style="width: 15%">Celular</th>
+            <th style="width: 15%">Acciones</th>
+          </tr>
         </thead>
         <tbody>
           <?php foreach ($lideresPagina as $l): ?>
-          <?php
-          $conteo = $conteoAsignaciones[(int) $l['id']] ?? ['coordinador' => 0, 'encargado' => 0];
-          $parentesco = $parentescoPorMiembro[(int) $l['id']] ?? null;
-          ?>
           <tr>
-            <td class="text-muted"><?= (int) $l['id'] ?></td>
-            <td>
-              <?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?>
-              <?php if (!empty($l['celular'])): ?>
-              <div class="text-muted small"><?= htmlspecialchars((string) $l['celular']) ?></div>
-              <?php endif; ?>
-            </td>
-            <td><?= htmlspecialchars(etiquetaGeneroMiembro($l['genero'] ?? '')) ?></td>
-            <td><?= htmlspecialchars(($l['cedula'] ?? '') !== '' ? (string) $l['cedula'] : '—') ?></td>
-            <td class="small">
-              <?php if ($parentesco): ?>
-              <?= htmlspecialchars(etiquetaParentescoMiembro((string) $parentesco['parentesco'])) ?>
-              de <?= htmlspecialchars(trim($parentesco['pariente_nombre'] . ' ' . $parentesco['pariente_apellido'])) ?>
-              <form method="POST" action="estructura.php?pestaña=lideres&amp;pagina=<?= (int) $paginaMiembros ?>" class="d-inline">
-                <input type="hidden" name="accion" value="eliminar_parentesco">
-                <input type="hidden" name="miembro_id" value="<?= (int) $parentesco['miembro_id'] ?>">
-                <input type="hidden" name="pariente_id" value="<?= (int) $parentesco['pariente_id'] ?>">
-                <button type="submit" class="btn btn-link btn-sm p-0 ms-1">Quitar</button>
-              </form>
-              <?php else: ?>
-              <span class="text-muted">Sin conectar</span>
-              <?php endif; ?>
-            </td>
-            <td class="small">
-              <?php if ((int) $conteo['coordinador'] > 0): ?>
-              <div>Coord. <?= (int) $conteo['coordinador'] ?></div>
-              <?php endif; ?>
-              <?php if ((int) $conteo['encargado'] > 0): ?>
-              <div>Enc. <?= (int) $conteo['encargado'] ?></div>
-              <?php endif; ?>
-              <?php if ((int) $conteo['coordinador'] === 0 && (int) $conteo['encargado'] === 0): ?>
-              <span class="text-muted">Sin asignar</span>
-              <?php endif; ?>
-            </td>
+            <td><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></td>
+            <td><?= htmlspecialchars(($l['celular'] ?? '') !== '' ? (string) $l['celular'] : '—') ?></td>
             <td class="text-nowrap">
               <a
                 class="btn btn-sm btn-outline-primary"
@@ -160,7 +128,7 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
           </tr>
           <?php endforeach; ?>
           <?php if (empty($lideresPagina)): ?>
-          <tr><td colspan="7" class="text-center text-muted py-4">No hay miembros registrados.</td></tr>
+          <tr><td colspan="3" class="text-center text-muted py-4">No hay miembros registrados.</td></tr>
           <?php endif; ?>
         </tbody>
       </table>

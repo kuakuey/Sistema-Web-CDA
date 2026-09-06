@@ -113,7 +113,23 @@ $nombreCompleto = trim((string) ($miembroDetalle['nombre'] ?? '') . ' ' . (strin
         <?php else: ?>
         <ul class="small mb-0 ps-3">
           <?php foreach ($casasMiembro as $casa): ?>
-          <li><?= htmlspecialchars((string) $casa['nombre']) ?></li>
+          <?php
+          $rolesCasa = [];
+          $miembroId = (int) ($miembroDetalle['id'] ?? 0);
+          if ((int) ($casa['lider_id'] ?? 0) === $miembroId) {
+              $rolesCasa[] = 'Líder';
+          }
+          if ((int) ($casa['colaborador_id'] ?? 0) === $miembroId) {
+              $rolesCasa[] = 'Colaborador';
+          }
+          if ((int) ($casa['anfitrion_id'] ?? 0) === $miembroId) {
+              $rolesCasa[] = 'Anfitrión';
+          }
+          ?>
+          <li>
+            <?= htmlspecialchars(implode(', ', $rolesCasa)) ?>
+            · <?= htmlspecialchars((string) ($casa['direccion'] ?? nombreVisibleCasaVida($casa))) ?>
+          </li>
           <?php endforeach; ?>
         </ul>
         <?php endif; ?>

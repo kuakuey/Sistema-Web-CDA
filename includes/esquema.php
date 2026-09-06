@@ -551,13 +551,22 @@ function migrateEstructuraTables(PDO $pdo): void
             id INT AUTO_INCREMENT PRIMARY KEY,
             territorio_id INT NOT NULL,
             lider_id INT NOT NULL,
+            colaborador_id INT NOT NULL DEFAULT 0,
+            anfitrion_id INT NOT NULL DEFAULT 0,
             nombre VARCHAR(100) NOT NULL,
             direccion VARCHAR(255) NOT NULL,
             creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_territorio (territorio_id),
-            INDEX idx_lider (lider_id)
+            INDEX idx_lider (lider_id),
+            INDEX idx_colaborador (colaborador_id),
+            INDEX idx_anfitrion (anfitrion_id)
         ) ENGINE=InnoDB'
     );
+
+    asegurarColumnasTabla($pdo, 'casas_vida', [
+        'colaborador_id' => 'ADD COLUMN colaborador_id INT NOT NULL DEFAULT 0 AFTER lider_id',
+        'anfitrion_id'   => 'ADD COLUMN anfitrion_id INT NOT NULL DEFAULT 0 AFTER colaborador_id',
+    ]);
 
     asegurarColumnasTabla($pdo, 'lideres', [
         'pareja' => "ADD COLUMN pareja VARCHAR(20) NOT NULL DEFAULT 'esposo' AFTER apellido",

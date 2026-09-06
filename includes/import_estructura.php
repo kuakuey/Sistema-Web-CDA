@@ -68,16 +68,19 @@ function catalogoPasosImportEstructura(): array
             'clave'            => 'casas',
             'etiqueta'         => 'Casas de vida',
             'pestana_permiso'  => 'casas',
-            'descripcion'      => 'Asigna cada casa de vida a un territorio y a un miembro ya creados.',
-            'ayuda'            => 'El territorio y el miembro deben existir. Prefiere la cédula; si no, usa el nombre completo.',
+            'descripcion'      => 'Cada casa de vida tiene líder, colaborador, anfitrión y dirección. Los tres deben ser miembros ya creados.',
+            'ayuda'            => 'Prefiere la cédula para relacionar a cada persona. Si no hay cédula, usa el nombre completo.',
             'columnas'         => [
-                'nombre_casa'  => 'Nombre casa',
-                'direccion'    => 'Direccion',
-                'territorio'   => 'Territorio',
-                'lider'        => 'Lider',
-                'cedula_lider' => 'Cedula lider',
+                'territorio'          => 'Territorio',
+                'direccion'           => 'Direccion',
+                'lider'               => 'Lider',
+                'cedula_lider'        => 'Cedula lider',
+                'colaborador'         => 'Colaborador',
+                'cedula_colaborador'  => 'Cedula colaborador',
+                'anfitrion'           => 'Anfitrion',
+                'cedula_anfitrion'    => 'Cedula anfitrion',
             ],
-            'requeridas'       => ['nombre_casa', 'direccion', 'territorio'],
+            'requeridas'       => ['territorio', 'direccion'],
             'archivo_xls'      => 'plantilla-estructura-casas.xls',
             'archivo_csv'      => 'plantilla-estructura-casas.csv',
         ],
@@ -262,11 +265,14 @@ function descripcionesColumnasPasoImportEstructura(string $paso): array
             ['Cedula esposa', 'Sí*', 'Forma más segura de relacionar a la esposa.'],
         ],
         'casas' => [
-            ['Nombre casa', 'Sí', 'Nombre de la casa de vida.'],
-            ['Direccion', 'Sí', 'Dirección o punto de referencia.'],
             ['Territorio', 'Sí', 'Debe coincidir con un territorio ya creado.'],
-            ['Lider', 'Sí*', 'Nombre completo de la persona. Obligatorio si no hay cédula.'],
-            ['Cedula lider', 'Sí*', 'Cédula de la persona. Es la forma más segura de relacionarla.'],
+            ['Direccion', 'Sí', 'Dirección o punto de referencia de la casa.'],
+            ['Lider', 'Sí*', 'Nombre completo. Obligatorio si no hay cédula del líder.'],
+            ['Cedula lider', 'Sí*', 'Forma más segura de relacionar al líder.'],
+            ['Colaborador', 'Sí*', 'Nombre completo. Obligatorio si no hay cédula del colaborador.'],
+            ['Cedula colaborador', 'Sí*', 'Forma más segura de relacionar al colaborador.'],
+            ['Anfitrion', 'Sí*', 'Nombre completo. Obligatorio si no hay cédula del anfitrión.'],
+            ['Cedula anfitrion', 'Sí*', 'Forma más segura de relacionar al anfitrión.'],
         ],
         default => [],
     };
@@ -281,7 +287,7 @@ function ejemploFilaPasoImportEstructura(string $paso): array
         'miembros' => ['Juan Carlos', 'Pérez Gómez', 'masculino', '1234567890', '3001234567', 'juan@correo.com', 'Coordinador'],
         'territorios' => ['Norte'],
         'asignaciones' => ['Norte', 'coordinador', 'Juan Carlos Pérez Gómez', 'Ana María Pérez Gómez', '1234567890', '0987654321'],
-        'casas' => ['Casa Esperanza', 'Cra 10 #20-30', 'Norte', 'Ana María Pérez Gómez', '1234567890'],
+        'casas' => ['Norte', 'Cra 10 #20-30', 'Ana María Pérez Gómez', '1234567890', 'Juan Carlos Pérez Gómez', '0987654321', 'Laura Gómez', '1122334455'],
         default => [],
     };
 }
@@ -365,11 +371,14 @@ function aliasEncabezadosPasoImportEstructura(string $paso): array
             'cedula_esposa' => ['cedula esposa', 'documento esposa', 'cc esposa'],
         ],
         'casas' => [
-            'nombre_casa'  => ['nombre casa', 'casa', 'casa de vida', 'nombre', 'nombre cdv', 'cdv'],
-            'direccion'    => ['direccion', 'dir', 'ubicacion', 'direccion casa'],
-            'territorio'   => ['territorio', 'nombre territorio', 'zona'],
-            'lider'        => ['lider', 'persona', 'nombre lider', 'lider casa', 'nombre completo lider'],
-            'cedula_lider' => ['cedula lider', 'cedula persona', 'documento lider', 'cc lider', 'cedula'],
+            'territorio'         => ['territorio', 'nombre territorio', 'zona'],
+            'direccion'          => ['direccion', 'dir', 'ubicacion', 'direccion casa'],
+            'lider'              => ['lider', 'nombre lider', 'lider casa', 'nombre completo lider'],
+            'cedula_lider'       => ['cedula lider', 'documento lider', 'cc lider'],
+            'colaborador'        => ['colaborador', 'nombre colaborador', 'colaborador casa'],
+            'cedula_colaborador' => ['cedula colaborador', 'documento colaborador', 'cc colaborador'],
+            'anfitrion'          => ['anfitrion', 'nombre anfitrion', 'anfitrion casa', 'host'],
+            'cedula_anfitrion'   => ['cedula anfitrion', 'documento anfitrion', 'cc anfitrion'],
         ],
         default => [],
     };
@@ -613,6 +622,32 @@ function importarAsignacionesEstructura(array $filas): array
  * @param array{cedula: array<string, array<string, mixed>>, nombre: array<string, array<string, mixed>>} $indice
  * @return array<string, mixed>|null
  */
+/**
+ * @param array{cedula: array<string, array<string, mixed>>, nombre: array<string, array<string, mixed>>} $indice
+ * @param array<string, string> $fila
+ * @return array<string, mixed>
+ */
+function resolverMiembroRolImportEstructura(array $indice, array $fila, string $rol, string $etiqueta): array
+{
+    $nombre = trim((string) ($fila[$rol] ?? ''));
+    $cedula = normalizarCedulaImportEstructura($fila['cedula_' . $rol] ?? '');
+
+    if ($cedula === '' && $nombre === '') {
+        throw new InvalidArgumentException('Indica el ' . $etiqueta . ' (nombre completo) o su cédula.');
+    }
+
+    $miembro = resolverMiembroImportEstructura($indice, $cedula, $nombre);
+    if ($miembro === null) {
+        throw new InvalidArgumentException($etiqueta . ' no encontrado: ' . ($cedula !== '' ? $cedula : $nombre));
+    }
+
+    return $miembro;
+}
+
+/**
+ * @param array{cedula: array<string, array<string, mixed>>, nombre: array<string, array<string, mixed>>} $indice
+ * @return array<string, mixed>|null
+ */
 function resolverMiembroImportEstructura(array $indice, string $cedula, string $nombre): ?array
 {
     if ($cedula !== '' && isset($indice['cedula'][$cedula])) {
@@ -697,7 +732,7 @@ function importarCasasEstructura(array $filas): array
 
     $casasExistentes = [];
     foreach (obtenerCasasVida() as $casa) {
-        $clave = (int) $casa['territorio_id'] . '|' . claveTextoImportEstructura((string) $casa['nombre']);
+        $clave = (int) $casa['territorio_id'] . '|' . claveTextoImportEstructura((string) $casa['direccion']);
         $casasExistentes[$clave] = $casa;
     }
 
@@ -713,18 +748,11 @@ function importarCasasEstructura(array $filas): array
             $numeroFila = (int) ($fila['_fila'] ?? 0);
 
             try {
-                $nombreCasa = trim((string) ($fila['nombre_casa'] ?? ''));
                 $direccion = trim((string) ($fila['direccion'] ?? ''));
                 $territorioNombre = trim((string) ($fila['territorio'] ?? ''));
-                $liderNombre = trim((string) ($fila['lider'] ?? ''));
-                $cedulaLider = normalizarCedulaImportEstructura($fila['cedula_lider'] ?? '');
 
-                if ($nombreCasa === '' || $direccion === '' || $territorioNombre === '') {
-                    throw new InvalidArgumentException('Nombre de casa, dirección y territorio son obligatorios.');
-                }
-
-                if ($cedulaLider === '' && $liderNombre === '') {
-                    throw new InvalidArgumentException('Indica el líder (nombre completo) o su cédula.');
+                if ($direccion === '' || $territorioNombre === '') {
+                    throw new InvalidArgumentException('Dirección y territorio son obligatorios.');
                 }
 
                 $territorio = $territorios[claveTextoImportEstructura($territorioNombre)] ?? null;
@@ -732,30 +760,22 @@ function importarCasasEstructura(array $filas): array
                     throw new InvalidArgumentException('Territorio no encontrado: ' . $territorioNombre);
                 }
 
-                $lider = null;
-                if ($cedulaLider !== '' && isset($lideres['cedula'][$cedulaLider])) {
-                    $lider = $lideres['cedula'][$cedulaLider];
-                } elseif ($liderNombre !== '') {
-                    $claveLider = claveTextoImportEstructura($liderNombre);
-                    $lider = $lideres['nombre'][$claveLider] ?? null;
-                }
+                $lider = resolverMiembroRolImportEstructura($lideres, $fila, 'lider', 'Líder');
+                $colaborador = resolverMiembroRolImportEstructura($lideres, $fila, 'colaborador', 'Colaborador');
+                $anfitrion = resolverMiembroRolImportEstructura($lideres, $fila, 'anfitrion', 'Anfitrión');
 
-                if ($lider === null) {
-                    $referencia = $cedulaLider !== '' ? $cedulaLider : $liderNombre;
-                    throw new InvalidArgumentException('Persona/líder no encontrada: ' . $referencia);
-                }
-
-                $claveCasa = (int) $territorio['id'] . '|' . claveTextoImportEstructura($nombreCasa);
+                $claveCasa = (int) $territorio['id'] . '|' . claveTextoImportEstructura($direccion);
                 if (isset($casasExistentes[$claveCasa])) {
                     $duplicados++;
                     continue;
                 }
 
                 $id = crearCasaVida([
-                    'territorio_id' => (int) $territorio['id'],
-                    'lider_id'      => (int) $lider['id'],
-                    'nombre'        => $nombreCasa,
-                    'direccion'     => $direccion,
+                    'territorio_id'  => (int) $territorio['id'],
+                    'lider_id'       => (int) $lider['id'],
+                    'colaborador_id' => (int) $colaborador['id'],
+                    'anfitrion_id'   => (int) $anfitrion['id'],
+                    'direccion'      => $direccion,
                 ]);
 
                 $casasExistentes[$claveCasa] = ['id' => $id];

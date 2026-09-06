@@ -222,11 +222,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             case 'crear_casa':
-                if (trim($_POST['nombre'] ?? '') === '' || trim($_POST['direccion'] ?? '') === '') {
-                    throw new InvalidArgumentException('Nombre y dirección de la casa son obligatorios.');
-                }
-                crearCasaVida($_POST);
-                registrarActividadPorAccion('crear_casa', 0, 'Crear casa de vida · ' . trim((string) $_POST['nombre']));
+                $idCasa = crearCasaVida($_POST);
+                $casaCreada = obtenerCasaVida($idCasa);
+                registrarActividadPorAccion(
+                    'crear_casa',
+                    $idCasa,
+                    'Crear casa de vida · ' . ($casaCreada ? nombreVisibleCasaVida($casaCreada) : trim((string) ($_POST['direccion'] ?? '')))
+                );
                 $mensaje = 'Casa de vida creada correctamente.';
                 $pestaña = 'casas';
                 break;
@@ -361,7 +363,11 @@ if ($pestaña === 'lideres' && $miembroVistaId > 0) {
         }
 
         foreach ($casas as $casa) {
-            if ((int) $casa['lider_id'] === $miembroVistaId) {
+            if (
+                (int) $casa['lider_id'] === $miembroVistaId
+                || (int) ($casa['colaborador_id'] ?? 0) === $miembroVistaId
+                || (int) ($casa['anfitrion_id'] ?? 0) === $miembroVistaId
+            ) {
                 $casasMiembro[] = $casa;
             }
         }

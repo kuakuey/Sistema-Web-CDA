@@ -906,31 +906,106 @@ function guardarTerritorioConAsignaciones(int $id, string $nombre, array $coordi
 /**
  * @return array<int, array<string, mixed>>
  */
+function sqlSelectCasasVida(): string
+{
+    return 'SELECT c.*, t.nombre AS territorio_nombre,
+                   l.nombre AS lider_nombre, l.apellido AS lider_apellido,
+                   col.nombre AS colaborador_nombre, col.apellido AS colaborador_apellido,
+                   anf.nombre AS anfitrion_nombre, anf.apellido AS anfitrion_apellido
+            FROM casas_vida c
+            INNER JOIN territorios t ON t.id = c.territorio_id
+            INNER JOIN lideres l ON l.id = c.lider_id
+            LEFT JOIN lideres col ON col.id = c.colaborador_id
+            LEFT JOIN lideres anf ON anf.id = c.anfitrion_id';
+}
+
+function nombreVisibleCasaVida(array $casa): string
+{
+    $anfitrion = trim((string) ($casa['anfitrion_nombre'] ?? '') . ' ' . (string) ($casa['anfitrion_apellido'] ?? ''));
+    if ($anfitrion !== '') {
+        return $anfitrion;
+    }
+
+    $nombre = trim((string) ($casa['nombre'] ?? ''));
+    if ($nombre !== '') {
+        return $nombre;
+    }
+
+    $direccion = trim((string) ($casa['direccion'] ?? ''));
+
+    return $direccion !== '' ? $direccion : 'Casa de vida';
+}
+
+/**
+ * @return array{territorio_id: int, lider_id: int, colaborador_id: int, anfitrion_id: int, nombre: string, direccion: string}
+ */
+function normalizarDatosCasaVida(array $datos): array
+{
+    require_once __DIR__ . '/texto.php';
+    $datos = normalizarCamposTextoOrdenado($datos, ['nombre', 'direccion']);
+
+    $territorioId = (int) ($datos['territorio_id'] ?? 0);
+    $liderId = (int) ($datos['lider_id'] ?? 0);
+    $colaboradorId = (int) ($datos['colaborador_id'] ?? 0);
+    $anfitrionId = (int) ($datos['anfitrion_id'] ?? 0);
+    $direccion = trim((string) ($datos['direccion'] ?? ''));
+
+    if ($territorioId <= 0) {
+        throw new InvalidArgumentException('Selecciona el territorio de la casa de vida.');
+    }
+    if ($direccion === '') {
+        throw new InvalidArgumentException('La dirección de la casa de vida es obligatoria.');
+    }
+    if ($liderId <= 0 || $colaboradorId <= 0 || $anfitrionId <= 0) {
+        throw new InvalidArgumentException('La casa de vida necesita líder, colaborador y anfitrión.');
+    }
+
+    $roles = [
+        'líder'       => $liderId,
+        'colaborador' => $colaboradorId,
+        'anfitrión'   => $anfitrionId,
+    ];
+    $vistos = [];
+    foreach ($roles as $etiqueta => $miembroId) {
+        if (isset($vistos[$miembroId])) {
+            throw new InvalidArgumentException('El líder, el colaborador y el anfitrión deben ser miembros distintos.');
+        }
+        $vistos[$miembroId] = $etiqueta;
+
+        if (obtenerLider($miembroId) === null) {
+            throw new InvalidArgumentException('El ' . $etiqueta . ' seleccionado no existe.');
+        }
+    }
+
+    $anfitrion = obtenerLider($anfitrionId);
+    $nombre = trim((string) ($datos['nombre'] ?? ''));
+    if ($nombre === '') {
+        $nombre = $anfitrion !== null ? nombreCompletoLider($anfitrion) : $direccion;
+    }
+
+    return [
+        'territorio_id'   => $territorioId,
+        'lider_id'        => $liderId,
+        'colaborador_id'  => $colaboradorId,
+        'anfitrion_id'    => $anfitrionId,
+        'nombre'          => $nombre,
+        'direccion'       => $direccion,
+    ];
+}
+
 function obtenerCasasVida(): array
 {
     $pdo = getConnection();
 
     return $pdo->query(
-        'SELECT c.*, t.nombre AS territorio_nombre,
-                l.nombre AS lider_nombre, l.apellido AS lider_apellido
-         FROM casas_vida c
-         INNER JOIN territorios t ON t.id = c.territorio_id
-         INNER JOIN lideres l ON l.id = c.lider_id
-         ORDER BY c.creado_en DESC, c.id DESC'
+        sqlSelectCasasVida() . ' ORDER BY c.creado_en DESC, c.id DESC'
     )->fetchAll();
 }
 
 function obtenerCasaVida(int $id): ?array
 {
     $pdo = getConnection();
-    $stmt = $pdo->prepare(
-        'SELECT c.*, t.nombre AS territorio_nombre,
-                l.nombre AS lider_nombre, l.apellido AS lider_apellido
-         FROM casas_vida c
-         INNER JOIN territorios t ON t.id = c.territorio_id
-         INNER JOIN lideres l ON l.id = c.lider_id
-         WHERE c.id = ?'
-    );
+    $stmt = $pdo->prepare(sqlSelectCasasVida() . ' WHERE c.id = ?');
     $stmt->execute([$id]);
 
     return $stmt->fetch() ?: null;
@@ -938,19 +1013,20 @@ function obtenerCasaVida(int $id): ?array
 
 function crearCasaVida(array $datos): int
 {
-    require_once __DIR__ . '/texto.php';
-    $datos = normalizarCamposTextoOrdenado($datos, ['nombre', 'direccion']);
+    $datos = normalizarDatosCasaVida($datos);
 
     $pdo = getConnection();
     $stmt = $pdo->prepare(
-        'INSERT INTO casas_vida (territorio_id, lider_id, nombre, direccion, creado_en)
-         VALUES (?, ?, ?, ?, NOW())'
+        'INSERT INTO casas_vida (territorio_id, lider_id, colaborador_id, anfitrion_id, nombre, direccion, creado_en)
+         VALUES (?, ?, ?, ?, ?, ?, NOW())'
     );
     $stmt->execute([
-        (int) $datos['territorio_id'],
-        (int) $datos['lider_id'],
-        trim($datos['nombre']),
-        trim($datos['direccion']),
+        $datos['territorio_id'],
+        $datos['lider_id'],
+        $datos['colaborador_id'],
+        $datos['anfitrion_id'],
+        $datos['nombre'],
+        $datos['direccion'],
     ]);
 
     return (int) $pdo->lastInsertId();
@@ -958,19 +1034,22 @@ function crearCasaVida(array $datos): int
 
 function actualizarCasaVida(int $id, array $datos): bool
 {
-    require_once __DIR__ . '/texto.php';
-    $datos = normalizarCamposTextoOrdenado($datos, ['nombre', 'direccion']);
+    $datos = normalizarDatosCasaVida($datos);
 
     $pdo = getConnection();
     $stmt = $pdo->prepare(
-        'UPDATE casas_vida SET territorio_id = ?, lider_id = ?, nombre = ?, direccion = ? WHERE id = ?'
+        'UPDATE casas_vida
+         SET territorio_id = ?, lider_id = ?, colaborador_id = ?, anfitrion_id = ?, nombre = ?, direccion = ?
+         WHERE id = ?'
     );
 
     return $stmt->execute([
-        (int) $datos['territorio_id'],
-        (int) $datos['lider_id'],
-        trim($datos['nombre']),
-        trim($datos['direccion']),
+        $datos['territorio_id'],
+        $datos['lider_id'],
+        $datos['colaborador_id'],
+        $datos['anfitrion_id'],
+        $datos['nombre'],
+        $datos['direccion'],
         $id,
     ]);
 }
@@ -1004,8 +1083,10 @@ function obtenerEstructuraParaApi(): array
         $listaCasas[] = [
             'id'            => (int) $casa['id'],
             'territorio_id' => (int) $casa['territorio_id'],
-            'nombre'        => $casa['nombre'],
+            'nombre'        => nombreVisibleCasaVida($casa),
             'lider'         => trim($casa['lider_nombre'] . ' ' . $casa['lider_apellido']),
+            'colaborador'   => trim(($casa['colaborador_nombre'] ?? '') . ' ' . ($casa['colaborador_apellido'] ?? '')),
+            'anfitrion'     => trim(($casa['anfitrion_nombre'] ?? '') . ' ' . ($casa['anfitrion_apellido'] ?? '')),
             'direccion'     => $casa['direccion'],
         ];
     }

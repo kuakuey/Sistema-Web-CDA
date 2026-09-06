@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php if ($pestaña === 'casas'): ?>
 <div class="alert alert-light border small mb-4">
   <i class="bi bi-lightbulb me-1 text-primary"></i>
-  Paso 3: asigna cada casa de vida a un territorio y a un miembro líder.
+  Paso 3: cada casa de vida tiene líder, colaborador, anfitrión y dirección.
   <?php if (in_array('importar', $pestañasEstructura, true)): ?>
   Si ya cargaste miembros y territorios, puedes
   <a href="estructura.php?pestaña=importar&amp;paso=casas">importar las casas desde Excel o CSV</a>.
@@ -556,10 +556,10 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white py-3"><h3 class="h6 mb-0">Nueva casa de vida</h3></div>
       <div class="card-body">
-        <?php if (empty($territorios) || empty($lideres)): ?>
-        <p class="text-muted small mb-2">Primero crea al menos un miembro y un territorio.</p>
+        <?php if (empty($territorios) || count($lideres) < 3): ?>
+        <p class="text-muted small mb-2">Primero crea un territorio y al menos tres miembros (líder, colaborador y anfitrión).</p>
         <div class="d-flex flex-wrap gap-2">
-          <?php if (empty($lideres) && in_array('lideres', $pestañasEstructura, true)): ?>
+          <?php if (count($lideres) < 3 && in_array('lideres', $pestañasEstructura, true)): ?>
           <a class="btn btn-sm btn-outline-primary" href="estructura.php?pestaña=lideres">Ir a miembros</a>
           <?php endif; ?>
           <?php if (empty($territorios) && in_array('territorios', $pestañasEstructura, true)): ?>
@@ -578,16 +578,31 @@ document.addEventListener('DOMContentLoaded', function () {
             </select>
           </div>
           <div class="mb-2">
-            <label class="form-label">Miembro (líder)</label>
+            <label class="form-label">Líder</label>
             <select class="form-select" name="lider_id" required>
+              <option value="">Seleccione…</option>
               <?php foreach ($lideres as $l): ?>
               <option value="<?= (int) $l['id'] ?>"><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></option>
               <?php endforeach; ?>
             </select>
           </div>
           <div class="mb-2">
-            <label class="form-label">Nombre casa</label>
-            <input type="text" class="form-control" name="nombre" required>
+            <label class="form-label">Colaborador</label>
+            <select class="form-select" name="colaborador_id" required>
+              <option value="">Seleccione…</option>
+              <?php foreach ($lideres as $l): ?>
+              <option value="<?= (int) $l['id'] ?>"><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Anfitrión</label>
+            <select class="form-select" name="anfitrion_id" required>
+              <option value="">Seleccione…</option>
+              <?php foreach ($lideres as $l): ?>
+              <option value="<?= (int) $l['id'] ?>"><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></option>
+              <?php endforeach; ?>
+            </select>
           </div>
           <div class="mb-3">
             <label class="form-label">Dirección</label>
@@ -604,15 +619,15 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="card-body p-0">
         <table class="table table-hover table-dashboard mb-0 align-middle">
           <thead class="table-light">
-            <tr><th>#</th><th>Casa</th><th>Territorio</th><th>Líder</th><th>Dirección</th><th></th></tr>
+            <tr><th>Territorio</th><th>Líder</th><th>Colaborador</th><th>Anfitrión</th><th>Dirección</th><th></th></tr>
           </thead>
           <tbody>
             <?php foreach ($casas as $c): ?>
             <tr>
-              <td class="text-muted"><?= (int) $c['id'] ?></td>
-              <td><?= htmlspecialchars($c['nombre']) ?></td>
-              <td><?= htmlspecialchars($c['territorio_nombre']) ?></td>
-              <td><?= htmlspecialchars($c['lider_nombre'] . ' ' . $c['lider_apellido']) ?></td>
+              <td><?= htmlspecialchars((string) $c['territorio_nombre']) ?></td>
+              <td><?= htmlspecialchars(trim($c['lider_nombre'] . ' ' . $c['lider_apellido'])) ?></td>
+              <td><?= htmlspecialchars(trim(($c['colaborador_nombre'] ?? '') . ' ' . ($c['colaborador_apellido'] ?? '')) ?: '—') ?></td>
+              <td><?= htmlspecialchars(trim(($c['anfitrion_nombre'] ?? '') . ' ' . ($c['anfitrion_apellido'] ?? '')) ?: '—') ?></td>
               <td class="text-truncate-cell"><?= htmlspecialchars($c['direccion']) ?></td>
               <td>
                 <?php if ($puedeEliminar): ?>

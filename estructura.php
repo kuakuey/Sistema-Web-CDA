@@ -45,6 +45,7 @@ if ($pestaña === 'importar' && isset($_GET['descargar']) && $_GET['descargar'] 
 
 $mensaje = null;
 $error = null;
+$miembroVistaId = isset($_GET['miembro']) ? (int) $_GET['miembro'] : 0;
 
 $resultadoImportEstructura = $_SESSION['import_estructura_resultado'] ?? null;
 $errorImportEstructura = $_SESSION['import_estructura_error'] ?? null;
@@ -217,6 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 registrarActividadPorAccion('actualizar_lider', $id);
                 $mensaje = 'Miembro actualizado.';
                 $pestaña = 'lideres';
+                $miembroVistaId = $id;
                 break;
 
             case 'crear_casa':
@@ -313,11 +315,58 @@ if ($error !== null && isset($accion)) {
             'coordinador_ids'  => array_values(normalizarIdsEnteros($_POST['coordinador_ids'] ?? [])),
             'encargado_ids'    => array_values(normalizarIdsEnteros($_POST['encargado_ids'] ?? [])),
         ];
+    } elseif ($accion === 'actualizar_lider') {
+        $miembroVistaId = (int) ($_POST['id'] ?? $miembroVistaId);
     }
 }
 $etiquetasRoles = obtenerEtiquetasRoles();
 $seccionesPermitidas = obtenerSeccionesPermitidas($usuario['rol']);
 $etiquetasSecciones = obtenerEtiquetasSecciones();
+
+$miembroDetalle = null;
+$datosMiembro = null;
+$asignacionesMiembro = [];
+$casasMiembro = [];
+if ($pestaña === 'lideres' && $miembroVistaId > 0) {
+    foreach ($lideres as $lider) {
+        if ((int) $lider['id'] === $miembroVistaId) {
+            $miembroDetalle = $lider;
+            break;
+        }
+    }
+
+    if ($miembroDetalle === null) {
+        if ($error === null) {
+            $error = 'El miembro no existe.';
+        }
+        $miembroVistaId = 0;
+    } else {
+        $datosMiembro = $miembroDetalle;
+        if ($error !== null && isset($accion) && $accion === 'actualizar_lider') {
+            $datosMiembro = array_merge($miembroDetalle, [
+                'nombre'   => (string) ($_POST['nombre'] ?? $miembroDetalle['nombre']),
+                'apellido' => (string) ($_POST['apellido'] ?? $miembroDetalle['apellido']),
+                'genero'   => (string) ($_POST['genero'] ?? $miembroDetalle['genero']),
+                'cedula'   => (string) ($_POST['cedula'] ?? $miembroDetalle['cedula'] ?? ''),
+                'celular'  => (string) ($_POST['celular'] ?? $miembroDetalle['celular'] ?? ''),
+                'email'    => (string) ($_POST['email'] ?? $miembroDetalle['email'] ?? ''),
+                'notas'    => (string) ($_POST['notas'] ?? $miembroDetalle['notas'] ?? ''),
+            ]);
+        }
+
+        foreach (obtenerAsignacionesTerritorio() as $asignacion) {
+            if ((int) $asignacion['miembro_id'] === $miembroVistaId) {
+                $asignacionesMiembro[] = $asignacion;
+            }
+        }
+
+        foreach ($casas as $casa) {
+            if ((int) $casa['lider_id'] === $miembroVistaId) {
+                $casasMiembro[] = $casa;
+            }
+        }
+    }
+}
 
 try {
     $estadisticas = obtenerEstadisticasPorRol($usuario['rol']);
@@ -325,8 +374,13 @@ try {
     $estadisticas = [];
 }
 
+$tituloPagina = 'Estructura CDV';
+if (is_array($miembroDetalle)) {
+    $tituloPagina = 'Miembro · ' . trim((string) $miembroDetalle['nombre'] . ' ' . (string) $miembroDetalle['apellido']);
+}
+
 view('estructura/index', [
-    'tituloPagina'        => 'Estructura CDV',
+    'tituloPagina'        => $tituloPagina,
     'usuario'             => $usuario,
     'seccionActiva'       => 'estructura',
     'pestaña'             => $pestaña,
@@ -345,6 +399,10 @@ view('estructura/index', [
     'modalEstructura'     => $modalEstructura,
     'territorioEdicion'   => $territorioEdicion,
     'conteoAsignaciones'  => $conteoAsignaciones,
+    'miembroDetalle'      => $miembroDetalle,
+    'datosMiembro'        => $datosMiembro,
+    'asignacionesMiembro' => $asignacionesMiembro,
+    'casasMiembro'        => $casasMiembro,
     'mensaje'             => $mensaje,
     'error'               => $error,
     'puedeEliminar'       => puedeEliminarRegistros($usuario['rol']),

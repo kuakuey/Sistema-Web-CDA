@@ -281,6 +281,11 @@ function obtenerLideres(): array
     )->fetchAll();
 }
 
+function urlFichaMiembro(int $id): string
+{
+    return 'estructura.php?pestaña=lideres&miembro=' . $id;
+}
+
 function obtenerLider(int $id): ?array
 {
     asegurarTablasEstructura();

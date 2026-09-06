@@ -11,6 +11,10 @@ $resumenParejas = $resumenParejas ?? [];
 $conteoAsignaciones = $conteoAsignaciones ?? [];
 $modalEstructura = $modalEstructura ?? null;
 $territorioEdicion = $territorioEdicion ?? null;
+$miembroDetalle = $miembroDetalle ?? null;
+$datosMiembro = $datosMiembro ?? null;
+$asignacionesMiembro = $asignacionesMiembro ?? [];
+$casasMiembro = $casasMiembro ?? [];
 $lideresPagina = $lideresPagina ?? $lideres ?? [];
 $totalMiembros = $totalMiembros ?? count($lideres ?? []);
 $paginaMiembros = $paginaMiembros ?? 1;
@@ -62,7 +66,9 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
   <?php endif; ?>
 </ul>
 
-<?php if ($pestaña === 'lideres'): ?>
+<?php if ($pestaña === 'lideres' && $miembroDetalle): ?>
+<?php include __DIR__ . '/pestaña-miembro.php'; ?>
+<?php elseif ($pestaña === 'lideres'): ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
   <p class="text-muted small mb-0">
     Paso 1: crea los miembros. El parentesco y el borrado masivo están en
@@ -85,7 +91,7 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
     <div class="table-responsive">
       <table class="table table-hover table-dashboard mb-0 align-middle">
         <thead class="table-light">
-          <tr><th>#</th><th>Nombre</th><th>Género</th><th>Cédula</th><th>Parentesco</th><th>Territorios</th><th></th></tr>
+          <tr><th>#</th><th>Nombre</th><th>Género</th><th>Cédula</th><th>Parentesco</th><th>Territorios</th><th>Acciones</th></tr>
         </thead>
         <tbody>
           <?php foreach ($lideresPagina as $l): ?>
@@ -128,7 +134,14 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
               <span class="text-muted">Sin asignar</span>
               <?php endif; ?>
             </td>
-            <td>
+            <td class="text-nowrap">
+              <a
+                class="btn btn-sm btn-outline-primary"
+                href="<?= htmlspecialchars(urlFichaMiembro((int) $l['id'])) ?>"
+                title="Ver"
+              >
+                <i class="bi bi-eye"></i>
+              </a>
               <?php if ($puedeEliminar): ?>
               <form
                 method="POST"
@@ -140,7 +153,7 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
                 <input type="hidden" name="accion" value="eliminar_lider">
                 <input type="hidden" name="id" value="<?= (int) $l['id'] ?>">
                 <input type="hidden" name="redireccion" value="estructura.php?pestaña=lideres&amp;pagina=<?= (int) $paginaMiembros ?>">
-                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
               </form>
               <?php endif; ?>
             </td>

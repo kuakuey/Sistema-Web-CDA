@@ -69,7 +69,7 @@ function catalogoPasosImportEstructura(): array
             'etiqueta'         => 'Casas de vida',
             'pestana_permiso'  => 'casas',
             'descripcion'      => 'Cada casa de vida tiene nombre, líder, dirección y, si aplica, colaborador y anfitrión.',
-            'ayuda'            => 'Solo Ids. Obligatorios: Id territorio e Id lider. Id colaborador e Id anfitrion son opcionales.',
+            'ayuda'            => 'Solo Ids. Obligatorios: Id territorio e Id lider. Id colaborador e Id anfitrion son opcionales. La misma persona puede repetirse en más de un rol.',
             'columnas'         => [
                 'id_territorio'    => 'Id territorio',
                 'nombre_casa'      => 'Nombre casa',

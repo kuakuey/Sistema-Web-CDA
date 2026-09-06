@@ -969,15 +969,10 @@ function normalizarDatosCasaVida(array $datos): array
         'colaborador' => $colaboradorId,
         'anfitrión'   => $anfitrionId,
     ];
-    $vistos = [];
     foreach ($roles as $etiqueta => $miembroId) {
         if ($miembroId <= 0) {
             continue;
         }
-        if (isset($vistos[$miembroId])) {
-            throw new InvalidArgumentException('El líder, el colaborador y el anfitrión deben ser miembros distintos.');
-        }
-        $vistos[$miembroId] = $etiqueta;
 
         if (obtenerLider($miembroId) === null) {
             throw new InvalidArgumentException('El ' . $etiqueta . ' seleccionado no existe.');
@@ -1061,6 +1056,21 @@ function eliminarCasaVida(int $id): bool
     $stmt = $pdo->prepare('DELETE FROM casas_vida WHERE id = ?');
 
     return $stmt->execute([$id]) && $stmt->rowCount() > 0;
+}
+
+function eliminarTodasCasasVida(): int
+{
+    asegurarTablasEstructura();
+    $pdo = getConnection();
+    $total = (int) $pdo->query('SELECT COUNT(*) FROM casas_vida')->fetchColumn();
+
+    if ($total === 0) {
+        return 0;
+    }
+
+    $pdo->exec('DELETE FROM casas_vida');
+
+    return $total;
 }
 
 /**

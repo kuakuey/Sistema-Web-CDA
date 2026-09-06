@@ -557,124 +557,171 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php endif; ?>
 
 <?php if ($pestaña === 'casas'): ?>
-<div class="alert alert-light border small mb-4">
-  <i class="bi bi-lightbulb me-1 text-primary"></i>
-  Paso 3: cada casa de vida tiene líder y dirección. Colaborador y anfitrión son opcionales.
-  <?php if (in_array('importar', $pestañasEstructura, true)): ?>
-  Si ya cargaste miembros y territorios, puedes
-  <a href="estructura.php?pestaña=importar&amp;paso=casas">importar las casas desde Excel o CSV</a>.
-  <?php endif; ?>
+<?php $casaForm = ($modalEstructura === 'casa') ? $_POST : []; ?>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <p class="text-muted small mb-0">
+    Paso 3: cada casa de vida tiene líder y dirección. Colaborador y anfitrión son opcionales.
+    La misma persona puede repetirse en más de un rol.
+    <?php if (in_array('importar', $pestañasEstructura, true)): ?>
+    También puedes
+    <a href="estructura.php?pestaña=importar&amp;paso=casas">importarlas desde Excel o CSV</a>.
+    <?php endif; ?>
+  </p>
+  <div class="d-flex flex-wrap gap-2">
+    <?php if (!empty($puedeEliminar) && !empty($casas)): ?>
+    <form
+      method="POST"
+      action="estructura.php?pestaña=casas"
+      class="d-inline js-form-confirmar"
+      data-confirm-title="Eliminar todas las casas"
+      data-confirm="Se eliminarán todas las casas de vida. ¿Continuar?"
+    >
+      <input type="hidden" name="accion" value="eliminar_todas_casas">
+      <button type="submit" class="btn btn-outline-danger">
+        <i class="bi bi-trash me-1"></i>Borrar todas
+      </button>
+    </form>
+    <?php endif; ?>
+    <?php if (empty($territorios) || empty($lideres)): ?>
+    <?php if (empty($lideres) && in_array('lideres', $pestañasEstructura, true)): ?>
+    <a class="btn btn-outline-primary" href="estructura.php?pestaña=lideres">Ir a miembros</a>
+    <?php endif; ?>
+    <?php if (empty($territorios) && in_array('territorios', $pestañasEstructura, true)): ?>
+    <a class="btn btn-outline-primary" href="estructura.php?pestaña=territorios">Ir a territorios</a>
+    <?php endif; ?>
+    <?php else: ?>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaCasa">
+      <i class="bi bi-plus-lg me-1"></i>Nueva casa
+    </button>
+    <?php endif; ?>
+  </div>
 </div>
-<div class="row g-4">
-  <div class="col-lg-4">
-    <div class="card border-0 shadow-sm">
-      <div class="card-header bg-white py-3"><h3 class="h6 mb-0">Nueva casa de vida</h3></div>
-      <div class="card-body">
-        <?php if (empty($territorios) || empty($lideres)): ?>
-        <p class="text-muted small mb-2">Primero crea un territorio y al menos un miembro (líder).</p>
-        <div class="d-flex flex-wrap gap-2">
-          <?php if (empty($lideres) && in_array('lideres', $pestañasEstructura, true)): ?>
-          <a class="btn btn-sm btn-outline-primary" href="estructura.php?pestaña=lideres">Ir a miembros</a>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-dashboard mb-0 align-middle">
+        <thead class="table-light">
+          <tr><th>Casa</th><th>Territorio</th><th>Líder</th><th>Colaborador</th><th>Anfitrión</th><th>Dirección</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          <?php foreach ($casas as $c): ?>
+          <tr>
+            <td><?= htmlspecialchars(nombreVisibleCasaVida($c)) ?></td>
+            <td><?= htmlspecialchars((string) $c['territorio_nombre']) ?></td>
+            <td><?= htmlspecialchars(trim($c['lider_nombre'] . ' ' . $c['lider_apellido'])) ?></td>
+            <td><?= htmlspecialchars(trim(($c['colaborador_nombre'] ?? '') . ' ' . ($c['colaborador_apellido'] ?? '')) ?: '—') ?></td>
+            <td><?= htmlspecialchars(trim(($c['anfitrion_nombre'] ?? '') . ' ' . ($c['anfitrion_apellido'] ?? '')) ?: '—') ?></td>
+            <td class="text-truncate-cell"><?= htmlspecialchars($c['direccion']) ?></td>
+            <td>
+              <?php if ($puedeEliminar): ?>
+              <form
+                method="POST"
+                action="acciones.php"
+                class="d-inline js-form-confirmar"
+                data-confirm-title="Eliminar casa"
+                data-confirm="¿Eliminar casa?"
+              >
+                <input type="hidden" name="accion" value="eliminar_casa">
+                <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+                <input type="hidden" name="redireccion" value="estructura.php?pestaña=casas">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+              </form>
+              <?php endif; ?>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+          <?php if (empty($casas)): ?>
+          <tr><td colspan="7" class="text-center text-muted py-4">No hay casas de vida registradas.</td></tr>
           <?php endif; ?>
-          <?php if (empty($territorios) && in_array('territorios', $pestañasEstructura, true)): ?>
-          <a class="btn btn-sm btn-outline-primary" href="estructura.php?pestaña=territorios">Ir a territorios</a>
-          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<?php if (!empty($territorios) && !empty($lideres)): ?>
+<div class="modal fade" id="modalNuevaCasa" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="estructura.php?pestaña=casas">
+        <div class="modal-header">
+          <h5 class="modal-title">Nueva casa de vida</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
-        <?php else: ?>
-        <form method="POST" action="estructura.php?pestaña=casas">
+        <div class="modal-body">
           <input type="hidden" name="accion" value="crear_casa">
-          <div class="mb-2">
+          <div class="mb-3">
             <label class="form-label">Territorio</label>
             <select class="form-select" name="territorio_id" required>
               <?php foreach ($territorios as $t): ?>
-              <option value="<?= (int) $t['id'] ?>"><?= htmlspecialchars((string) $t['nombre']) ?></option>
+              <option value="<?= (int) $t['id'] ?>" <?= ((int) ($casaForm['territorio_id'] ?? 0) === (int) $t['id']) ? 'selected' : '' ?>>
+                <?= htmlspecialchars((string) $t['nombre']) ?>
+              </option>
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="mb-2">
+          <div class="mb-3">
             <label class="form-label">Líder</label>
             <select class="form-select" name="lider_id" required>
               <option value="">Seleccione…</option>
               <?php foreach ($lideres as $l): ?>
-              <option value="<?= (int) $l['id'] ?>"><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></option>
+              <option value="<?= (int) $l['id'] ?>" <?= ((int) ($casaForm['lider_id'] ?? 0) === (int) $l['id']) ? 'selected' : '' ?>>
+                <?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?>
+              </option>
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="mb-2">
+          <div class="mb-3">
             <label class="form-label">Colaborador</label>
             <select class="form-select" name="colaborador_id">
               <option value="">Ninguno</option>
               <?php foreach ($lideres as $l): ?>
-              <option value="<?= (int) $l['id'] ?>"><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></option>
+              <option value="<?= (int) $l['id'] ?>" <?= ((int) ($casaForm['colaborador_id'] ?? 0) === (int) $l['id']) ? 'selected' : '' ?>>
+                <?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?>
+              </option>
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="mb-2">
+          <div class="mb-3">
             <label class="form-label">Anfitrión</label>
             <select class="form-select" name="anfitrion_id">
               <option value="">Ninguno</option>
               <?php foreach ($lideres as $l): ?>
-              <option value="<?= (int) $l['id'] ?>"><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></option>
+              <option value="<?= (int) $l['id'] ?>" <?= ((int) ($casaForm['anfitrion_id'] ?? 0) === (int) $l['id']) ? 'selected' : '' ?>>
+                <?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?>
+              </option>
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="mb-2">
-            <label class="form-label">Nombre casa</label>
-            <input type="text" class="form-control" name="nombre" required>
-          </div>
           <div class="mb-3">
-            <label class="form-label">Dirección</label>
-            <input type="text" class="form-control" name="direccion" required>
+            <label class="form-label">Nombre casa</label>
+            <input type="text" class="form-control" name="nombre" required value="<?= htmlspecialchars((string) ($casaForm['nombre'] ?? '')) ?>">
           </div>
-          <button type="submit" class="btn btn-primary w-100">Crear casa</button>
-        </form>
-        <?php endif; ?>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-8">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body p-0">
-        <table class="table table-hover table-dashboard mb-0 align-middle">
-          <thead class="table-light">
-            <tr><th>Casa</th><th>Territorio</th><th>Líder</th><th>Colaborador</th><th>Anfitrión</th><th>Dirección</th><th></th></tr>
-          </thead>
-          <tbody>
-            <?php foreach ($casas as $c): ?>
-            <tr>
-              <td><?= htmlspecialchars(nombreVisibleCasaVida($c)) ?></td>
-              <td><?= htmlspecialchars((string) $c['territorio_nombre']) ?></td>
-              <td><?= htmlspecialchars(trim($c['lider_nombre'] . ' ' . $c['lider_apellido'])) ?></td>
-              <td><?= htmlspecialchars(trim(($c['colaborador_nombre'] ?? '') . ' ' . ($c['colaborador_apellido'] ?? '')) ?: '—') ?></td>
-              <td><?= htmlspecialchars(trim(($c['anfitrion_nombre'] ?? '') . ' ' . ($c['anfitrion_apellido'] ?? '')) ?: '—') ?></td>
-              <td class="text-truncate-cell"><?= htmlspecialchars($c['direccion']) ?></td>
-              <td>
-                <?php if ($puedeEliminar): ?>
-                <form
-                  method="POST"
-                  action="acciones.php"
-                  class="d-inline js-form-confirmar"
-                  data-confirm-title="Eliminar casa"
-                  data-confirm="¿Eliminar casa?"
-                >
-                  <input type="hidden" name="accion" value="eliminar_casa">
-                  <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
-                  <input type="hidden" name="redireccion" value="estructura.php?pestaña=casas">
-                  <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                </form>
-                <?php endif; ?>
-              </td>
-            </tr>
-            <?php endforeach; ?>
-            <?php if (empty($casas)): ?>
-            <tr><td colspan="7" class="text-center text-muted py-4">No hay casas de vida registradas.</td></tr>
-            <?php endif; ?>
-          </tbody>
-        </table>
-      </div>
+          <div class="mb-0">
+            <label class="form-label">Dirección</label>
+            <input type="text" class="form-control" name="direccion" required value="<?= htmlspecialchars((string) ($casaForm['direccion'] ?? '')) ?>">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear casa</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
+<?php if ($modalEstructura === 'casa'): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var el = document.getElementById('modalNuevaCasa');
+  if (el && window.bootstrap) {
+    window.bootstrap.Modal.getOrCreateInstance(el).show();
+  }
+});
+</script>
+<?php endif; ?>
+<?php endif; ?>
 <?php endif; ?>
 
 <?php if ($pestaña === 'importar'): ?>

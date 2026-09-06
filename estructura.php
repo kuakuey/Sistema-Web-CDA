@@ -92,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'eliminar_todos_lideres'       => 'lideres',
         'crear_casa'            => 'casas',
         'actualizar_casa'       => 'casas',
+        'eliminar_todas_casas'  => 'casas',
         'importar_estructura'   => 'importar',
     ];
 
@@ -241,6 +242,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $miembroVistaId = $id;
                 break;
 
+            case 'eliminar_todas_casas':
+                if (!puedeEliminarRegistros($usuario['rol'])) {
+                    throw new InvalidArgumentException('No tienes permiso para eliminar casas de vida.');
+                }
+                $eliminadas = eliminarTodasCasasVida();
+                registrarActividadPorAccion(
+                    'eliminar_todas_casas',
+                    0,
+                    'Eliminar todas las casas de vida · ' . $eliminadas
+                );
+                $mensaje = $eliminadas === 0
+                    ? 'No había casas de vida para eliminar.'
+                    : 'Se eliminaron ' . $eliminadas . ' casa(s) de vida.';
+                $pestaña = 'casas';
+                break;
+
             case 'crear_casa':
                 $idCasa = crearCasaVida($_POST);
                 $casaCreada = obtenerCasaVida($idCasa);
@@ -339,6 +356,8 @@ if ($error !== null && isset($accion)) {
         ];
     } elseif ($accion === 'actualizar_lider') {
         $miembroVistaId = (int) ($_POST['id'] ?? $miembroVistaId);
+    } elseif ($accion === 'crear_casa') {
+        $modalEstructura = 'casa';
     }
 }
 $etiquetasRoles = obtenerEtiquetasRoles();

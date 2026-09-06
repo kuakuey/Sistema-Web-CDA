@@ -69,8 +69,9 @@ function catalogoPasosImportEstructura(): array
             'etiqueta'         => 'Casas de vida',
             'pestana_permiso'  => 'casas',
             'descripcion'      => 'Cada casa de vida tiene nombre, líder, colaborador, anfitrión y dirección. Los tres deben ser miembros ya creados.',
-            'ayuda'            => 'Usa el Id del miembro (exporta miembros para validar). También acepta nombre o cédula.',
+            'ayuda'            => 'Enlaza con Ids: exporta territorios y miembros, y copia Id territorio, Id lider, Id colaborador e Id anfitrion.',
             'columnas'         => [
+                'id_territorio'    => 'Id territorio',
                 'territorio'       => 'Territorio',
                 'nombre_casa'      => 'Nombre casa',
                 'direccion'        => 'Direccion',
@@ -81,7 +82,7 @@ function catalogoPasosImportEstructura(): array
                 'id_anfitrion'     => 'Id anfitrion',
                 'anfitrion'        => 'Anfitrion',
             ],
-            'requeridas'       => ['territorio', 'nombre_casa', 'direccion'],
+            'requeridas'       => ['nombre_casa', 'direccion'],
             'archivo_xls'      => 'plantilla-estructura-casas.xls',
             'archivo_csv'      => 'plantilla-estructura-casas.csv',
         ],
@@ -184,7 +185,59 @@ function enviarExportacionMiembrosEstructura(string $formato = 'xls'): void
     echo "\xEF\xBB\xBF";
     echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
     echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
-    echo construirWorkbookXmlExportacionMiembrosEstructura($encabezados, $filas);
+    echo construirWorkbookXmlExportacionListaEstructura('Miembros', $encabezados, $filas);
+}
+
+function enviarExportacionTerritoriosEstructura(string $formato = 'xls'): void
+{
+    $filas = filasExportacionTerritoriosEstructura();
+    $encabezados = ['Id', 'Nombre'];
+
+    if ($formato === 'csv') {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="territorios-estructura.csv"');
+        header('Cache-Control: max-age=0');
+        echo "\xEF\xBB\xBF";
+
+        $salida = fopen('php://output', 'w');
+        if ($salida === false) {
+            throw new RuntimeException('No se pudo generar el CSV de territorios.');
+        }
+
+        fputcsv($salida, $encabezados, ';');
+        foreach ($filas as $fila) {
+            fputcsv($salida, $fila, ';');
+        }
+        fclose($salida);
+
+        return;
+    }
+
+    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+    header('Content-Disposition: attachment; filename="territorios-estructura.xls"');
+    header('Cache-Control: max-age=0');
+
+    echo "\xEF\xBB\xBF";
+    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+    echo construirWorkbookXmlExportacionListaEstructura('Territorios', $encabezados, $filas);
+}
+
+/**
+ * @return array<int, array{0: string, 1: string}>
+ */
+function filasExportacionTerritoriosEstructura(): array
+{
+    $filas = [];
+
+    foreach (obtenerTerritorios() as $territorio) {
+        $filas[] = [
+            (string) (int) $territorio['id'],
+            (string) ($territorio['nombre'] ?? ''),
+        ];
+    }
+
+    return $filas;
 }
 
 /**
@@ -212,7 +265,7 @@ function filasExportacionMiembrosEstructura(): array
  * @param array<int, string> $encabezados
  * @param array<int, array<int, string>> $filas
  */
-function construirWorkbookXmlExportacionMiembrosEstructura(array $encabezados, array $filas): string
+function construirWorkbookXmlExportacionListaEstructura(string $hoja, array $encabezados, array $filas): string
 {
     $xml = '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"'
         . ' xmlns:o="urn:schemas-microsoft-com:office:office"'
@@ -223,7 +276,7 @@ function construirWorkbookXmlExportacionMiembrosEstructura(array $encabezados, a
     $xml .= '<Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#D9E2F3" ss:Pattern="Solid"/></Style>';
     $xml .= '<Style ss:ID="Texto"><NumberFormat ss:Format="@"/></Style>';
     $xml .= '</Styles>';
-    $xml .= '<Worksheet ss:Name="Miembros"><Table>';
+    $xml .= '<Worksheet ss:Name="' . escaparXmlExcelImportEstructura($hoja) . '"><Table>';
 
     foreach (array_keys($encabezados) as $indice) {
         $ancho = $indice === 0 ? 60 : 140;
@@ -259,6 +312,7 @@ function construirWorkbookXmlPlantillaImportEstructura(array $info): string
     $xml .= construirHojaDatosXmlPlantillaImportEstructura($info);
     $xml .= construirHojaGuiaXmlPlantillaImportEstructura($info);
     if (($info['clave'] ?? '') === 'casas') {
+        $xml .= construirHojaTerritoriosXmlPlantillaImportEstructura();
         $xml .= construirHojaMiembrosXmlPlantillaImportEstructura();
     }
     $xml .= '</Workbook>';
@@ -311,7 +365,7 @@ function construirHojaGuiaXmlPlantillaImportEstructura(array $info): string
         '5. Importe los pasos en orden: personas, territorios y casas de vida.',
     ];
     if (($info['clave'] ?? '') === 'casas') {
-        $instrucciones[] = '6. Copie el Id de la pestaña «Miembros» en Id lider, Id colaborador e Id anfitrion.';
+        $instrucciones[] = '6. Copie el Id de «Territorios» en Id territorio y el Id de «Miembros» en Id lider, Id colaborador e Id anfitrion.';
     }
     foreach ($instrucciones as $linea) {
         $xml .= filaXmlExcelImportEstructura([$linea]);
@@ -329,6 +383,30 @@ function construirHojaGuiaXmlPlantillaImportEstructura(array $info): string
     $xml .= filaXmlExcelImportEstructura(['EJEMPLO'], 'Subtitulo');
     $xml .= filaXmlExcelImportEstructura(array_values($info['columnas']), 'Header');
     $xml .= filaXmlExcelImportEstructura(ejemploFilaPasoImportEstructura((string) $info['clave']));
+    $xml .= '</Table></Worksheet>';
+
+    return $xml;
+}
+
+function construirHojaTerritoriosXmlPlantillaImportEstructura(): string
+{
+    $xml = '<Worksheet ss:Name="Territorios"><Table>';
+    $xml .= '<Column ss:Index="1" ss:AutoFitWidth="0" ss:Width="60" ss:StyleID="Texto"/>';
+    $xml .= '<Column ss:Index="2" ss:AutoFitWidth="0" ss:Width="200" ss:StyleID="Texto"/>';
+    $xml .= filaXmlExcelImportEstructura(['Id', 'Nombre'], 'Header');
+
+    $territorios = obtenerTerritorios();
+    foreach ($territorios as $territorio) {
+        $xml .= filaXmlExcelImportEstructura([
+            (string) (int) $territorio['id'],
+            (string) ($territorio['nombre'] ?? ''),
+        ]);
+    }
+
+    if ($territorios === []) {
+        $xml .= filaXmlExcelImportEstructura(['', 'No hay territorios. Créalos o impórtalos primero.']);
+    }
+
     $xml .= '</Table></Worksheet>';
 
     return $xml;
@@ -391,7 +469,8 @@ function descripcionesColumnasPasoImportEstructura(string $paso): array
             ['Cedula esposa', 'Sí*', 'Forma más segura de relacionar a la esposa.'],
         ],
         'casas' => [
-            ['Territorio', 'Sí', 'Debe coincidir con un territorio ya creado.'],
+            ['Id territorio', 'Sí*', 'Id del territorio. Cópialo de la pestaña Territorios o del Excel exportado.'],
+            ['Territorio', 'Sí*', 'Nombre. Solo hace falta si no pones el Id del territorio.'],
             ['Nombre casa', 'Sí', 'Nombre de la casa de vida.'],
             ['Direccion', 'Sí', 'Dirección o punto de referencia de la casa.'],
             ['Id lider', 'Sí*', 'Id del miembro. Cópialo de la pestaña Miembros o del Excel exportado.'],
@@ -414,7 +493,7 @@ function ejemploFilaPasoImportEstructura(string $paso): array
         'miembros' => ['Juan Carlos', 'Pérez Gómez', 'masculino', '1234567890', '3001234567', 'juan@correo.com', 'Coordinador'],
         'territorios' => ['Norte'],
         'asignaciones' => ['Norte', 'coordinador', 'Juan Carlos Pérez Gómez', 'Ana María Pérez Gómez', '1234567890', '0987654321'],
-        'casas' => ['Norte', 'Casa Esperanza', 'Cra 10 #20-30', '1', 'Ana María Pérez Gómez', '2', 'Juan Carlos Pérez Gómez', '3', 'Laura Gómez'],
+        'casas' => ['1', 'Norte', 'Casa Esperanza', 'Cra 10 #20-30', '1', 'Ana María Pérez Gómez', '2', 'Juan Carlos Pérez Gómez', '3', 'Laura Gómez'],
         default => [],
     };
 }
@@ -498,14 +577,15 @@ function aliasEncabezadosPasoImportEstructura(string $paso): array
             'cedula_esposa' => ['cedula esposa', 'documento esposa', 'cc esposa'],
         ],
         'casas' => [
+            'id_territorio'      => ['id territorio', 'territorio id', 'id del territorio'],
             'territorio'         => ['territorio', 'nombre territorio', 'zona'],
             'nombre_casa'        => ['nombre casa', 'casa', 'casa de vida', 'nombre', 'nombre cdv', 'cdv'],
             'direccion'          => ['direccion', 'dir', 'ubicacion', 'direccion casa'],
             'id_lider'           => ['id lider', 'lider id', 'id del lider'],
             'lider'              => ['lider', 'nombre lider', 'lider casa', 'nombre completo lider'],
             'cedula_lider'       => ['cedula lider', 'documento lider', 'cc lider'],
-            'id_colaborador'     => ['id colaborador', 'colaborador id', 'id del colaborador'],
-            'colaborador'        => ['colaborador', 'nombre colaborador', 'colaborador casa'],
+            'id_colaborador'     => ['id colaborador', 'colaborador id', 'id del colaborador', 'id colider', 'colider id'],
+            'colaborador'        => ['colaborador', 'nombre colaborador', 'colaborador casa', 'colider'],
             'cedula_colaborador' => ['cedula colaborador', 'documento colaborador', 'cc colaborador'],
             'id_anfitrion'       => ['id anfitrion', 'anfitrion id', 'id del anfitrion'],
             'anfitrion'          => ['anfitrion', 'nombre anfitrion', 'anfitrion casa', 'host'],
@@ -865,9 +945,11 @@ function importarTerritoriosEstructura(array $filas): array
  */
 function importarCasasEstructura(array $filas): array
 {
-    $territorios = [];
+    $territoriosPorNombre = [];
+    $territoriosPorId = [];
     foreach (obtenerTerritorios() as $territorio) {
-        $territorios[claveTextoImportEstructura((string) $territorio['nombre'])] = $territorio;
+        $territoriosPorId[(int) $territorio['id']] = $territorio;
+        $territoriosPorNombre[claveTextoImportEstructura((string) $territorio['nombre'])] = $territorio;
     }
 
     $lideres = indiceLideresImportEstructura();
@@ -892,15 +974,28 @@ function importarCasasEstructura(array $filas): array
             try {
                 $nombreCasa = trim((string) ($fila['nombre_casa'] ?? ''));
                 $direccion = trim((string) ($fila['direccion'] ?? ''));
+                $territorioId = (int) ($fila['id_territorio'] ?? 0);
                 $territorioNombre = trim((string) ($fila['territorio'] ?? ''));
 
-                if ($nombreCasa === '' || $direccion === '' || $territorioNombre === '') {
-                    throw new InvalidArgumentException('Nombre de la casa, dirección y territorio son obligatorios.');
+                if ($territorioId <= 0 && preg_match('/^\d+$/', $territorioNombre) === 1) {
+                    $territorioId = (int) $territorioNombre;
+                    $territorioNombre = '';
                 }
 
-                $territorio = $territorios[claveTextoImportEstructura($territorioNombre)] ?? null;
+                if ($nombreCasa === '' || $direccion === '') {
+                    throw new InvalidArgumentException('Nombre de la casa y dirección son obligatorios.');
+                }
+
+                if ($territorioId <= 0 && $territorioNombre === '') {
+                    throw new InvalidArgumentException('Indica el Id del territorio (o su nombre).');
+                }
+
+                $territorio = $territorioId > 0
+                    ? ($territoriosPorId[$territorioId] ?? null)
+                    : ($territoriosPorNombre[claveTextoImportEstructura($territorioNombre)] ?? null);
                 if ($territorio === null) {
-                    throw new InvalidArgumentException('Territorio no encontrado: ' . $territorioNombre);
+                    $referencia = $territorioId > 0 ? ('Id ' . $territorioId) : $territorioNombre;
+                    throw new InvalidArgumentException('Territorio no encontrado: ' . $referencia);
                 }
 
                 $lider = resolverMiembroRolImportEstructura($lideres, $fila, 'lider', 'Líder');

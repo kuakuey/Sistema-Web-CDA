@@ -235,9 +235,16 @@ foreach ($lideres as $miembro) {
     <a href="estructura.php?pestaña=importar&amp;paso=asignaciones">cargarlo desde Excel o CSV</a>.
     <?php endif; ?>
   </p>
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoTerritorio">
-    <i class="bi bi-plus-lg me-1"></i>Nuevo territorio
-  </button>
+  <div class="d-flex flex-wrap gap-2">
+    <?php if (!empty($territorios)): ?>
+    <a class="btn btn-outline-success" href="estructura.php?pestaña=territorios&amp;descargar=territorios">
+      <i class="bi bi-download me-1"></i>Exportar territorios
+    </a>
+    <?php endif; ?>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoTerritorio">
+      <i class="bi bi-plus-lg me-1"></i>Nuevo territorio
+    </button>
+  </div>
 </div>
 
 <div class="card border-0 shadow-sm">

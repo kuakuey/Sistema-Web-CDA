@@ -35,6 +35,14 @@ $pasoSiguiente = ($indicePaso !== false && isset($clavesPasos[$indicePaso + 1]))
       <i class="bi bi-download me-1"></i>Exportar miembros
     </a>
     <?php endif; ?>
+    <?php if (!empty($territorios)): ?>
+    <a
+      class="btn btn-outline-success"
+      href="estructura.php?pestaña=importar&amp;descargar=territorios"
+    >
+      <i class="bi bi-download me-1"></i>Exportar territorios
+    </a>
+    <?php endif; ?>
     <?php if (!empty($puedeEliminar) && !empty($lideres)): ?>
     <form
       method="POST"

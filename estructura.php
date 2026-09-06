@@ -47,6 +47,16 @@ if (isset($_GET['descargar']) && $_GET['descargar'] === 'miembros') {
     exit;
 }
 
+if (isset($_GET['descargar']) && $_GET['descargar'] === 'territorios') {
+    if (!puedeGestionarEstructuraPestana($usuario['rol'], 'territorios') && !puedeGestionarEstructuraPestana($usuario['rol'], 'importar')) {
+        header('Location: ' . obtenerUrlInicioPorRol($usuario['rol']));
+        exit;
+    }
+    $formato = isset($_GET['formato']) && $_GET['formato'] === 'csv' ? 'csv' : 'xls';
+    enviarExportacionTerritoriosEstructura($formato);
+    exit;
+}
+
 if ($pestaña === 'importar' && isset($_GET['descargar']) && $_GET['descargar'] === 'plantilla') {
     $formato = isset($_GET['formato']) && $_GET['formato'] === 'csv' ? 'csv' : 'xls';
     enviarPlantillaImportEstructura($pasoImportar, $formato);

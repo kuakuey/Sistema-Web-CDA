@@ -262,13 +262,6 @@ foreach ($lideres as $miembro) {
 }
 ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-  <p class="text-muted small mb-0">
-    Paso 2: crea territorios y, al editar, asigna uno o más coordinadores y encargados.
-    <?php if (in_array('importar', $pestañasEstructura, true)): ?>
-    También puedes
-    <a href="estructura.php?pestaña=importar&amp;paso=asignaciones">cargarlo desde Excel o CSV</a>.
-    <?php endif; ?>
-  </p>
   <div class="d-flex flex-wrap gap-2">
     <?php if (!empty($territorios)): ?>
     <a class="btn btn-outline-success" href="estructura.php?pestaña=territorios&amp;descargar=territorios">
@@ -593,14 +586,6 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php if ($pestaña === 'casas'): ?>
 <?php $casaForm = ($modalEstructura === 'casa') ? $_POST : []; ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-  <p class="text-muted small mb-0">
-    Paso 3: cada casa de vida tiene líder y dirección. Colaborador y anfitrión son opcionales.
-    La misma persona puede repetirse en más de un rol.
-    <?php if (in_array('importar', $pestañasEstructura, true)): ?>
-    También puedes
-    <a href="estructura.php?pestaña=importar&amp;paso=casas">importarlas desde Excel o CSV</a>.
-    <?php endif; ?>
-  </p>
   <div class="d-flex flex-wrap gap-2">
     <?php if (!empty($puedeEliminar) && $totalCasasRegistradas > 0): ?>
     <form

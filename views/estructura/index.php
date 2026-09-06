@@ -10,6 +10,7 @@ $miembrosFemeninos = $miembrosFemeninos ?? [];
 $resumenParejas = $resumenParejas ?? [];
 $conteoAsignaciones = $conteoAsignaciones ?? [];
 $modalEstructura = $modalEstructura ?? null;
+$territorioEdicion = $territorioEdicion ?? null;
 $lideresPagina = $lideresPagina ?? $lideres ?? [];
 $totalMiembros = $totalMiembros ?? count($lideres ?? []);
 $paginaMiembros = $paginaMiembros ?? 1;
@@ -18,7 +19,7 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h2 class="h4 mb-1">Estructura CDV</h2>
-    <p class="text-muted small mb-0">Primero registra los miembros. Cuando ya existan, conéctalos por parentesco y luego asígnalos a los territorios.</p>
+    <p class="text-muted small mb-0">Primero registra los miembros. Luego crea territorios y asígnales coordinadores y encargados.</p>
   </div>
 </div>
 
@@ -66,6 +67,7 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
   <p class="text-muted small mb-0">
     Paso 1: crea los miembros. El parentesco y el borrado masivo están en
     <a href="estructura.php?pestaña=importar">Carga masiva</a>.
+    Luego asígnalos a territorios desde la pestaña Territorios.
   </p>
   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoMiembro">
     <i class="bi bi-plus-lg me-1"></i>Nuevo miembro
@@ -227,180 +229,336 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php endif; ?>
 
 <?php if ($pestaña === 'territorios'): ?>
-<div class="alert alert-light border small mb-4">
-  <i class="bi bi-lightbulb me-1 text-primary"></i>
-  Paso 2: crea los territorios y asigna una pareja ya conectada por parentesco como coordinadores o encargados.
-  Un coordinador puede tener varios territorios; un encargado puede tener uno o más.
-  <?php if (in_array('importar', $pestañasEstructura, true)): ?>
-  También puedes
-  <a href="estructura.php?pestaña=importar&amp;paso=asignaciones">cargarlo desde Excel o CSV</a>.
-  <?php endif; ?>
+<?php
+$miembrosBusqueda = [];
+foreach ($lideres as $miembro) {
+    $miembrosBusqueda[] = [
+        'id'     => (int) $miembro['id'],
+        'nombre' => trim((string) $miembro['nombre'] . ' ' . (string) $miembro['apellido']),
+        'cedula' => (string) ($miembro['cedula'] ?? ''),
+    ];
+}
+?>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <p class="text-muted small mb-0">
+    Paso 2: crea territorios y, al editar, asigna uno o más coordinadores y encargados.
+    <?php if (in_array('importar', $pestañasEstructura, true)): ?>
+    También puedes
+    <a href="estructura.php?pestaña=importar&amp;paso=asignaciones">cargarlo desde Excel o CSV</a>.
+    <?php endif; ?>
+  </p>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoTerritorio">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo territorio
+  </button>
 </div>
-<div class="row g-4">
-  <div class="col-lg-4">
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white py-3"><h3 class="h6 mb-0">Nuevo territorio</h3></div>
-      <div class="card-body">
-        <form method="POST" action="estructura.php?pestaña=territorios">
-          <input type="hidden" name="accion" value="crear_territorio">
-          <div class="mb-3">
-            <label class="form-label" for="nombre_territorio">Nombre</label>
-            <input type="text" class="form-control" id="nombre_territorio" name="nombre" required>
-          </div>
-          <button type="submit" class="btn btn-primary w-100">Crear territorio</button>
-        </form>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-8">
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white py-3"><h3 class="h6 mb-0">Asignar pareja a territorios</h3></div>
-      <div class="card-body">
-        <?php if (empty($parejasParentesco) || empty($territorios)): ?>
-        <p class="text-muted small mb-2">Para asignar necesitas territorios y al menos una pareja conectada por parentesco.</p>
-        <div class="d-flex flex-wrap gap-2">
-          <?php if (empty($parejasParentesco) && in_array('lideres', $pestañasEstructura, true)): ?>
-          <a class="btn btn-sm btn-outline-primary" href="estructura.php?pestaña=lideres">Ir a miembros</a>
-          <?php endif; ?>
-        </div>
-        <?php else: ?>
-        <form method="POST" action="estructura.php?pestaña=territorios">
-          <input type="hidden" name="accion" value="asignar_pareja_territorio">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label class="form-label">Rol</label>
-              <select class="form-select" name="rol" required>
-                <option value="coordinador">Coordinador</option>
-                <option value="encargado">Encargado</option>
-              </select>
-            </div>
-            <div class="col-md-8">
-              <label class="form-label">Pareja (parentesco)</label>
-              <select class="form-select" name="pareja_clave" required>
-                <option value="">Seleccione…</option>
-                <?php foreach ($parejasParentesco as $pareja): ?>
-                <option value="<?= htmlspecialchars((string) $pareja['clave']) ?>">
-                  <?= htmlspecialchars(nombreCompletoLider($pareja['esposo'])) ?>
-                  ·
-                  <?= htmlspecialchars(nombreCompletoLider($pareja['esposa'])) ?>
-                </option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-          </div>
-          <div class="mt-3">
-            <label class="form-label">Territorios</label>
-            <div class="cdv-territorios-check border rounded p-3">
-              <?php foreach ($territorios as $t): ?>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="territorio_ids[]" value="<?= (int) $t['id'] ?>" id="territorio_asig_<?= (int) $t['id'] ?>">
-                <label class="form-check-label" for="territorio_asig_<?= (int) $t['id'] ?>"><?= htmlspecialchars((string) $t['nombre']) ?></label>
-              </div>
-              <?php endforeach; ?>
-            </div>
-            <div class="form-text">Marca todos los territorios de esta pareja. Un coordinador puede tener 6; un encargado, 1 o los que correspondan.</div>
-          </div>
-          <button type="submit" class="btn btn-primary mt-3">Guardar asignación</button>
-        </form>
-        <?php endif; ?>
-      </div>
-    </div>
-  </div>
-</div>
-
-<?php if ($resumenParejas !== []): ?>
-<div class="card border-0 shadow-sm mb-4">
-  <div class="card-header bg-white py-3"><h3 class="h6 mb-0">Parejas y cobertura</h3></div>
-  <div class="card-body p-0">
-    <table class="table table-hover table-dashboard mb-0 align-middle">
-      <thead class="table-light">
-        <tr><th>Rol</th><th>Esposo</th><th>Esposa</th><th>Territorios</th><th>Total</th></tr>
-      </thead>
-      <tbody>
-        <?php foreach ($resumenParejas as $parejaResumen): ?>
-        <tr>
-          <td><?= htmlspecialchars(etiquetaRolTerritorio((string) $parejaResumen['rol'])) ?></td>
-          <td><?= htmlspecialchars($parejaResumen['esposo'] ? nombreCompletoLider(['nombre' => $parejaResumen['esposo']['miembro_nombre'], 'apellido' => $parejaResumen['esposo']['miembro_apellido']]) : '—') ?></td>
-          <td><?= htmlspecialchars($parejaResumen['esposa'] ? nombreCompletoLider(['nombre' => $parejaResumen['esposa']['miembro_nombre'], 'apellido' => $parejaResumen['esposa']['miembro_apellido']]) : '—') ?></td>
-          <td class="small"><?= htmlspecialchars(implode(', ', array_map(static fn (array $territorio): string => (string) $territorio['nombre'], $parejaResumen['territorios']))) ?></td>
-          <td><span class="badge bg-primary"><?= (int) $parejaResumen['total'] ?></span></td>
-        </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
-  </div>
-</div>
-<?php endif; ?>
 
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
-    <table class="table table-hover table-dashboard mb-0 align-middle">
-      <thead class="table-light">
-        <tr><th>#</th><th>Territorio</th><th>Coordinadores</th><th>Encargados</th><th></th></tr>
-      </thead>
-      <tbody>
-        <?php foreach ($territorios as $t): ?>
-        <?php
-        $coord = $t['asignaciones']['coordinador'] ?? ['esposo' => null, 'esposa' => null];
-        $enc = $t['asignaciones']['encargado'] ?? ['esposo' => null, 'esposa' => null];
-        ?>
-        <tr>
-          <td class="text-muted"><?= (int) $t['id'] ?></td>
-          <td>
-            <form method="POST" action="estructura.php?pestaña=territorios" class="d-flex gap-2">
-              <input type="hidden" name="accion" value="actualizar_territorio">
-              <input type="hidden" name="id" value="<?= (int) $t['id'] ?>">
-              <input type="text" class="form-control form-control-sm" name="nombre" value="<?= htmlspecialchars((string) $t['nombre']) ?>" required>
-              <button type="submit" class="btn btn-sm btn-outline-primary">Guardar</button>
-            </form>
-          </td>
-          <td class="small">
-            <?= htmlspecialchars(nombreParejaAsignada($coord['esposo'] ?? null, $coord['esposa'] ?? null)) ?>
-            <?php if (($coord['esposo'] ?? null) || ($coord['esposa'] ?? null)): ?>
-            <form method="POST" action="estructura.php?pestaña=territorios" class="mt-1">
-              <input type="hidden" name="accion" value="quitar_asignacion_territorio">
-              <input type="hidden" name="territorio_id" value="<?= (int) $t['id'] ?>">
-              <input type="hidden" name="rol" value="coordinador">
-              <button type="submit" class="btn btn-link btn-sm p-0">Quitar</button>
-            </form>
-            <?php endif; ?>
-          </td>
-          <td class="small">
-            <?= htmlspecialchars(nombreParejaAsignada($enc['esposo'] ?? null, $enc['esposa'] ?? null)) ?>
-            <?php if (($enc['esposo'] ?? null) || ($enc['esposa'] ?? null)): ?>
-            <form method="POST" action="estructura.php?pestaña=territorios" class="mt-1">
-              <input type="hidden" name="accion" value="quitar_asignacion_territorio">
-              <input type="hidden" name="territorio_id" value="<?= (int) $t['id'] ?>">
-              <input type="hidden" name="rol" value="encargado">
-              <button type="submit" class="btn btn-link btn-sm p-0">Quitar</button>
-            </form>
-            <?php endif; ?>
-          </td>
-          <td>
-            <?php if ($puedeEliminar): ?>
-            <form
-              method="POST"
-              action="acciones.php"
-              class="d-inline js-form-confirmar"
-              data-confirm-title="Eliminar territorio"
-              data-confirm="¿Eliminar territorio?"
-            >
-              <input type="hidden" name="accion" value="eliminar_territorio">
-              <input type="hidden" name="id" value="<?= (int) $t['id'] ?>">
-              <input type="hidden" name="redireccion" value="estructura.php?pestaña=territorios">
-              <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-            </form>
-            <?php endif; ?>
-          </td>
-        </tr>
-        <?php endforeach; ?>
-        <?php if (empty($territorios)): ?>
-        <tr><td colspan="5" class="text-center text-muted py-4">No hay territorios registrados.</td></tr>
-        <?php endif; ?>
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="table table-hover table-dashboard mb-0 align-middle">
+        <thead class="table-light">
+          <tr><th>#</th><th>Territorio</th><th>Coordinadores</th><th>Encargados</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          <?php foreach ($territorios as $t): ?>
+          <?php
+          $coord = array_values($t['asignaciones']['coordinador'] ?? []);
+          $enc = array_values($t['asignaciones']['encargado'] ?? []);
+          ?>
+          <tr>
+            <td class="text-muted"><?= (int) $t['id'] ?></td>
+            <td><?= htmlspecialchars((string) $t['nombre']) ?></td>
+            <td class="small">
+              <?php if ($coord === []): ?>
+              <span class="text-muted">Sin asignar</span>
+              <?php else: ?>
+                <?php foreach ($coord as $asignado): ?>
+                <div><?= htmlspecialchars(nombreCompletoLider([
+                    'nombre'   => $asignado['miembro_nombre'] ?? '',
+                    'apellido' => $asignado['miembro_apellido'] ?? '',
+                ])) ?></div>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </td>
+            <td class="small">
+              <?php if ($enc === []): ?>
+              <span class="text-muted">Sin asignar</span>
+              <?php else: ?>
+                <?php foreach ($enc as $asignado): ?>
+                <div><?= htmlspecialchars(nombreCompletoLider([
+                    'nombre'   => $asignado['miembro_nombre'] ?? '',
+                    'apellido' => $asignado['miembro_apellido'] ?? '',
+                ])) ?></div>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </td>
+            <td class="text-nowrap">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#modalEditarTerritorio"
+                data-id="<?= (int) $t['id'] ?>"
+                data-nombre="<?= htmlspecialchars((string) $t['nombre'], ENT_QUOTES) ?>"
+                data-coordinadores="<?= htmlspecialchars(implode(',', idsMiembrosAsignados($coord)), ENT_QUOTES) ?>"
+                data-encargados="<?= htmlspecialchars(implode(',', idsMiembrosAsignados($enc)), ENT_QUOTES) ?>"
+                title="Editar"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+              <?php if ($puedeEliminar): ?>
+              <form
+                method="POST"
+                action="acciones.php"
+                class="d-inline js-form-confirmar"
+                data-confirm-title="Eliminar territorio"
+                data-confirm="¿Eliminar territorio?"
+              >
+                <input type="hidden" name="accion" value="eliminar_territorio">
+                <input type="hidden" name="id" value="<?= (int) $t['id'] ?>">
+                <input type="hidden" name="redireccion" value="estructura.php?pestaña=territorios">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+              </form>
+              <?php endif; ?>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+          <?php if (empty($territorios)): ?>
+          <tr><td colspan="5" class="text-center text-muted py-4">No hay territorios registrados.</td></tr>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
+
+<div class="modal fade" id="modalNuevoTerritorio" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="estructura.php?pestaña=territorios">
+        <div class="modal-header">
+          <h5 class="modal-title">Nuevo territorio</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="accion" value="crear_territorio">
+          <label class="form-label" for="nombre_territorio">Nombre</label>
+          <input type="text" class="form-control" id="nombre_territorio" name="nombre" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear territorio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalEditarTerritorio" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <form method="POST" action="estructura.php?pestaña=territorios">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar territorio</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="accion" value="guardar_territorio">
+          <input type="hidden" name="id" id="territorioEditarId" value="">
+          <div class="mb-3">
+            <label class="form-label" for="territorioEditarNombre">Nombre</label>
+            <input type="text" class="form-control" id="territorioEditarNombre" name="nombre" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="territorioBuscarMiembro">Buscar miembro</label>
+            <input type="search" class="form-control" id="territorioBuscarMiembro" placeholder="Nombre o cédula" autocomplete="off">
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Coordinadores</label>
+              <div id="territorioChipsCoord" class="cdv-miembro-chips"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Encargados</label>
+              <div id="territorioChipsEnc" class="cdv-miembro-chips"></div>
+            </div>
+          </div>
+          <div class="cdv-miembros-picker border rounded" id="territorioListaMiembros"></div>
+          <div id="territorioInputsCoord"></div>
+          <div id="territorioInputsEnc"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var miembros = <?= json_encode($miembrosBusqueda, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+  var edicion = <?= json_encode($territorioEdicion, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+  var modalNuevo = document.getElementById('modalNuevoTerritorio');
+  var modal = document.getElementById('modalEditarTerritorio');
+  var campoId = document.getElementById('territorioEditarId');
+  var campoNombre = document.getElementById('territorioEditarNombre');
+  var campoBuscar = document.getElementById('territorioBuscarMiembro');
+  var lista = document.getElementById('territorioListaMiembros');
+  var chipsCoord = document.getElementById('territorioChipsCoord');
+  var chipsEnc = document.getElementById('territorioChipsEnc');
+  var inputsCoord = document.getElementById('territorioInputsCoord');
+  var inputsEnc = document.getElementById('territorioInputsEnc');
+  var seleccion = { coordinador: [], encargado: [] };
+
+  function idsDeTexto(valor) {
+    return String(valor || '').split(',').map(function (id) { return parseInt(id, 10); }).filter(function (id) { return id > 0; });
+  }
+
+  function miembroPorId(id) {
+    return miembros.filter(function (m) { return m.id === id; })[0] || null;
+  }
+
+  function renderChips(contenedor, rol) {
+    contenedor.innerHTML = '';
+    if (!seleccion[rol].length) {
+      contenedor.innerHTML = '<span class="text-muted small">Ninguno</span>';
+      return;
+    }
+    seleccion[rol].forEach(function (id) {
+      var miembro = miembroPorId(id);
+      var chip = document.createElement('span');
+      chip.className = 'badge rounded-pill text-bg-light border cdv-miembro-chip';
+      chip.textContent = miembro ? miembro.nombre : ('#' + id);
+      var quitar = document.createElement('button');
+      quitar.type = 'button';
+      quitar.className = 'btn-close btn-close-sm ms-1';
+      quitar.setAttribute('aria-label', 'Quitar');
+      quitar.addEventListener('click', function () { quitarMiembro(rol, id); });
+      chip.appendChild(quitar);
+      contenedor.appendChild(chip);
+    });
+  }
+
+  function renderInputs(contenedor, name, rol) {
+    contenedor.innerHTML = '';
+    seleccion[rol].forEach(function (id) {
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = String(id);
+      contenedor.appendChild(input);
+    });
+  }
+
+  function coincide(miembro, q) {
+    if (!q) return true;
+    var hay = (miembro.nombre + ' ' + miembro.cedula).toLowerCase();
+    return hay.indexOf(q) !== -1;
+  }
+
+  function renderLista() {
+    var q = (campoBuscar.value || '').trim().toLowerCase();
+    lista.innerHTML = '';
+    var visibles = miembros.filter(function (m) { return coincide(m, q); });
+    if (!miembros.length) {
+      lista.innerHTML = '<div class="text-muted small px-3 py-3">No hay miembros registrados.</div>';
+      return;
+    }
+    if (!visibles.length) {
+      lista.innerHTML = '<div class="text-muted small px-3 py-3">No hay miembros que coincidan.</div>';
+      return;
+    }
+    visibles.forEach(function (m) {
+      var fila = document.createElement('div');
+      fila.className = 'cdv-miembros-picker__item';
+      var datos = document.createElement('div');
+      datos.innerHTML = '<div>' + m.nombre.replace(/</g, '&lt;') + '</div>'
+        + (m.cedula ? '<div class="text-muted small">' + String(m.cedula).replace(/</g, '&lt;') + '</div>' : '');
+      var acciones = document.createElement('div');
+      acciones.className = 'd-flex flex-wrap gap-1';
+      [['coordinador', 'Coord.'], ['encargado', 'Enc.']].forEach(function (par) {
+        var rol = par[0];
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = seleccion[rol].indexOf(m.id) !== -1 ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-primary';
+        btn.textContent = par[1];
+        btn.addEventListener('click', function () {
+          if (seleccion[rol].indexOf(m.id) !== -1) {
+            quitarMiembro(rol, m.id);
+          } else {
+            agregarMiembro(rol, m.id);
+          }
+        });
+        acciones.appendChild(btn);
+      });
+      fila.appendChild(datos);
+      fila.appendChild(acciones);
+      lista.appendChild(fila);
+    });
+  }
+
+  function render() {
+    renderChips(chipsCoord, 'coordinador');
+    renderChips(chipsEnc, 'encargado');
+    renderInputs(inputsCoord, 'coordinador_ids[]', 'coordinador');
+    renderInputs(inputsEnc, 'encargado_ids[]', 'encargado');
+    renderLista();
+  }
+
+  function agregarMiembro(rol, id) {
+    var otro = rol === 'coordinador' ? 'encargado' : 'coordinador';
+    seleccion[otro] = seleccion[otro].filter(function (actual) { return actual !== id; });
+    if (seleccion[rol].indexOf(id) === -1) {
+      seleccion[rol].push(id);
+    }
+    render();
+  }
+
+  function quitarMiembro(rol, id) {
+    seleccion[rol] = seleccion[rol].filter(function (actual) { return actual !== id; });
+    render();
+  }
+
+  function cargarTerritorio(datos) {
+    campoId.value = String(datos.id || '');
+    campoNombre.value = datos.nombre || '';
+    campoBuscar.value = '';
+    seleccion.coordinador = (datos.coordinador_ids || idsDeTexto(datos.coordinadores)).slice();
+    seleccion.encargado = (datos.encargado_ids || idsDeTexto(datos.encargados)).slice();
+    render();
+  }
+
+  if (campoBuscar) {
+    campoBuscar.addEventListener('input', renderLista);
+  }
+
+  if (modal) {
+    modal.addEventListener('show.bs.modal', function (evento) {
+      var boton = evento.relatedTarget;
+      if (!boton) {
+        return;
+      }
+      cargarTerritorio({
+        id: boton.getAttribute('data-id'),
+        nombre: boton.getAttribute('data-nombre'),
+        coordinadores: boton.getAttribute('data-coordinadores'),
+        encargados: boton.getAttribute('data-encargados')
+      });
+    });
+  }
+
+  if (window.bootstrap) {
+    if (<?= json_encode($modalEstructura === 'territorio-nuevo') ?> && modalNuevo) {
+      bootstrap.Modal.getOrCreateInstance(modalNuevo).show();
+    }
+    if (<?= json_encode($modalEstructura === 'territorio') ?> && modal && edicion) {
+      cargarTerritorio(edicion);
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    }
+  }
+});
+</script>
 <?php endif; ?>
 
 <?php if ($pestaña === 'casas'): ?>

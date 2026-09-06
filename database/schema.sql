@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS territorio_asignaciones (
     rol VARCHAR(20) NOT NULL,
     pareja VARCHAR(20) NOT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uniq_territorio_rol_pareja (territorio_id, rol, pareja),
+    UNIQUE KEY uniq_territorio_miembro_rol (territorio_id, miembro_id, rol),
     INDEX idx_miembro (miembro_id),
     INDEX idx_territorio (territorio_id),
     INDEX idx_rol (rol)

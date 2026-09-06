@@ -90,6 +90,80 @@ function etiquetaRolTerritorio(string $rol): string
     return $rol === 'encargado' ? 'Encargado' : 'Coordinador';
 }
 
+function parejaDesdeGenero(?string $genero): string
+{
+    try {
+        return normalizarGeneroMiembro($genero) === 'femenino' ? 'esposa' : 'esposo';
+    } catch (InvalidArgumentException $e) {
+        return 'esposo';
+    }
+}
+
+/**
+ * @param array<int, mixed> $ids
+ * @return array<int, int>
+ */
+function normalizarIdsEnteros(array $ids): array
+{
+    $normalizados = [];
+
+    foreach ($ids as $id) {
+        $id = (int) $id;
+        if ($id > 0) {
+            $normalizados[$id] = $id;
+        }
+    }
+
+    return $normalizados;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $miembros
+ * @return array<int, int>
+ */
+function idsMiembrosAsignados(array $miembros): array
+{
+    $ids = [];
+
+    foreach ($miembros as $miembro) {
+        if (!is_array($miembro)) {
+            continue;
+        }
+
+        $id = (int) ($miembro['miembro_id'] ?? $miembro['id'] ?? 0);
+        if ($id > 0) {
+            $ids[] = $id;
+        }
+    }
+
+    return $ids;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $miembros
+ */
+function nombresMiembrosAsignados(array $miembros): string
+{
+    $nombres = [];
+
+    foreach ($miembros as $miembro) {
+        if (!is_array($miembro)) {
+            continue;
+        }
+
+        $nombre = nombreCompletoLider([
+            'nombre'   => $miembro['miembro_nombre'] ?? $miembro['nombre'] ?? '',
+            'apellido' => $miembro['miembro_apellido'] ?? $miembro['apellido'] ?? '',
+        ]);
+
+        if ($nombre !== '') {
+            $nombres[] = $nombre;
+        }
+    }
+
+    return $nombres === [] ? '—' : implode(', ', $nombres);
+}
+
 function normalizarParejaMiembro(?string $pareja): string
 {
     $clave = function_exists('mb_strtolower')
@@ -536,30 +610,28 @@ function obtenerAsignacionesTerritorio(): array
 }
 
 /**
- * @return array<int, array<string, array<string, array<string, mixed>|null>>>
+ * @return array<int, array{coordinador: array<int, array<string, mixed>>, encargado: array<int, array<string, mixed>>}>
  */
 function obtenerAsignacionesAgrupadasPorTerritorio(): array
 {
-    $vacio = [
-        'coordinador' => ['esposo' => null, 'esposa' => null],
-        'encargado'   => ['esposo' => null, 'esposa' => null],
-    ];
     $agrupadas = [];
 
     foreach (obtenerAsignacionesTerritorio() as $fila) {
         $territorioId = (int) $fila['territorio_id'];
         $rol = (string) $fila['rol'];
-        $pareja = (string) $fila['pareja'];
 
         if (!isset($agrupadas[$territorioId])) {
-            $agrupadas[$territorioId] = $vacio;
+            $agrupadas[$territorioId] = [
+                'coordinador' => [],
+                'encargado'   => [],
+            ];
         }
 
         if (!isset($agrupadas[$territorioId][$rol])) {
-            $agrupadas[$territorioId][$rol] = ['esposo' => null, 'esposa' => null];
+            $agrupadas[$territorioId][$rol] = [];
         }
 
-        $agrupadas[$territorioId][$rol][$pareja] = $fila;
+        $agrupadas[$territorioId][$rol][] = $fila;
     }
 
     return $agrupadas;
@@ -575,8 +647,8 @@ function obtenerTerritoriosConAsignaciones(): array
 
     foreach ($territorios as &$territorio) {
         $territorio['asignaciones'] = $asignaciones[(int) $territorio['id']] ?? [
-            'coordinador' => ['esposo' => null, 'esposa' => null],
-            'encargado'   => ['esposo' => null, 'esposa' => null],
+            'coordinador' => [],
+            'encargado'   => [],
         ];
     }
     unset($territorio);
@@ -604,20 +676,20 @@ function obtenerResumenParejasTerritorio(): array
         }
 
         foreach (['coordinador', 'encargado'] as $rol) {
-            $esposo = $roles[$rol]['esposo'] ?? null;
-            $esposa = $roles[$rol]['esposa'] ?? null;
-            if ($esposo === null && $esposa === null) {
+            $lista = array_values($roles[$rol] ?? []);
+            if ($lista === []) {
                 continue;
             }
 
-            $clave = $rol . ':' . (int) ($esposo['miembro_id'] ?? 0) . ':' . (int) ($esposa['miembro_id'] ?? 0);
+            $ids = idsMiembrosAsignados($lista);
+            sort($ids);
+            $clave = $rol . ':' . implode('-', $ids);
             if (!isset($resumen[$clave])) {
                 $resumen[$clave] = [
-                    'rol'            => $rol,
-                    'esposo'         => $esposo,
-                    'esposa'         => $esposa,
-                    'territorios'    => [],
-                    'total'          => 0,
+                    'rol'         => $rol,
+                    'miembros'    => $lista,
+                    'territorios' => [],
+                    'total'       => 0,
                 ];
             }
 
@@ -734,7 +806,7 @@ function asignarParejaATerritorios(string $rol, int $esposoId, int $esposaId, ar
     $stmt = $pdo->prepare(
         'INSERT INTO territorio_asignaciones (territorio_id, miembro_id, rol, pareja, creado_en)
          VALUES (?, ?, ?, ?, NOW())
-         ON DUPLICATE KEY UPDATE miembro_id = VALUES(miembro_id)'
+         ON DUPLICATE KEY UPDATE pareja = VALUES(pareja)'
     );
 
     foreach ($ids as $territorioId) {
@@ -757,6 +829,73 @@ function quitarAsignacionTerritorio(int $territorioId, string $rol): bool
     $stmt = $pdo->prepare('DELETE FROM territorio_asignaciones WHERE territorio_id = ? AND rol = ?');
 
     return $stmt->execute([$territorioId, $rol]) && $stmt->rowCount() > 0;
+}
+
+/**
+ * @param array<int, int|string> $coordinadorIds
+ * @param array<int, int|string> $encargadoIds
+ */
+function guardarTerritorioConAsignaciones(int $id, string $nombre, array $coordinadorIds, array $encargadoIds): void
+{
+    asegurarTablasEstructura();
+
+    if ($id <= 0) {
+        throw new InvalidArgumentException('Territorio no válido.');
+    }
+
+    if (trim($nombre) === '') {
+        throw new InvalidArgumentException('El nombre del territorio es obligatorio.');
+    }
+
+    $existe = false;
+    foreach (obtenerTerritorios() as $territorio) {
+        if ((int) $territorio['id'] === $id) {
+            $existe = true;
+            break;
+        }
+    }
+
+    if (!$existe) {
+        throw new InvalidArgumentException('El territorio no existe.');
+    }
+
+    $coordinadores = normalizarIdsEnteros($coordinadorIds);
+    $encargados = normalizarIdsEnteros($encargadoIds);
+
+    foreach ($encargados as $miembroId => $_) {
+        if (isset($coordinadores[$miembroId])) {
+            unset($encargados[$miembroId]);
+        }
+    }
+
+    actualizarTerritorio($id, $nombre);
+
+    $pdo = getConnection();
+    $pdo->beginTransaction();
+
+    try {
+        $pdo->prepare('DELETE FROM territorio_asignaciones WHERE territorio_id = ?')->execute([$id]);
+        $stmt = $pdo->prepare(
+            'INSERT INTO territorio_asignaciones (territorio_id, miembro_id, rol, pareja, creado_en)
+             VALUES (?, ?, ?, ?, NOW())'
+        );
+
+        foreach (['coordinador' => $coordinadores, 'encargado' => $encargados] as $rol => $ids) {
+            foreach ($ids as $miembroId) {
+                $miembro = obtenerLider($miembroId);
+                if ($miembro === null) {
+                    throw new InvalidArgumentException('Uno de los miembros seleccionados no existe.');
+                }
+
+                $stmt->execute([$id, $miembroId, $rol, parejaDesdeGenero($miembro['genero'] ?? '')]);
+            }
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
 }
 
 /**

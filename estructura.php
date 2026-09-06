@@ -61,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pestanaPorAccion = [
         'crear_territorio'             => 'territorios',
         'actualizar_territorio'        => 'territorios',
+        'guardar_territorio'           => 'territorios',
         'asignar_pareja_territorio'    => 'territorios',
         'quitar_asignacion_territorio' => 'territorios',
         'crear_lider'                  => 'lideres',
@@ -96,6 +97,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 actualizarTerritorio($id, $_POST['nombre']);
                 registrarActividadPorAccion('actualizar_territorio', $id);
+                $mensaje = 'Territorio actualizado.';
+                $pestaña = 'territorios';
+                break;
+
+            case 'guardar_territorio':
+                $id = (int) ($_POST['id'] ?? 0);
+                guardarTerritorioConAsignaciones(
+                    $id,
+                    (string) ($_POST['nombre'] ?? ''),
+                    $_POST['coordinador_ids'] ?? [],
+                    $_POST['encargado_ids'] ?? []
+                );
+                registrarActividadPorAccion('actualizar_territorio', $id, 'Editar territorio y asignaciones');
                 $mensaje = 'Territorio actualizado.';
                 $pestaña = 'territorios';
                 break;
@@ -282,12 +296,23 @@ $totalMiembros = count($lideres);
 $paginaMiembros = ajustarPaginaRegistros(parsearPaginaRegistros($_GET), $totalMiembros);
 $lideresPagina = array_slice($lideres, calcularOffsetRegistros($paginaMiembros), obtenerRegistrosPorPagina());
 $totalPaginasMiembros = calcularTotalPaginasRegistros($totalMiembros);
+$territorioEdicion = null;
 $modalEstructura = null;
 if ($error !== null && isset($accion)) {
     if ($accion === 'crear_lider') {
         $modalEstructura = 'miembro';
     } elseif ($accion === 'conectar_parentesco') {
         $modalEstructura = 'parentesco';
+    } elseif ($accion === 'crear_territorio') {
+        $modalEstructura = 'territorio-nuevo';
+    } elseif ($accion === 'guardar_territorio') {
+        $modalEstructura = 'territorio';
+        $territorioEdicion = [
+            'id'               => (int) ($_POST['id'] ?? 0),
+            'nombre'           => (string) ($_POST['nombre'] ?? ''),
+            'coordinador_ids'  => array_values(normalizarIdsEnteros($_POST['coordinador_ids'] ?? [])),
+            'encargado_ids'    => array_values(normalizarIdsEnteros($_POST['encargado_ids'] ?? [])),
+        ];
     }
 }
 $etiquetasRoles = obtenerEtiquetasRoles();
@@ -318,6 +343,7 @@ view('estructura/index', [
     'miembrosFemeninos'   => $miembrosFemeninos,
     'resumenParejas'      => $resumenParejas,
     'modalEstructura'     => $modalEstructura,
+    'territorioEdicion'   => $territorioEdicion,
     'conteoAsignaciones'  => $conteoAsignaciones,
     'mensaje'             => $mensaje,
     'error'               => $error,

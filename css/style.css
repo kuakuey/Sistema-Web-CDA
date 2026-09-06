@@ -1103,6 +1103,43 @@ body.blank-body {
   margin-bottom: 0;
 }
 
+.cdv-miembro-chips {
+  min-height: 2rem;
+}
+
+.cdv-miembro-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin: 0 0.35rem 0.35rem 0;
+  font-weight: 500;
+}
+
+.cdv-miembro-chip .btn-close {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0.35rem;
+}
+
+.cdv-miembros-picker {
+  max-height: 240px;
+  overflow: auto;
+  background: var(--cda-surface, #fff);
+}
+
+.cdv-miembros-picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--cda-border, #eee);
+}
+
+.cdv-miembros-picker__item:last-child {
+  border-bottom: 0;
+}
+
 html[data-theme="dark"] .cdv-paso {
   background: var(--cda-surface);
   border-color: var(--cda-border);

@@ -581,12 +581,29 @@ function migrateEstructuraTables(PDO $pdo): void
             rol VARCHAR(20) NOT NULL,
             pareja VARCHAR(20) NOT NULL,
             creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY uniq_territorio_rol_pareja (territorio_id, rol, pareja),
+            UNIQUE KEY uniq_territorio_miembro_rol (territorio_id, miembro_id, rol),
             INDEX idx_miembro (miembro_id),
             INDEX idx_territorio (territorio_id),
             INDEX idx_rol (rol)
         ) ENGINE=InnoDB'
     );
+
+    if (tablaExiste($pdo, 'territorio_asignaciones')) {
+        $indices = [];
+        foreach ($pdo->query('SHOW INDEX FROM territorio_asignaciones')->fetchAll() as $indice) {
+            $indices[(string) $indice['Key_name']] = true;
+        }
+
+        if (isset($indices['uniq_territorio_rol_pareja'])) {
+            $pdo->exec('ALTER TABLE territorio_asignaciones DROP INDEX uniq_territorio_rol_pareja');
+        }
+
+        if (!isset($indices['uniq_territorio_miembro_rol'])) {
+            $pdo->exec(
+                'ALTER TABLE territorio_asignaciones ADD UNIQUE KEY uniq_territorio_miembro_rol (territorio_id, miembro_id, rol)'
+            );
+        }
+    }
 
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS miembro_parentescos (

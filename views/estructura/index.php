@@ -78,11 +78,6 @@ $filtrosListaEstructura = $buscarEstructura !== '' ? ['buscar' => $buscarEstruct
 <?php include __DIR__ . '/pestaña-miembro.php'; ?>
 <?php elseif ($pestaña === 'lideres'): ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-  <p class="text-muted small mb-0">
-    Paso 1: crea los miembros. El parentesco y el borrado masivo están en
-    <a href="estructura.php?pestaña=importar">Carga masiva</a>.
-    Luego asígnalos a territorios desde la pestaña Territorios.
-  </p>
   <div class="d-flex flex-wrap gap-2">
     <?php if ($totalMiembrosRegistrados > 0): ?>
     <a class="btn btn-outline-success" href="estructura.php?pestaña=lideres&amp;descargar=miembros">

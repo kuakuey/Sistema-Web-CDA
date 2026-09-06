@@ -75,9 +75,16 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
     <a href="estructura.php?pestaña=importar">Carga masiva</a>.
     Luego asígnalos a territorios desde la pestaña Territorios.
   </p>
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoMiembro">
-    <i class="bi bi-plus-lg me-1"></i>Nuevo miembro
-  </button>
+  <div class="d-flex flex-wrap gap-2">
+    <?php if ($totalMiembros > 0): ?>
+    <a class="btn btn-outline-success" href="estructura.php?pestaña=lideres&amp;descargar=miembros">
+      <i class="bi bi-download me-1"></i>Exportar miembros
+    </a>
+    <?php endif; ?>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoMiembro">
+      <i class="bi bi-plus-lg me-1"></i>Nuevo miembro
+    </button>
+  </div>
 </div>
 
 <div class="card border-0 shadow-sm mb-4">

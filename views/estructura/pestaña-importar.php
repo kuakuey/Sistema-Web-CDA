@@ -27,6 +27,14 @@ $pasoSiguiente = ($indicePaso !== false && isset($clavesPasos[$indicePaso + 1]))
     >
       <i class="bi bi-people me-1"></i>Conectar parentesco
     </button>
+    <?php if (!empty($lideres)): ?>
+    <a
+      class="btn btn-outline-success"
+      href="estructura.php?pestaña=importar&amp;descargar=miembros"
+    >
+      <i class="bi bi-download me-1"></i>Exportar miembros
+    </a>
+    <?php endif; ?>
     <?php if (!empty($puedeEliminar) && !empty($lideres)): ?>
     <form
       method="POST"

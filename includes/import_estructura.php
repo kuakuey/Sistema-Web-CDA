@@ -69,17 +69,17 @@ function catalogoPasosImportEstructura(): array
             'etiqueta'         => 'Casas de vida',
             'pestana_permiso'  => 'casas',
             'descripcion'      => 'Cada casa de vida tiene nombre, líder, colaborador, anfitrión y dirección. Los tres deben ser miembros ya creados.',
-            'ayuda'            => 'Prefiere la cédula para relacionar a cada persona. Si no hay cédula, usa el nombre completo.',
+            'ayuda'            => 'Usa el Id del miembro (exporta miembros para validar). También acepta nombre o cédula.',
             'columnas'         => [
-                'territorio'          => 'Territorio',
-                'nombre_casa'         => 'Nombre casa',
-                'direccion'           => 'Direccion',
-                'lider'               => 'Lider',
-                'cedula_lider'        => 'Cedula lider',
-                'colaborador'         => 'Colaborador',
-                'cedula_colaborador'  => 'Cedula colaborador',
-                'anfitrion'           => 'Anfitrion',
-                'cedula_anfitrion'    => 'Cedula anfitrion',
+                'territorio'       => 'Territorio',
+                'nombre_casa'      => 'Nombre casa',
+                'direccion'        => 'Direccion',
+                'id_lider'         => 'Id lider',
+                'lider'            => 'Lider',
+                'id_colaborador'   => 'Id colaborador',
+                'colaborador'      => 'Colaborador',
+                'id_anfitrion'     => 'Id anfitrion',
+                'anfitrion'        => 'Anfitrion',
             ],
             'requeridas'       => ['territorio', 'nombre_casa', 'direccion'],
             'archivo_xls'      => 'plantilla-estructura-casas.xls',
@@ -152,6 +152,94 @@ function enviarPlantillaImportEstructura(string $paso, string $formato = 'xls'):
     echo construirWorkbookXmlPlantillaImportEstructura($info);
 }
 
+function enviarExportacionMiembrosEstructura(string $formato = 'xls'): void
+{
+    $filas = filasExportacionMiembrosEstructura();
+    $encabezados = ['Id', 'Nombres', 'Apellidos', 'Genero', 'Cedula', 'Celular'];
+
+    if ($formato === 'csv') {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="miembros-estructura.csv"');
+        header('Cache-Control: max-age=0');
+        echo "\xEF\xBB\xBF";
+
+        $salida = fopen('php://output', 'w');
+        if ($salida === false) {
+            throw new RuntimeException('No se pudo generar el CSV de miembros.');
+        }
+
+        fputcsv($salida, $encabezados, ';');
+        foreach ($filas as $fila) {
+            fputcsv($salida, $fila, ';');
+        }
+        fclose($salida);
+
+        return;
+    }
+
+    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+    header('Content-Disposition: attachment; filename="miembros-estructura.xls"');
+    header('Cache-Control: max-age=0');
+
+    echo "\xEF\xBB\xBF";
+    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+    echo construirWorkbookXmlExportacionMiembrosEstructura($encabezados, $filas);
+}
+
+/**
+ * @return array<int, array{0: string, 1: string, 2: string, 3: string, 4: string, 5: string}>
+ */
+function filasExportacionMiembrosEstructura(): array
+{
+    $filas = [];
+
+    foreach (obtenerLideres() as $miembro) {
+        $filas[] = [
+            (string) (int) $miembro['id'],
+            (string) ($miembro['nombre'] ?? ''),
+            (string) ($miembro['apellido'] ?? ''),
+            (string) ($miembro['genero'] ?? ''),
+            (string) ($miembro['cedula'] ?? ''),
+            (string) ($miembro['celular'] ?? ''),
+        ];
+    }
+
+    return $filas;
+}
+
+/**
+ * @param array<int, string> $encabezados
+ * @param array<int, array<int, string>> $filas
+ */
+function construirWorkbookXmlExportacionMiembrosEstructura(array $encabezados, array $filas): string
+{
+    $xml = '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"'
+        . ' xmlns:o="urn:schemas-microsoft-com:office:office"'
+        . ' xmlns:x="urn:schemas-microsoft-com:office:excel"'
+        . ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"'
+        . ' xmlns:html="http://www.w3.org/TR/REC-html40">';
+    $xml .= '<Styles>';
+    $xml .= '<Style ss:ID="Header"><Font ss:Bold="1"/><Interior ss:Color="#D9E2F3" ss:Pattern="Solid"/></Style>';
+    $xml .= '<Style ss:ID="Texto"><NumberFormat ss:Format="@"/></Style>';
+    $xml .= '</Styles>';
+    $xml .= '<Worksheet ss:Name="Miembros"><Table>';
+
+    foreach (array_keys($encabezados) as $indice) {
+        $ancho = $indice === 0 ? 60 : 140;
+        $xml .= '<Column ss:Index="' . ($indice + 1) . '" ss:AutoFitWidth="0" ss:Width="' . $ancho . '" ss:StyleID="Texto"/>';
+    }
+
+    $xml .= filaXmlExcelImportEstructura($encabezados, 'Header');
+    foreach ($filas as $fila) {
+        $xml .= filaXmlExcelImportEstructura($fila);
+    }
+
+    $xml .= '</Table></Worksheet></Workbook>';
+
+    return $xml;
+}
+
 /**
  * @param array<string, mixed> $info
  */
@@ -170,6 +258,9 @@ function construirWorkbookXmlPlantillaImportEstructura(array $info): string
     $xml .= '</Styles>';
     $xml .= construirHojaDatosXmlPlantillaImportEstructura($info);
     $xml .= construirHojaGuiaXmlPlantillaImportEstructura($info);
+    if (($info['clave'] ?? '') === 'casas') {
+        $xml .= construirHojaMiembrosXmlPlantillaImportEstructura();
+    }
     $xml .= '</Workbook>';
 
     return $xml;
@@ -212,13 +303,17 @@ function construirHojaGuiaXmlPlantillaImportEstructura(array $info): string
     $xml .= filaXmlExcelImportEstructura(['']);
     $xml .= filaXmlExcelImportEstructura(['INSTRUCCIONES'], 'Subtitulo');
 
-    foreach ([
+    $instrucciones = [
         '1. Complete una fila por registro en la pestaña «Datos».',
         '2. No cambie los nombres de las columnas de la fila 1.',
         '3. El sistema lee únicamente la pestaña «Datos».',
         '4. Si Excel convierte el archivo a .xlsx, guárdelo como CSV UTF-8 o use esta plantilla .xls sin convertirla.',
         '5. Importe los pasos en orden: personas, territorios y casas de vida.',
-    ] as $linea) {
+    ];
+    if (($info['clave'] ?? '') === 'casas') {
+        $instrucciones[] = '6. Copie el Id de la pestaña «Miembros» en Id lider, Id colaborador e Id anfitrion.';
+    }
+    foreach ($instrucciones as $linea) {
         $xml .= filaXmlExcelImportEstructura([$linea]);
     }
 
@@ -234,6 +329,36 @@ function construirHojaGuiaXmlPlantillaImportEstructura(array $info): string
     $xml .= filaXmlExcelImportEstructura(['EJEMPLO'], 'Subtitulo');
     $xml .= filaXmlExcelImportEstructura(array_values($info['columnas']), 'Header');
     $xml .= filaXmlExcelImportEstructura(ejemploFilaPasoImportEstructura((string) $info['clave']));
+    $xml .= '</Table></Worksheet>';
+
+    return $xml;
+}
+
+function construirHojaMiembrosXmlPlantillaImportEstructura(): string
+{
+    $xml = '<Worksheet ss:Name="Miembros"><Table>';
+    $xml .= '<Column ss:Index="1" ss:AutoFitWidth="0" ss:Width="60" ss:StyleID="Texto"/>';
+    $xml .= '<Column ss:Index="2" ss:AutoFitWidth="0" ss:Width="180" ss:StyleID="Texto"/>';
+    $xml .= '<Column ss:Index="3" ss:AutoFitWidth="0" ss:Width="140" ss:StyleID="Texto"/>';
+    $xml .= '<Column ss:Index="4" ss:AutoFitWidth="0" ss:Width="100" ss:StyleID="Texto"/>';
+    $xml .= '<Column ss:Index="5" ss:AutoFitWidth="0" ss:Width="120" ss:StyleID="Texto"/>';
+    $xml .= filaXmlExcelImportEstructura(['Id', 'Nombres', 'Apellidos', 'Cedula', 'Celular'], 'Header');
+
+    $miembros = obtenerLideres();
+    foreach ($miembros as $miembro) {
+        $xml .= filaXmlExcelImportEstructura([
+            (string) (int) $miembro['id'],
+            (string) ($miembro['nombre'] ?? ''),
+            (string) ($miembro['apellido'] ?? ''),
+            (string) ($miembro['cedula'] ?? ''),
+            (string) ($miembro['celular'] ?? ''),
+        ]);
+    }
+
+    if ($miembros === []) {
+        $xml .= filaXmlExcelImportEstructura(['', 'No hay miembros. Créalos o impórtalos primero.']);
+    }
+
     $xml .= '</Table></Worksheet>';
 
     return $xml;
@@ -269,12 +394,12 @@ function descripcionesColumnasPasoImportEstructura(string $paso): array
             ['Territorio', 'Sí', 'Debe coincidir con un territorio ya creado.'],
             ['Nombre casa', 'Sí', 'Nombre de la casa de vida.'],
             ['Direccion', 'Sí', 'Dirección o punto de referencia de la casa.'],
-            ['Lider', 'Sí*', 'Nombre completo. Obligatorio si no hay cédula del líder.'],
-            ['Cedula lider', 'Sí*', 'Forma más segura de relacionar al líder.'],
-            ['Colaborador', 'Sí*', 'Nombre completo. Obligatorio si no hay cédula del colaborador.'],
-            ['Cedula colaborador', 'Sí*', 'Forma más segura de relacionar al colaborador.'],
-            ['Anfitrion', 'Sí*', 'Nombre completo. Obligatorio si no hay cédula del anfitrión.'],
-            ['Cedula anfitrion', 'Sí*', 'Forma más segura de relacionar al anfitrión.'],
+            ['Id lider', 'Sí*', 'Id del miembro. Cópialo de la pestaña Miembros o del Excel exportado.'],
+            ['Lider', 'Sí*', 'Nombre. Solo hace falta si no pones el Id del líder.'],
+            ['Id colaborador', 'Sí*', 'Id del miembro colaborador.'],
+            ['Colaborador', 'Sí*', 'Nombre. Solo hace falta si no pones el Id del colaborador.'],
+            ['Id anfitrion', 'Sí*', 'Id del miembro anfitrión.'],
+            ['Anfitrion', 'Sí*', 'Nombre. Solo hace falta si no pones el Id del anfitrión.'],
         ],
         default => [],
     };
@@ -289,7 +414,7 @@ function ejemploFilaPasoImportEstructura(string $paso): array
         'miembros' => ['Juan Carlos', 'Pérez Gómez', 'masculino', '1234567890', '3001234567', 'juan@correo.com', 'Coordinador'],
         'territorios' => ['Norte'],
         'asignaciones' => ['Norte', 'coordinador', 'Juan Carlos Pérez Gómez', 'Ana María Pérez Gómez', '1234567890', '0987654321'],
-        'casas' => ['Norte', 'Casa Esperanza', 'Cra 10 #20-30', 'Ana María Pérez Gómez', '1234567890', 'Juan Carlos Pérez Gómez', '0987654321', 'Laura Gómez', '1122334455'],
+        'casas' => ['Norte', 'Casa Esperanza', 'Cra 10 #20-30', '1', 'Ana María Pérez Gómez', '2', 'Juan Carlos Pérez Gómez', '3', 'Laura Gómez'],
         default => [],
     };
 }
@@ -376,10 +501,13 @@ function aliasEncabezadosPasoImportEstructura(string $paso): array
             'territorio'         => ['territorio', 'nombre territorio', 'zona'],
             'nombre_casa'        => ['nombre casa', 'casa', 'casa de vida', 'nombre', 'nombre cdv', 'cdv'],
             'direccion'          => ['direccion', 'dir', 'ubicacion', 'direccion casa'],
+            'id_lider'           => ['id lider', 'lider id', 'id del lider'],
             'lider'              => ['lider', 'nombre lider', 'lider casa', 'nombre completo lider'],
             'cedula_lider'       => ['cedula lider', 'documento lider', 'cc lider'],
+            'id_colaborador'     => ['id colaborador', 'colaborador id', 'id del colaborador'],
             'colaborador'        => ['colaborador', 'nombre colaborador', 'colaborador casa'],
             'cedula_colaborador' => ['cedula colaborador', 'documento colaborador', 'cc colaborador'],
+            'id_anfitrion'       => ['id anfitrion', 'anfitrion id', 'id del anfitrion'],
             'anfitrion'          => ['anfitrion', 'nombre anfitrion', 'anfitrion casa', 'host'],
             'cedula_anfitrion'   => ['cedula anfitrion', 'documento anfitrion', 'cc anfitrion'],
         ],
@@ -632,16 +760,23 @@ function importarAsignacionesEstructura(array $filas): array
  */
 function resolverMiembroRolImportEstructura(array $indice, array $fila, string $rol, string $etiqueta): array
 {
+    $id = (int) ($fila['id_' . $rol] ?? 0);
     $nombre = trim((string) ($fila[$rol] ?? ''));
     $cedula = normalizarCedulaImportEstructura($fila['cedula_' . $rol] ?? '');
 
-    if ($cedula === '' && $nombre === '') {
-        throw new InvalidArgumentException('Indica el ' . $etiqueta . ' (nombre completo) o su cédula.');
+    if ($id <= 0 && preg_match('/^\d+$/', $nombre) === 1) {
+        $id = (int) $nombre;
+        $nombre = '';
     }
 
-    $miembro = resolverMiembroImportEstructura($indice, $cedula, $nombre);
+    if ($id <= 0 && $cedula === '' && $nombre === '') {
+        throw new InvalidArgumentException('Indica el Id del ' . $etiqueta . ' (o su nombre / cédula).');
+    }
+
+    $miembro = resolverMiembroImportEstructura($indice, $cedula, $nombre, $id);
     if ($miembro === null) {
-        throw new InvalidArgumentException($etiqueta . ' no encontrado: ' . ($cedula !== '' ? $cedula : $nombre));
+        $referencia = $id > 0 ? ('Id ' . $id) : ($cedula !== '' ? $cedula : $nombre);
+        throw new InvalidArgumentException($etiqueta . ' no encontrado: ' . $referencia);
     }
 
     return $miembro;
@@ -651,8 +786,12 @@ function resolverMiembroRolImportEstructura(array $indice, array $fila, string $
  * @param array{cedula: array<string, array<string, mixed>>, nombre: array<string, array<string, mixed>>} $indice
  * @return array<string, mixed>|null
  */
-function resolverMiembroImportEstructura(array $indice, string $cedula, string $nombre): ?array
+function resolverMiembroImportEstructura(array $indice, string $cedula, string $nombre, int $id = 0): ?array
 {
+    if ($id > 0 && isset($indice['id'][$id])) {
+        return $indice['id'][$id];
+    }
+
     if ($cedula !== '' && isset($indice['cedula'][$cedula])) {
         return $indice['cedula'][$cedula];
     }
@@ -811,8 +950,11 @@ function indiceLideresImportEstructura(): array
 {
     $porCedula = [];
     $porNombre = [];
+    $porId = [];
 
     foreach (obtenerLideres() as $lider) {
+        $porId[(int) $lider['id']] = $lider;
+
         $cedula = normalizarCedulaImportEstructura((string) ($lider['cedula'] ?? ''));
         if ($cedula !== '') {
             $porCedula[$cedula] = $lider;
@@ -822,6 +964,7 @@ function indiceLideresImportEstructura(): array
     }
 
     return [
+        'id'     => $porId,
         'cedula' => $porCedula,
         'nombre' => $porNombre,
     ];

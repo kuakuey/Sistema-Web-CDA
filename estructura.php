@@ -37,6 +37,16 @@ if (!in_array($pasoImportar, $pasosImportar, true)) {
     $pasoImportar = $pasosImportar[0] ?? 'miembros';
 }
 
+if (isset($_GET['descargar']) && $_GET['descargar'] === 'miembros') {
+    if (!puedeGestionarEstructuraPestana($usuario['rol'], 'lideres') && !puedeGestionarEstructuraPestana($usuario['rol'], 'importar')) {
+        header('Location: ' . obtenerUrlInicioPorRol($usuario['rol']));
+        exit;
+    }
+    $formato = isset($_GET['formato']) && $_GET['formato'] === 'csv' ? 'csv' : 'xls';
+    enviarExportacionMiembrosEstructura($formato);
+    exit;
+}
+
 if ($pestaña === 'importar' && isset($_GET['descargar']) && $_GET['descargar'] === 'plantilla') {
     $formato = isset($_GET['formato']) && $_GET['formato'] === 'csv' ? 'csv' : 'xls';
     enviarPlantillaImportEstructura($pasoImportar, $formato);

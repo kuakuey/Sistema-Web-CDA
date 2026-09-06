@@ -921,14 +921,14 @@ function sqlSelectCasasVida(): string
 
 function nombreVisibleCasaVida(array $casa): string
 {
-    $anfitrion = trim((string) ($casa['anfitrion_nombre'] ?? '') . ' ' . (string) ($casa['anfitrion_apellido'] ?? ''));
-    if ($anfitrion !== '') {
-        return $anfitrion;
-    }
-
     $nombre = trim((string) ($casa['nombre'] ?? ''));
     if ($nombre !== '') {
         return $nombre;
+    }
+
+    $anfitrion = trim((string) ($casa['anfitrion_nombre'] ?? '') . ' ' . (string) ($casa['anfitrion_apellido'] ?? ''));
+    if ($anfitrion !== '') {
+        return $anfitrion;
     }
 
     $direccion = trim((string) ($casa['direccion'] ?? ''));
@@ -953,6 +953,10 @@ function normalizarDatosCasaVida(array $datos): array
     if ($territorioId <= 0) {
         throw new InvalidArgumentException('Selecciona el territorio de la casa de vida.');
     }
+    $nombre = trim((string) ($datos['nombre'] ?? ''));
+    if ($nombre === '') {
+        throw new InvalidArgumentException('El nombre de la casa de vida es obligatorio.');
+    }
     if ($direccion === '') {
         throw new InvalidArgumentException('La dirección de la casa de vida es obligatoria.');
     }
@@ -975,12 +979,6 @@ function normalizarDatosCasaVida(array $datos): array
         if (obtenerLider($miembroId) === null) {
             throw new InvalidArgumentException('El ' . $etiqueta . ' seleccionado no existe.');
         }
-    }
-
-    $anfitrion = obtenerLider($anfitrionId);
-    $nombre = trim((string) ($datos['nombre'] ?? ''));
-    if ($nombre === '') {
-        $nombre = $anfitrion !== null ? nombreCompletoLider($anfitrion) : $direccion;
     }
 
     return [

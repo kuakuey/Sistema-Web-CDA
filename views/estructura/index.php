@@ -604,6 +604,10 @@ document.addEventListener('DOMContentLoaded', function () {
               <?php endforeach; ?>
             </select>
           </div>
+          <div class="mb-2">
+            <label class="form-label">Nombre casa</label>
+            <input type="text" class="form-control" name="nombre" required>
+          </div>
           <div class="mb-3">
             <label class="form-label">Dirección</label>
             <input type="text" class="form-control" name="direccion" required>
@@ -619,11 +623,12 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="card-body p-0">
         <table class="table table-hover table-dashboard mb-0 align-middle">
           <thead class="table-light">
-            <tr><th>Territorio</th><th>Líder</th><th>Colaborador</th><th>Anfitrión</th><th>Dirección</th><th></th></tr>
+            <tr><th>Casa</th><th>Territorio</th><th>Líder</th><th>Colaborador</th><th>Anfitrión</th><th>Dirección</th><th></th></tr>
           </thead>
           <tbody>
             <?php foreach ($casas as $c): ?>
             <tr>
+              <td><?= htmlspecialchars(nombreVisibleCasaVida($c)) ?></td>
               <td><?= htmlspecialchars((string) $c['territorio_nombre']) ?></td>
               <td><?= htmlspecialchars(trim($c['lider_nombre'] . ' ' . $c['lider_apellido'])) ?></td>
               <td><?= htmlspecialchars(trim(($c['colaborador_nombre'] ?? '') . ' ' . ($c['colaborador_apellido'] ?? '')) ?: '—') ?></td>
@@ -648,7 +653,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </tr>
             <?php endforeach; ?>
             <?php if (empty($casas)): ?>
-            <tr><td colspan="6" class="text-center text-muted py-4">No hay casas de vida registradas.</td></tr>
+            <tr><td colspan="7" class="text-center text-muted py-4">No hay casas de vida registradas.</td></tr>
             <?php endif; ?>
           </tbody>
         </table>

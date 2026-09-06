@@ -128,7 +128,7 @@ $nombreCompleto = trim((string) ($miembroDetalle['nombre'] ?? '') . ' ' . (strin
           ?>
           <li>
             <?= htmlspecialchars(implode(', ', $rolesCasa)) ?>
-            · <?= htmlspecialchars((string) ($casa['direccion'] ?? nombreVisibleCasaVida($casa))) ?>
+            · <?= htmlspecialchars(nombreVisibleCasaVida($casa)) ?>
           </li>
           <?php endforeach; ?>
         </ul>

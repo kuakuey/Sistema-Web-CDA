@@ -69,20 +69,16 @@ function catalogoPasosImportEstructura(): array
             'etiqueta'         => 'Casas de vida',
             'pestana_permiso'  => 'casas',
             'descripcion'      => 'Cada casa de vida tiene nombre, líder, colaborador, anfitrión y dirección. Los tres deben ser miembros ya creados.',
-            'ayuda'            => 'Enlaza con Ids: exporta territorios y miembros, y copia Id territorio, Id lider, Id colaborador e Id anfitrion.',
+            'ayuda'            => 'Solo Ids: exporta territorios y miembros, y copia Id territorio, Id lider, Id colaborador e Id anfitrion. Con el Id el sistema valida y enlaza.',
             'columnas'         => [
                 'id_territorio'    => 'Id territorio',
-                'territorio'       => 'Territorio',
                 'nombre_casa'      => 'Nombre casa',
                 'direccion'        => 'Direccion',
                 'id_lider'         => 'Id lider',
-                'lider'            => 'Lider',
                 'id_colaborador'   => 'Id colaborador',
-                'colaborador'      => 'Colaborador',
                 'id_anfitrion'     => 'Id anfitrion',
-                'anfitrion'        => 'Anfitrion',
             ],
-            'requeridas'       => ['nombre_casa', 'direccion'],
+            'requeridas'       => ['id_territorio', 'nombre_casa', 'direccion', 'id_lider', 'id_colaborador', 'id_anfitrion'],
             'archivo_xls'      => 'plantilla-estructura-casas.xls',
             'archivo_csv'      => 'plantilla-estructura-casas.csv',
         ],
@@ -469,16 +465,12 @@ function descripcionesColumnasPasoImportEstructura(string $paso): array
             ['Cedula esposa', 'Sí*', 'Forma más segura de relacionar a la esposa.'],
         ],
         'casas' => [
-            ['Id territorio', 'Sí*', 'Id del territorio. Cópialo de la pestaña Territorios o del Excel exportado.'],
-            ['Territorio', 'Sí*', 'Nombre. Solo hace falta si no pones el Id del territorio.'],
+            ['Id territorio', 'Sí', 'Id del territorio. Cópialo de la pestaña Territorios o del Excel exportado.'],
             ['Nombre casa', 'Sí', 'Nombre de la casa de vida.'],
             ['Direccion', 'Sí', 'Dirección o punto de referencia de la casa.'],
-            ['Id lider', 'Sí*', 'Id del miembro. Cópialo de la pestaña Miembros o del Excel exportado.'],
-            ['Lider', 'Sí*', 'Nombre. Solo hace falta si no pones el Id del líder.'],
-            ['Id colaborador', 'Sí*', 'Id del miembro colaborador.'],
-            ['Colaborador', 'Sí*', 'Nombre. Solo hace falta si no pones el Id del colaborador.'],
-            ['Id anfitrion', 'Sí*', 'Id del miembro anfitrión.'],
-            ['Anfitrion', 'Sí*', 'Nombre. Solo hace falta si no pones el Id del anfitrión.'],
+            ['Id lider', 'Sí', 'Id del miembro líder. Cópialo de la pestaña Miembros o del Excel exportado.'],
+            ['Id colaborador', 'Sí', 'Id del miembro colaborador.'],
+            ['Id anfitrion', 'Sí', 'Id del miembro anfitrión.'],
         ],
         default => [],
     };
@@ -493,7 +485,7 @@ function ejemploFilaPasoImportEstructura(string $paso): array
         'miembros' => ['Juan Carlos', 'Pérez Gómez', 'masculino', '1234567890', '3001234567', 'juan@correo.com', 'Coordinador'],
         'territorios' => ['Norte'],
         'asignaciones' => ['Norte', 'coordinador', 'Juan Carlos Pérez Gómez', 'Ana María Pérez Gómez', '1234567890', '0987654321'],
-        'casas' => ['1', 'Norte', 'Casa Esperanza', 'Cra 10 #20-30', '1', 'Ana María Pérez Gómez', '2', 'Juan Carlos Pérez Gómez', '3', 'Laura Gómez'],
+        'casas' => ['1', 'Casa Esperanza', 'Cra 10 #20-30', '12', '15', '18'],
         default => [],
     };
 }
@@ -838,6 +830,19 @@ function importarAsignacionesEstructura(array $filas): array
  * @param array<string, string> $fila
  * @return array<string, mixed>
  */
+function resolverMiembroPorIdImportEstructura(array $indice, int $id, string $etiqueta): array
+{
+    if ($id <= 0) {
+        throw new InvalidArgumentException('El Id del ' . $etiqueta . ' es obligatorio.');
+    }
+
+    if (!isset($indice['id'][$id])) {
+        throw new InvalidArgumentException($etiqueta . ' no encontrado: Id ' . $id);
+    }
+
+    return $indice['id'][$id];
+}
+
 function resolverMiembroRolImportEstructura(array $indice, array $fila, string $rol, string $etiqueta): array
 {
     $id = (int) ($fila['id_' . $rol] ?? 0);
@@ -945,11 +950,9 @@ function importarTerritoriosEstructura(array $filas): array
  */
 function importarCasasEstructura(array $filas): array
 {
-    $territoriosPorNombre = [];
     $territoriosPorId = [];
     foreach (obtenerTerritorios() as $territorio) {
         $territoriosPorId[(int) $territorio['id']] = $territorio;
-        $territoriosPorNombre[claveTextoImportEstructura((string) $territorio['nombre'])] = $territorio;
     }
 
     $lideres = indiceLideresImportEstructura();
@@ -975,32 +978,23 @@ function importarCasasEstructura(array $filas): array
                 $nombreCasa = trim((string) ($fila['nombre_casa'] ?? ''));
                 $direccion = trim((string) ($fila['direccion'] ?? ''));
                 $territorioId = (int) ($fila['id_territorio'] ?? 0);
-                $territorioNombre = trim((string) ($fila['territorio'] ?? ''));
-
-                if ($territorioId <= 0 && preg_match('/^\d+$/', $territorioNombre) === 1) {
-                    $territorioId = (int) $territorioNombre;
-                    $territorioNombre = '';
-                }
 
                 if ($nombreCasa === '' || $direccion === '') {
                     throw new InvalidArgumentException('Nombre de la casa y dirección son obligatorios.');
                 }
 
-                if ($territorioId <= 0 && $territorioNombre === '') {
-                    throw new InvalidArgumentException('Indica el Id del territorio (o su nombre).');
+                if ($territorioId <= 0) {
+                    throw new InvalidArgumentException('El Id del territorio es obligatorio.');
                 }
 
-                $territorio = $territorioId > 0
-                    ? ($territoriosPorId[$territorioId] ?? null)
-                    : ($territoriosPorNombre[claveTextoImportEstructura($territorioNombre)] ?? null);
+                $territorio = $territoriosPorId[$territorioId] ?? null;
                 if ($territorio === null) {
-                    $referencia = $territorioId > 0 ? ('Id ' . $territorioId) : $territorioNombre;
-                    throw new InvalidArgumentException('Territorio no encontrado: ' . $referencia);
+                    throw new InvalidArgumentException('Territorio no encontrado: Id ' . $territorioId);
                 }
 
-                $lider = resolverMiembroRolImportEstructura($lideres, $fila, 'lider', 'Líder');
-                $colaborador = resolverMiembroRolImportEstructura($lideres, $fila, 'colaborador', 'Colaborador');
-                $anfitrion = resolverMiembroRolImportEstructura($lideres, $fila, 'anfitrion', 'Anfitrión');
+                $lider = resolverMiembroPorIdImportEstructura($lideres, (int) ($fila['id_lider'] ?? 0), 'Líder');
+                $colaborador = resolverMiembroPorIdImportEstructura($lideres, (int) ($fila['id_colaborador'] ?? 0), 'Colaborador');
+                $anfitrion = resolverMiembroPorIdImportEstructura($lideres, (int) ($fila['id_anfitrion'] ?? 0), 'Anfitrión');
 
                 $claveCasa = (int) $territorio['id'] . '|' . claveTextoImportEstructura($nombreCasa);
                 if (isset($casasExistentes[$claveCasa])) {

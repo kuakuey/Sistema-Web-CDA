@@ -27,36 +27,6 @@ $pasoSiguiente = ($indicePaso !== false && isset($clavesPasos[$indicePaso + 1]))
     >
       <i class="bi bi-people me-1"></i>Conectar parentesco
     </button>
-    <?php if (!empty($lideres)): ?>
-    <a
-      class="btn btn-outline-success"
-      href="estructura.php?pestaña=importar&amp;descargar=miembros"
-    >
-      <i class="bi bi-download me-1"></i>Exportar miembros
-    </a>
-    <?php endif; ?>
-    <?php if (!empty($territorios)): ?>
-    <a
-      class="btn btn-outline-success"
-      href="estructura.php?pestaña=importar&amp;descargar=territorios"
-    >
-      <i class="bi bi-download me-1"></i>Exportar territorios
-    </a>
-    <?php endif; ?>
-    <?php if (!empty($puedeEliminar) && !empty($lideres)): ?>
-    <form
-      method="POST"
-      action="estructura.php?pestaña=importar"
-      class="d-inline js-form-confirmar"
-      data-confirm-title="Eliminar todos los miembros"
-      data-confirm="Se eliminarán todos los miembros, sus parentescos, asignaciones a territorios y casas de vida. ¿Continuar?"
-    >
-      <input type="hidden" name="accion" value="eliminar_todos_lideres">
-      <button type="submit" class="btn btn-outline-danger">
-        <i class="bi bi-trash me-1"></i>Borrar todos
-      </button>
-    </form>
-    <?php endif; ?>
   </div>
 </div>
 

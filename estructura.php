@@ -57,6 +57,16 @@ if (isset($_GET['descargar']) && $_GET['descargar'] === 'territorios') {
     exit;
 }
 
+if (isset($_GET['descargar']) && $_GET['descargar'] === 'casas') {
+    if (!puedeGestionarEstructuraPestana($usuario['rol'], 'casas') && !puedeGestionarEstructuraPestana($usuario['rol'], 'importar')) {
+        header('Location: ' . obtenerUrlInicioPorRol($usuario['rol']));
+        exit;
+    }
+    $formato = isset($_GET['formato']) && $_GET['formato'] === 'csv' ? 'csv' : 'xls';
+    enviarExportacionCasasEstructura($formato);
+    exit;
+}
+
 if ($pestaña === 'importar' && isset($_GET['descargar']) && $_GET['descargar'] === 'plantilla') {
     $formato = isset($_GET['formato']) && $_GET['formato'] === 'csv' ? 'csv' : 'xls';
     enviarPlantillaImportEstructura($pasoImportar, $formato);
@@ -90,6 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'conectar_parentesco'          => 'lideres',
         'eliminar_parentesco'          => 'lideres',
         'eliminar_todos_lideres'       => 'lideres',
+        'eliminar_todos_territorios'   => 'territorios',
         'crear_casa'            => 'casas',
         'actualizar_casa'       => 'casas',
         'eliminar_todas_casas'  => 'casas',
@@ -227,7 +238,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mensaje = $eliminados === 0
                     ? 'No había miembros para eliminar.'
                     : 'Se eliminaron ' . $eliminados . ' miembro(s), sus parentescos, asignaciones y casas de vida.';
-                $pestaña = 'importar';
+                $pestaña = 'avanzado';
+                break;
+
+            case 'eliminar_todos_territorios':
+                if (!puedeEliminarRegistros($usuario['rol'])) {
+                    throw new InvalidArgumentException('No tienes permiso para eliminar territorios.');
+                }
+                $eliminados = eliminarTodosTerritorios();
+                registrarActividadPorAccion(
+                    'eliminar_todos_territorios',
+                    0,
+                    'Eliminar todos los territorios · ' . $eliminados
+                );
+                $mensaje = $eliminados === 0
+                    ? 'No había territorios para eliminar.'
+                    : 'Se eliminaron ' . $eliminados . ' territorio(s), sus asignaciones y las casas de vida asociadas.';
+                $pestaña = 'avanzado';
                 break;
 
             case 'actualizar_lider':
@@ -255,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mensaje = $eliminadas === 0
                     ? 'No había casas de vida para eliminar.'
                     : 'Se eliminaron ' . $eliminadas . ' casa(s) de vida.';
-                $pestaña = 'casas';
+                $pestaña = 'avanzado';
                 break;
 
             case 'crear_casa':

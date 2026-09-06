@@ -1,5 +1,5 @@
 <?php
-$pestañasEstructura = $pestañasPermitidas ?? ['lideres', 'territorios', 'casas', 'importar'];
+$pestañasEstructura = $pestañasPermitidas ?? ['lideres', 'territorios', 'casas', 'importar', 'avanzado'];
 $pasosImportar = $pasosImportar ?? [];
 $pasoImportar = $pasoImportar ?? 'miembros';
 $resultadoImportEstructura = $resultadoImportEstructura ?? null;
@@ -47,21 +47,21 @@ $filtrosListaEstructura = $buscarEstructura !== '' ? ['buscar' => $buscarEstruct
   <?php if (in_array('lideres', $pestañasEstructura, true)): ?>
   <li class="nav-item">
     <a class="nav-link <?= $pestaña === 'lideres' ? 'active' : '' ?>" href="estructura.php?pestaña=lideres">
-      <i class="bi bi-people me-1"></i>1. Miembros
+      <i class="bi bi-people me-1"></i>1. Miembros (<?= (int) $totalMiembrosRegistrados ?>)
     </a>
   </li>
   <?php endif; ?>
   <?php if (in_array('territorios', $pestañasEstructura, true)): ?>
   <li class="nav-item">
     <a class="nav-link <?= $pestaña === 'territorios' ? 'active' : '' ?>" href="estructura.php?pestaña=territorios">
-      <i class="bi bi-map me-1"></i>2. Territorios
+      <i class="bi bi-map me-1"></i>2. Territorios (<?= count($territorios ?? []) ?>)
     </a>
   </li>
   <?php endif; ?>
   <?php if (in_array('casas', $pestañasEstructura, true)): ?>
   <li class="nav-item">
     <a class="nav-link <?= $pestaña === 'casas' ? 'active' : '' ?>" href="estructura.php?pestaña=casas">
-      <i class="bi bi-house-heart me-1"></i>3. Casas de vida
+      <i class="bi bi-house-heart me-1"></i>3. Casas de vida (<?= (int) $totalCasasRegistradas ?>)
     </a>
   </li>
   <?php endif; ?>
@@ -72,22 +72,22 @@ $filtrosListaEstructura = $buscarEstructura !== '' ? ['buscar' => $buscarEstruct
     </a>
   </li>
   <?php endif; ?>
+  <?php if (in_array('avanzado', $pestañasEstructura, true)): ?>
+  <li class="nav-item">
+    <a class="nav-link <?= $pestaña === 'avanzado' ? 'active' : '' ?>" href="estructura.php?pestaña=avanzado">
+      <i class="bi bi-sliders me-1"></i>Avanzado
+    </a>
+  </li>
+  <?php endif; ?>
 </ul>
 
 <?php if ($pestaña === 'lideres' && $miembroDetalle): ?>
 <?php include __DIR__ . '/pestaña-miembro.php'; ?>
 <?php elseif ($pestaña === 'lideres'): ?>
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-  <div class="d-flex flex-wrap gap-2">
-    <?php if ($totalMiembrosRegistrados > 0): ?>
-    <a class="btn btn-outline-success" href="estructura.php?pestaña=lideres&amp;descargar=miembros">
-      <i class="bi bi-download me-1"></i>Exportar miembros
-    </a>
-    <?php endif; ?>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoMiembro">
-      <i class="bi bi-plus-lg me-1"></i>Nuevo miembro
-    </button>
-  </div>
+<div class="d-flex flex-wrap justify-content-end align-items-center gap-2 mb-4">
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoMiembro">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo miembro
+  </button>
 </div>
 
 <div class="card border-0 shadow-sm mb-4">
@@ -112,14 +112,6 @@ $filtrosListaEstructura = $buscarEstructura !== '' ? ['buscar' => $buscarEstruct
         <?php endif; ?>
       </div>
     </form>
-    <p class="mb-0 mt-3">
-      <?php if ($buscarEstructura !== ''): ?>
-      <strong><?= (int) $totalMiembros ?></strong> resultado(s) de <?= (int) $totalMiembrosRegistrados ?> miembro(s)
-      para «<?= htmlspecialchars((string) $buscarEstructura) ?>».
-      <?php else: ?>
-      Hay <strong><?= (int) $totalMiembrosRegistrados ?></strong> miembro(s) registrado(s). Se muestran 20 por página.
-      <?php endif; ?>
-    </p>
   </div>
 </div>
 
@@ -261,17 +253,10 @@ foreach ($lideres as $miembro) {
     ];
 }
 ?>
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-  <div class="d-flex flex-wrap gap-2">
-    <?php if (!empty($territorios)): ?>
-    <a class="btn btn-outline-success" href="estructura.php?pestaña=territorios&amp;descargar=territorios">
-      <i class="bi bi-download me-1"></i>Exportar territorios
-    </a>
-    <?php endif; ?>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoTerritorio">
-      <i class="bi bi-plus-lg me-1"></i>Nuevo territorio
-    </button>
-  </div>
+<div class="d-flex flex-wrap justify-content-end align-items-center gap-2 mb-4">
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoTerritorio">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo territorio
+  </button>
 </div>
 
 <div class="card border-0 shadow-sm">
@@ -585,35 +570,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <?php if ($pestaña === 'casas'): ?>
 <?php $casaForm = ($modalEstructura === 'casa') ? $_POST : []; ?>
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-  <div class="d-flex flex-wrap gap-2">
-    <?php if (!empty($puedeEliminar) && $totalCasasRegistradas > 0): ?>
-    <form
-      method="POST"
-      action="estructura.php?pestaña=casas"
-      class="d-inline js-form-confirmar"
-      data-confirm-title="Eliminar todas las casas"
-      data-confirm="Se eliminarán todas las casas de vida. ¿Continuar?"
-    >
-      <input type="hidden" name="accion" value="eliminar_todas_casas">
-      <button type="submit" class="btn btn-outline-danger">
-        <i class="bi bi-trash me-1"></i>Borrar todas
-      </button>
-    </form>
-    <?php endif; ?>
-    <?php if (empty($territorios) || empty($lideres)): ?>
+<div class="d-flex flex-wrap justify-content-end align-items-center gap-2 mb-4">
+  <?php if (empty($territorios) || empty($lideres)): ?>
     <?php if (empty($lideres) && in_array('lideres', $pestañasEstructura, true)): ?>
     <a class="btn btn-outline-primary" href="estructura.php?pestaña=lideres">Ir a miembros</a>
     <?php endif; ?>
     <?php if (empty($territorios) && in_array('territorios', $pestañasEstructura, true)): ?>
     <a class="btn btn-outline-primary" href="estructura.php?pestaña=territorios">Ir a territorios</a>
     <?php endif; ?>
-    <?php else: ?>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaCasa">
-      <i class="bi bi-plus-lg me-1"></i>Nueva casa
-    </button>
-    <?php endif; ?>
-  </div>
+  <?php else: ?>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaCasa">
+    <i class="bi bi-plus-lg me-1"></i>Nueva casa
+  </button>
+  <?php endif; ?>
 </div>
 
 <div class="card border-0 shadow-sm mb-4">
@@ -638,14 +607,6 @@ document.addEventListener('DOMContentLoaded', function () {
         <?php endif; ?>
       </div>
     </form>
-    <p class="mb-0 mt-3">
-      <?php if ($buscarEstructura !== ''): ?>
-      <strong><?= (int) $totalCasas ?></strong> resultado(s) de <?= (int) $totalCasasRegistradas ?> casa(s)
-      para «<?= htmlspecialchars((string) $buscarEstructura) ?>».
-      <?php else: ?>
-      Hay <strong><?= (int) $totalCasasRegistradas ?></strong> casa(s) de vida. Se muestran 20 por página.
-      <?php endif; ?>
-    </p>
   </div>
 </div>
 
@@ -791,4 +752,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <?php if ($pestaña === 'importar'): ?>
 <?php include __DIR__ . '/pestaña-importar.php'; ?>
+<?php endif; ?>
+
+<?php if ($pestaña === 'avanzado'): ?>
+<?php include __DIR__ . '/pestaña-avanzado.php'; ?>
 <?php endif; ?>

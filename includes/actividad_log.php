@@ -57,6 +57,7 @@ function mapaMetadatosActividad(): array
         'eliminar_territorio'              => ['seccion' => 'estructura', 'entidad' => 'territorio', 'etiqueta' => 'Eliminar territorio'],
         'eliminar_lider'                   => ['seccion' => 'estructura', 'entidad' => 'lider', 'etiqueta' => 'Eliminar líder'],
         'eliminar_todos_lideres'           => ['seccion' => 'estructura', 'entidad' => 'lider', 'etiqueta' => 'Eliminar todos los miembros'],
+        'eliminar_todos_territorios'       => ['seccion' => 'estructura', 'entidad' => 'territorio', 'etiqueta' => 'Eliminar todos los territorios'],
         'eliminar_casa'                    => ['seccion' => 'estructura', 'entidad' => 'casa', 'etiqueta' => 'Eliminar casa de vida'],
         'eliminar_todas_casas'             => ['seccion' => 'estructura', 'entidad' => 'casa', 'etiqueta' => 'Eliminar todas las casas de vida'],
         'eliminar_evento'                  => ['seccion' => 'eventos', 'entidad' => 'evento', 'etiqueta' => 'Eliminar evento'],

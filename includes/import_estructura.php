@@ -184,6 +184,63 @@ function enviarExportacionMiembrosEstructura(string $formato = 'xls'): void
     echo construirWorkbookXmlExportacionListaEstructura('Miembros', $encabezados, $filas);
 }
 
+function enviarExportacionCasasEstructura(string $formato = 'xls'): void
+{
+    $filas = filasExportacionCasasEstructura();
+    $encabezados = ['Id', 'Id territorio', 'Nombre casa', 'Direccion', 'Id lider', 'Id colaborador', 'Id anfitrion'];
+
+    if ($formato === 'csv') {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="casas-estructura.csv"');
+        header('Cache-Control: max-age=0');
+        echo "\xEF\xBB\xBF";
+
+        $salida = fopen('php://output', 'w');
+        if ($salida === false) {
+            throw new RuntimeException('No se pudo generar el CSV de casas de vida.');
+        }
+
+        fputcsv($salida, $encabezados, ';');
+        foreach ($filas as $fila) {
+            fputcsv($salida, $fila, ';');
+        }
+        fclose($salida);
+
+        return;
+    }
+
+    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+    header('Content-Disposition: attachment; filename="casas-estructura.xls"');
+    header('Cache-Control: max-age=0');
+
+    echo "\xEF\xBB\xBF";
+    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+    echo construirWorkbookXmlExportacionListaEstructura('Casas de vida', $encabezados, $filas);
+}
+
+/**
+ * @return array<int, array{0: string, 1: string, 2: string, 3: string, 4: string, 5: string, 6: string}>
+ */
+function filasExportacionCasasEstructura(): array
+{
+    $filas = [];
+
+    foreach (obtenerCasasVida() as $casa) {
+        $filas[] = [
+            (string) (int) $casa['id'],
+            (string) (int) $casa['territorio_id'],
+            (string) ($casa['nombre'] ?? ''),
+            (string) ($casa['direccion'] ?? ''),
+            (string) (int) $casa['lider_id'],
+            (string) (int) ($casa['colaborador_id'] ?? 0),
+            (string) (int) ($casa['anfitrion_id'] ?? 0),
+        ];
+    }
+
+    return $filas;
+}
+
 function enviarExportacionTerritoriosEstructura(string $formato = 'xls'): void
 {
     $filas = filasExportacionTerritoriosEstructura();

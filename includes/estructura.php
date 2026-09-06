@@ -268,6 +268,31 @@ function eliminarTerritorio(int $id): bool
     return $stmt->execute([$id]) && $stmt->rowCount() > 0;
 }
 
+function eliminarTodosTerritorios(): int
+{
+    asegurarTablasEstructura();
+    $pdo = getConnection();
+    $total = (int) $pdo->query('SELECT COUNT(*) FROM territorios')->fetchColumn();
+
+    if ($total === 0) {
+        return 0;
+    }
+
+    $pdo->beginTransaction();
+
+    try {
+        $pdo->exec('DELETE FROM territorio_asignaciones');
+        $pdo->exec('DELETE FROM casas_vida');
+        $pdo->exec('DELETE FROM territorios');
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+
+    return $total;
+}
+
 /**
  * @return array<int, array<string, mixed>>
  */

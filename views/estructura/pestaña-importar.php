@@ -103,7 +103,7 @@ $pasoSiguiente = ($indicePaso !== false && isset($clavesPasos[$indicePaso + 1]))
 
 <?php if ($pasoImportar === 'casas' && (empty($lideres) || empty($territorios))): ?>
 <div class="alert alert-warning">
-  Para importar casas de vida primero deben existir territorios y los miembros que serán líder, colaborador y anfitrión.
+  Para importar casas de vida primero deben existir territorios y al menos el miembro líder. Colaborador y anfitrión son opcionales.
   <div class="mt-2 d-flex flex-wrap gap-2">
     <?php if (empty($lideres) && in_array('miembros', $pasosImportar, true)): ?>
     <a class="btn btn-sm btn-outline-primary" href="estructura.php?pestaña=importar&amp;paso=miembros">Paso 1 · Miembros</a>

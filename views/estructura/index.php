@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php if ($pestaña === 'casas'): ?>
 <div class="alert alert-light border small mb-4">
   <i class="bi bi-lightbulb me-1 text-primary"></i>
-  Paso 3: cada casa de vida tiene líder, colaborador, anfitrión y dirección.
+  Paso 3: cada casa de vida tiene líder y dirección. Colaborador y anfitrión son opcionales.
   <?php if (in_array('importar', $pestañasEstructura, true)): ?>
   Si ya cargaste miembros y territorios, puedes
   <a href="estructura.php?pestaña=importar&amp;paso=casas">importar las casas desde Excel o CSV</a>.
@@ -570,10 +570,10 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white py-3"><h3 class="h6 mb-0">Nueva casa de vida</h3></div>
       <div class="card-body">
-        <?php if (empty($territorios) || count($lideres) < 3): ?>
-        <p class="text-muted small mb-2">Primero crea un territorio y al menos tres miembros (líder, colaborador y anfitrión).</p>
+        <?php if (empty($territorios) || empty($lideres)): ?>
+        <p class="text-muted small mb-2">Primero crea un territorio y al menos un miembro (líder).</p>
         <div class="d-flex flex-wrap gap-2">
-          <?php if (count($lideres) < 3 && in_array('lideres', $pestañasEstructura, true)): ?>
+          <?php if (empty($lideres) && in_array('lideres', $pestañasEstructura, true)): ?>
           <a class="btn btn-sm btn-outline-primary" href="estructura.php?pestaña=lideres">Ir a miembros</a>
           <?php endif; ?>
           <?php if (empty($territorios) && in_array('territorios', $pestañasEstructura, true)): ?>
@@ -602,8 +602,8 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
           <div class="mb-2">
             <label class="form-label">Colaborador</label>
-            <select class="form-select" name="colaborador_id" required>
-              <option value="">Seleccione…</option>
+            <select class="form-select" name="colaborador_id">
+              <option value="">Ninguno</option>
               <?php foreach ($lideres as $l): ?>
               <option value="<?= (int) $l['id'] ?>"><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></option>
               <?php endforeach; ?>
@@ -611,8 +611,8 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
           <div class="mb-2">
             <label class="form-label">Anfitrión</label>
-            <select class="form-select" name="anfitrion_id" required>
-              <option value="">Seleccione…</option>
+            <select class="form-select" name="anfitrion_id">
+              <option value="">Ninguno</option>
               <?php foreach ($lideres as $l): ?>
               <option value="<?= (int) $l['id'] ?>"><?= htmlspecialchars($l['nombre'] . ' ' . $l['apellido']) ?></option>
               <?php endforeach; ?>

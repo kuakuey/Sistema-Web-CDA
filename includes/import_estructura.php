@@ -68,8 +68,8 @@ function catalogoPasosImportEstructura(): array
             'clave'            => 'casas',
             'etiqueta'         => 'Casas de vida',
             'pestana_permiso'  => 'casas',
-            'descripcion'      => 'Cada casa de vida tiene nombre, líder, colaborador, anfitrión y dirección. Los tres deben ser miembros ya creados.',
-            'ayuda'            => 'Solo Ids: exporta territorios y miembros, y copia Id territorio, Id lider, Id colaborador e Id anfitrion. Con el Id el sistema valida y enlaza.',
+            'descripcion'      => 'Cada casa de vida tiene nombre, líder, dirección y, si aplica, colaborador y anfitrión.',
+            'ayuda'            => 'Solo Ids. Obligatorios: Id territorio e Id lider. Id colaborador e Id anfitrion son opcionales.',
             'columnas'         => [
                 'id_territorio'    => 'Id territorio',
                 'nombre_casa'      => 'Nombre casa',
@@ -78,7 +78,7 @@ function catalogoPasosImportEstructura(): array
                 'id_colaborador'   => 'Id colaborador',
                 'id_anfitrion'     => 'Id anfitrion',
             ],
-            'requeridas'       => ['id_territorio', 'nombre_casa', 'direccion', 'id_lider', 'id_colaborador', 'id_anfitrion'],
+            'requeridas'       => ['id_territorio', 'nombre_casa', 'direccion', 'id_lider'],
             'archivo_xls'      => 'plantilla-estructura-casas.xls',
             'archivo_csv'      => 'plantilla-estructura-casas.csv',
         ],
@@ -361,7 +361,7 @@ function construirHojaGuiaXmlPlantillaImportEstructura(array $info): string
         '5. Importe los pasos en orden: personas, territorios y casas de vida.',
     ];
     if (($info['clave'] ?? '') === 'casas') {
-        $instrucciones[] = '6. Copie el Id de «Territorios» en Id territorio y el Id de «Miembros» en Id lider, Id colaborador e Id anfitrion.';
+        $instrucciones[] = '6. Copie el Id de «Territorios» en Id territorio y el Id de «Miembros» en Id lider. Id colaborador e Id anfitrion son opcionales.';
     }
     foreach ($instrucciones as $linea) {
         $xml .= filaXmlExcelImportEstructura([$linea]);
@@ -469,8 +469,8 @@ function descripcionesColumnasPasoImportEstructura(string $paso): array
             ['Nombre casa', 'Sí', 'Nombre de la casa de vida.'],
             ['Direccion', 'Sí', 'Dirección o punto de referencia de la casa.'],
             ['Id lider', 'Sí', 'Id del miembro líder. Cópialo de la pestaña Miembros o del Excel exportado.'],
-            ['Id colaborador', 'Sí', 'Id del miembro colaborador.'],
-            ['Id anfitrion', 'Sí', 'Id del miembro anfitrión.'],
+            ['Id colaborador', 'No', 'Id del miembro colaborador. Opcional.'],
+            ['Id anfitrion', 'No', 'Id del miembro anfitrión. Opcional.'],
         ],
         default => [],
     };
@@ -993,8 +993,14 @@ function importarCasasEstructura(array $filas): array
                 }
 
                 $lider = resolverMiembroPorIdImportEstructura($lideres, (int) ($fila['id_lider'] ?? 0), 'Líder');
-                $colaborador = resolverMiembroPorIdImportEstructura($lideres, (int) ($fila['id_colaborador'] ?? 0), 'Colaborador');
-                $anfitrion = resolverMiembroPorIdImportEstructura($lideres, (int) ($fila['id_anfitrion'] ?? 0), 'Anfitrión');
+                $colaboradorId = (int) ($fila['id_colaborador'] ?? 0);
+                $anfitrionId = (int) ($fila['id_anfitrion'] ?? 0);
+                $colaborador = $colaboradorId > 0
+                    ? resolverMiembroPorIdImportEstructura($lideres, $colaboradorId, 'Colaborador')
+                    : null;
+                $anfitrion = $anfitrionId > 0
+                    ? resolverMiembroPorIdImportEstructura($lideres, $anfitrionId, 'Anfitrión')
+                    : null;
 
                 $claveCasa = (int) $territorio['id'] . '|' . claveTextoImportEstructura($nombreCasa);
                 if (isset($casasExistentes[$claveCasa])) {
@@ -1005,8 +1011,8 @@ function importarCasasEstructura(array $filas): array
                 $id = crearCasaVida([
                     'territorio_id'  => (int) $territorio['id'],
                     'lider_id'       => (int) $lider['id'],
-                    'colaborador_id' => (int) $colaborador['id'],
-                    'anfitrion_id'   => (int) $anfitrion['id'],
+                    'colaborador_id' => $colaborador !== null ? (int) $colaborador['id'] : 0,
+                    'anfitrion_id'   => $anfitrion !== null ? (int) $anfitrion['id'] : 0,
                     'nombre'         => $nombreCasa,
                     'direccion'      => $direccion,
                 ]);

@@ -960,8 +960,8 @@ function normalizarDatosCasaVida(array $datos): array
     if ($direccion === '') {
         throw new InvalidArgumentException('La dirección de la casa de vida es obligatoria.');
     }
-    if ($liderId <= 0 || $colaboradorId <= 0 || $anfitrionId <= 0) {
-        throw new InvalidArgumentException('La casa de vida necesita líder, colaborador y anfitrión.');
+    if ($liderId <= 0) {
+        throw new InvalidArgumentException('La casa de vida necesita un líder.');
     }
 
     $roles = [
@@ -971,6 +971,9 @@ function normalizarDatosCasaVida(array $datos): array
     ];
     $vistos = [];
     foreach ($roles as $etiqueta => $miembroId) {
+        if ($miembroId <= 0) {
+            continue;
+        }
         if (isset($vistos[$miembroId])) {
             throw new InvalidArgumentException('El líder, el colaborador y el anfitrión deben ser miembros distintos.');
         }

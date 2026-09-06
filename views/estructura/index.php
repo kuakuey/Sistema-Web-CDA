@@ -1,5 +1,5 @@
 <?php
-$pestañasEstructura = $pestañasPermitidas ?? ['lideres', 'territorios', 'casas', 'importar', 'avanzado'];
+$pestañasEstructura = $pestañasPermitidas ?? ['lideres', 'territorios', 'casas', 'avanzado'];
 $pasosImportar = $pasosImportar ?? [];
 $pasoImportar = $pasoImportar ?? 'miembros';
 $resultadoImportEstructura = $resultadoImportEstructura ?? null;
@@ -62,13 +62,6 @@ $filtrosListaEstructura = $buscarEstructura !== '' ? ['buscar' => $buscarEstruct
   <li class="nav-item">
     <a class="nav-link <?= $pestaña === 'casas' ? 'active' : '' ?>" href="estructura.php?pestaña=casas">
       <i class="bi bi-house-heart me-1"></i>3. Casas de vida (<?= (int) $totalCasasRegistradas ?>)
-    </a>
-  </li>
-  <?php endif; ?>
-  <?php if (in_array('importar', $pestañasEstructura, true)): ?>
-  <li class="nav-item">
-    <a class="nav-link <?= $pestaña === 'importar' ? 'active' : '' ?>" href="estructura.php?pestaña=importar">
-      <i class="bi bi-file-earmark-spreadsheet me-1"></i>Carga masiva
     </a>
   </li>
   <?php endif; ?>
@@ -748,10 +741,6 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <?php endif; ?>
 <?php endif; ?>
-<?php endif; ?>
-
-<?php if ($pestaña === 'importar'): ?>
-<?php include __DIR__ . '/pestaña-importar.php'; ?>
 <?php endif; ?>
 
 <?php if ($pestaña === 'avanzado'): ?>

@@ -237,7 +237,7 @@ function obtenerPestanasEstructuraPermitidas(string $rol): array
 {
     $permitidas = [];
 
-    foreach (['lideres', 'territorios', 'casas', 'importar', 'avanzado'] as $pestana) {
+    foreach (['lideres', 'territorios', 'casas', 'avanzado'] as $pestana) {
         if (puedeGestionarEstructuraPestana($rol, $pestana)) {
             $permitidas[] = $pestana;
         }

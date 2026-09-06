@@ -142,7 +142,7 @@ function obtenerCatalogoPermisosDetallados(): array
                 'lideres'     => 'Miembros',
                 'territorios' => 'Territorios',
                 'casas'       => 'Casas de vida',
-                'importar'    => 'Carga masiva',
+                'importar'    => 'Importar estructura',
             ],
         ],
     ];

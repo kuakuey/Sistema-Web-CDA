@@ -24,6 +24,13 @@ if ($pestañasPermitidas === []) {
 
 $pestaña = isset($_GET['pestaña']) ? trim((string) $_GET['pestaña']) : $pestañasPermitidas[0];
 
+if ($pestaña === 'importar') {
+    $params = $_GET;
+    $params['pestaña'] = 'avanzado';
+    header('Location: estructura.php?' . http_build_query($params));
+    exit;
+}
+
 if (!in_array($pestaña, $pestañasPermitidas, true)) {
     $pestaña = $pestañasPermitidas[0];
 }
@@ -67,7 +74,11 @@ if (isset($_GET['descargar']) && $_GET['descargar'] === 'casas') {
     exit;
 }
 
-if ($pestaña === 'importar' && isset($_GET['descargar']) && $_GET['descargar'] === 'plantilla') {
+if (isset($_GET['descargar']) && $_GET['descargar'] === 'plantilla') {
+    if (!in_array($pasoImportar, $pasosImportar, true)) {
+        header('Location: ' . obtenerUrlInicioPorRol($usuario['rol']));
+        exit;
+    }
     $formato = isset($_GET['formato']) && $_GET['formato'] === 'csv' ? 'csv' : 'xls';
     enviarPlantillaImportEstructura($pasoImportar, $formato);
     exit;
@@ -104,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'crear_casa'            => 'casas',
         'actualizar_casa'       => 'casas',
         'eliminar_todas_casas'  => 'casas',
-        'importar_estructura'   => 'importar',
+        'importar_estructura'   => 'avanzado',
     ];
 
     try {
@@ -211,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 registrarActividadPorAccion('conectar_parentesco', (int) ($_POST['miembro_id'] ?? 0), 'Conectar parentesco');
                 $mensaje = 'Parentesco conectado correctamente.';
-                $pestaña = 'importar';
+                $pestaña = 'avanzado';
                 break;
 
             case 'eliminar_parentesco':
@@ -331,20 +342,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $usuario,
                     $resultadoImport
                 );
-                header('Location: estructura.php?pestaña=importar&paso=' . urlencode($pasoImportar) . '&ok=1');
+                header('Location: estructura.php?pestaña=avanzado&paso=' . urlencode($pasoImportar) . '&ok=1');
                 exit;
         }
     } catch (InvalidArgumentException $e) {
         if ($accion === 'importar_estructura') {
             $_SESSION['import_estructura_error'] = ['mensaje' => $e->getMessage()];
-            header('Location: estructura.php?pestaña=importar&paso=' . urlencode($pasoImportar) . '&error=1');
+            header('Location: estructura.php?pestaña=avanzado&paso=' . urlencode($pasoImportar) . '&error=1');
             exit;
         }
         $error = $e->getMessage();
     } catch (PDOException $e) {
         if ($accion === 'importar_estructura') {
             $_SESSION['import_estructura_error'] = ['mensaje' => 'No se pudieron importar los registros. Revisa el archivo e inténtalo de nuevo.'];
-            header('Location: estructura.php?pestaña=importar&paso=' . urlencode($pasoImportar) . '&error=1');
+            header('Location: estructura.php?pestaña=avanzado&paso=' . urlencode($pasoImportar) . '&error=1');
             exit;
         }
         $error = 'No se pudo guardar. Verifica que existan miembros y territorios.';

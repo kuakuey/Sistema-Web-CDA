@@ -17,8 +17,16 @@ $asignacionesMiembro = $asignacionesMiembro ?? [];
 $casasMiembro = $casasMiembro ?? [];
 $lideresPagina = $lideresPagina ?? $lideres ?? [];
 $totalMiembros = $totalMiembros ?? count($lideres ?? []);
+$totalMiembrosRegistrados = $totalMiembrosRegistrados ?? $totalMiembros;
 $paginaMiembros = $paginaMiembros ?? 1;
 $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
+$buscarEstructura = $buscarEstructura ?? '';
+$casasPagina = $casasPagina ?? $casas ?? [];
+$totalCasas = $totalCasas ?? count($casas ?? []);
+$totalCasasRegistradas = $totalCasasRegistradas ?? $totalCasas;
+$paginaCasas = $paginaCasas ?? 1;
+$totalPaginasCasas = $totalPaginasCasas ?? 1;
+$filtrosListaEstructura = $buscarEstructura !== '' ? ['buscar' => $buscarEstructura] : [];
 ?>
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
@@ -76,7 +84,7 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
     Luego asígnalos a territorios desde la pestaña Territorios.
   </p>
   <div class="d-flex flex-wrap gap-2">
-    <?php if ($totalMiembros > 0): ?>
+    <?php if ($totalMiembrosRegistrados > 0): ?>
     <a class="btn btn-outline-success" href="estructura.php?pestaña=lideres&amp;descargar=miembros">
       <i class="bi bi-download me-1"></i>Exportar miembros
     </a>
@@ -89,7 +97,34 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
 
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body py-3">
-    <p class="mb-0">Hay <strong><?= (int) $totalMiembros ?></strong> miembro(s) registrado(s). Se muestran 20 por página.</p>
+    <form method="GET" action="estructura.php" class="row g-2 align-items-end">
+      <input type="hidden" name="pestaña" value="lideres">
+      <div class="col-md-6 col-lg-4">
+        <label class="form-label small mb-1" for="buscar-miembros">Buscar</label>
+        <input
+          type="search"
+          class="form-control form-control-sm"
+          id="buscar-miembros"
+          name="buscar"
+          value="<?= htmlspecialchars((string) $buscarEstructura) ?>"
+          placeholder="Nombre, cédula, celular…"
+        >
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-outline-primary">Buscar</button>
+        <?php if ($buscarEstructura !== ''): ?>
+        <a class="btn btn-sm btn-outline-secondary" href="estructura.php?pestaña=lideres">Limpiar</a>
+        <?php endif; ?>
+      </div>
+    </form>
+    <p class="mb-0 mt-3">
+      <?php if ($buscarEstructura !== ''): ?>
+      <strong><?= (int) $totalMiembros ?></strong> resultado(s) de <?= (int) $totalMiembrosRegistrados ?> miembro(s)
+      para «<?= htmlspecialchars((string) $buscarEstructura) ?>».
+      <?php else: ?>
+      Hay <strong><?= (int) $totalMiembrosRegistrados ?></strong> miembro(s) registrado(s). Se muestran 20 por página.
+      <?php endif; ?>
+    </p>
   </div>
 </div>
 
@@ -112,7 +147,7 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
             <td class="text-nowrap">
               <a
                 class="btn btn-sm btn-outline-primary"
-                href="<?= htmlspecialchars(urlFichaMiembro((int) $l['id'])) ?>"
+                href="<?= htmlspecialchars(urlFichaMiembro((int) $l['id'], (int) $paginaMiembros, (string) $buscarEstructura)) ?>"
                 title="Ver"
               >
                 <i class="bi bi-eye"></i>
@@ -127,7 +162,7 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
               >
                 <input type="hidden" name="accion" value="eliminar_lider">
                 <input type="hidden" name="id" value="<?= (int) $l['id'] ?>">
-                <input type="hidden" name="redireccion" value="estructura.php?pestaña=lideres&amp;pagina=<?= (int) $paginaMiembros ?>">
+                <input type="hidden" name="redireccion" value="<?= htmlspecialchars(construirUrlRegistros('estructura.php', $filtrosListaEstructura, (int) $paginaMiembros, 'lideres')) ?>">
                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
               </form>
               <?php endif; ?>
@@ -135,7 +170,11 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
           </tr>
           <?php endforeach; ?>
           <?php if (empty($lideresPagina)): ?>
-          <tr><td colspan="3" class="text-center text-muted py-4">No hay miembros registrados.</td></tr>
+          <tr>
+            <td colspan="3" class="text-center text-muted py-4">
+              <?= $buscarEstructura !== '' ? 'No se encontraron miembros para esa búsqueda.' : 'No hay miembros registrados.' ?>
+            </td>
+          </tr>
           <?php endif; ?>
         </tbody>
       </table>
@@ -145,7 +184,7 @@ $totalPaginasMiembros = $totalPaginasMiembros ?? 1;
     $totalPaginas = (int) $totalPaginasMiembros;
     $totalRegistros = (int) $totalMiembros;
     $archivoPagina = 'estructura.php';
-    $filtros = [];
+    $filtros = $filtrosListaEstructura;
     $pestañaPaginacion = 'lideres';
     include __DIR__ . '/../partials/paginacion-registros.php';
     ?>
@@ -568,7 +607,7 @@ document.addEventListener('DOMContentLoaded', function () {
     <?php endif; ?>
   </p>
   <div class="d-flex flex-wrap gap-2">
-    <?php if (!empty($puedeEliminar) && !empty($casas)): ?>
+    <?php if (!empty($puedeEliminar) && $totalCasasRegistradas > 0): ?>
     <form
       method="POST"
       action="estructura.php?pestaña=casas"
@@ -597,6 +636,39 @@ document.addEventListener('DOMContentLoaded', function () {
   </div>
 </div>
 
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body py-3">
+    <form method="GET" action="estructura.php" class="row g-2 align-items-end">
+      <input type="hidden" name="pestaña" value="casas">
+      <div class="col-md-6 col-lg-4">
+        <label class="form-label small mb-1" for="buscar-casas">Buscar</label>
+        <input
+          type="search"
+          class="form-control form-control-sm"
+          id="buscar-casas"
+          name="buscar"
+          value="<?= htmlspecialchars((string) $buscarEstructura) ?>"
+          placeholder="Casa, territorio, líder, dirección…"
+        >
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-outline-primary">Buscar</button>
+        <?php if ($buscarEstructura !== ''): ?>
+        <a class="btn btn-sm btn-outline-secondary" href="estructura.php?pestaña=casas">Limpiar</a>
+        <?php endif; ?>
+      </div>
+    </form>
+    <p class="mb-0 mt-3">
+      <?php if ($buscarEstructura !== ''): ?>
+      <strong><?= (int) $totalCasas ?></strong> resultado(s) de <?= (int) $totalCasasRegistradas ?> casa(s)
+      para «<?= htmlspecialchars((string) $buscarEstructura) ?>».
+      <?php else: ?>
+      Hay <strong><?= (int) $totalCasasRegistradas ?></strong> casa(s) de vida. Se muestran 20 por página.
+      <?php endif; ?>
+    </p>
+  </div>
+</div>
+
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -605,7 +677,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <tr><th>Casa</th><th>Territorio</th><th>Líder</th><th>Colaborador</th><th>Anfitrión</th><th>Dirección</th><th>Acciones</th></tr>
         </thead>
         <tbody>
-          <?php foreach ($casas as $c): ?>
+          <?php foreach ($casasPagina as $c): ?>
           <tr>
             <td><?= htmlspecialchars(nombreVisibleCasaVida($c)) ?></td>
             <td><?= htmlspecialchars((string) $c['territorio_nombre']) ?></td>
@@ -624,19 +696,32 @@ document.addEventListener('DOMContentLoaded', function () {
               >
                 <input type="hidden" name="accion" value="eliminar_casa">
                 <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
-                <input type="hidden" name="redireccion" value="estructura.php?pestaña=casas">
+                <input type="hidden" name="redireccion" value="<?= htmlspecialchars(construirUrlRegistros('estructura.php', $filtrosListaEstructura, (int) $paginaCasas, 'casas')) ?>">
                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
               </form>
               <?php endif; ?>
             </td>
           </tr>
           <?php endforeach; ?>
-          <?php if (empty($casas)): ?>
-          <tr><td colspan="7" class="text-center text-muted py-4">No hay casas de vida registradas.</td></tr>
+          <?php if (empty($casasPagina)): ?>
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              <?= $buscarEstructura !== '' ? 'No se encontraron casas de vida para esa búsqueda.' : 'No hay casas de vida registradas.' ?>
+            </td>
+          </tr>
           <?php endif; ?>
         </tbody>
       </table>
     </div>
+    <?php
+    $paginaActual = (int) $paginaCasas;
+    $totalPaginas = (int) $totalPaginasCasas;
+    $totalRegistros = (int) $totalCasas;
+    $archivoPagina = 'estructura.php';
+    $filtros = $filtrosListaEstructura;
+    $pestañaPaginacion = 'casas';
+    include __DIR__ . '/../partials/paginacion-registros.php';
+    ?>
   </div>
 </div>
 

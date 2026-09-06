@@ -4,7 +4,8 @@ $parentesco = $parentescoPorMiembro[(int) ($miembroDetalle['id'] ?? 0)] ?? null;
 $asignacionesMiembro = $asignacionesMiembro ?? [];
 $casasMiembro = $casasMiembro ?? [];
 $paginaLista = (int) ($paginaMiembros ?? 1);
-$urlLista = 'estructura.php?pestaña=lideres' . ($paginaLista > 1 ? '&pagina=' . $paginaLista : '');
+$buscarLista = trim((string) ($buscarEstructura ?? ''));
+$urlLista = construirUrlRegistros('estructura.php', $buscarLista !== '' ? ['buscar' => $buscarLista] : [], $paginaLista, 'lideres');
 $nombreCompleto = trim((string) ($miembroDetalle['nombre'] ?? '') . ' ' . (string) ($miembroDetalle['apellido'] ?? ''));
 ?>
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">

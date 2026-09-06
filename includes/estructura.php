@@ -281,9 +281,98 @@ function obtenerLideres(): array
     )->fetchAll();
 }
 
-function urlFichaMiembro(int $id): string
+function urlFichaMiembro(int $id, int $pagina = 1, string $buscar = ''): string
 {
-    return 'estructura.php?pestaña=lideres&miembro=' . $id;
+    $parametros = [
+        'pestaña' => 'lideres',
+        'miembro' => $id,
+    ];
+    if ($pagina > 1) {
+        $parametros['pagina'] = $pagina;
+    }
+    $buscar = trim($buscar);
+    if ($buscar !== '') {
+        $parametros['buscar'] = $buscar;
+    }
+
+    return 'estructura.php?' . http_build_query($parametros);
+}
+
+function parsearBusquedaEstructura(array $entrada): string
+{
+    return trim((string) ($entrada['buscar'] ?? ''));
+}
+
+function textoContieneBusquedaEstructura(string $texto, string $busqueda): bool
+{
+    $busqueda = trim($busqueda);
+    if ($busqueda === '') {
+        return true;
+    }
+
+    if (function_exists('mb_stripos')) {
+        return mb_stripos($texto, $busqueda, 0, 'UTF-8') !== false;
+    }
+
+    return stripos($texto, $busqueda) !== false;
+}
+
+/**
+ * @param list<array<string, mixed>> $lideres
+ * @return list<array<string, mixed>>
+ */
+function filtrarLideresPorBusqueda(array $lideres, string $busqueda): array
+{
+    $busqueda = trim($busqueda);
+    if ($busqueda === '') {
+        return $lideres;
+    }
+
+    $filtrados = [];
+    foreach ($lideres as $lider) {
+        $haystack = implode(' ', [
+            (string) ($lider['nombre'] ?? ''),
+            (string) ($lider['apellido'] ?? ''),
+            (string) ($lider['cedula'] ?? ''),
+            (string) ($lider['celular'] ?? ''),
+            (string) ($lider['email'] ?? ''),
+        ]);
+        if (textoContieneBusquedaEstructura($haystack, $busqueda)) {
+            $filtrados[] = $lider;
+        }
+    }
+
+    return $filtrados;
+}
+
+/**
+ * @param list<array<string, mixed>> $casas
+ * @return list<array<string, mixed>>
+ */
+function filtrarCasasVidaPorBusqueda(array $casas, string $busqueda): array
+{
+    $busqueda = trim($busqueda);
+    if ($busqueda === '') {
+        return $casas;
+    }
+
+    $filtrados = [];
+    foreach ($casas as $casa) {
+        $haystack = implode(' ', [
+            nombreVisibleCasaVida($casa),
+            (string) ($casa['nombre'] ?? ''),
+            (string) ($casa['direccion'] ?? ''),
+            (string) ($casa['territorio_nombre'] ?? ''),
+            trim((string) ($casa['lider_nombre'] ?? '') . ' ' . (string) ($casa['lider_apellido'] ?? '')),
+            trim((string) ($casa['colaborador_nombre'] ?? '') . ' ' . (string) ($casa['colaborador_apellido'] ?? '')),
+            trim((string) ($casa['anfitrion_nombre'] ?? '') . ' ' . (string) ($casa['anfitrion_apellido'] ?? '')),
+        ]);
+        if (textoContieneBusquedaEstructura($haystack, $busqueda)) {
+            $filtrados[] = $casa;
+        }
+    }
+
+    return $filtrados;
 }
 
 function obtenerLider(int $id): ?array

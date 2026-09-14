@@ -485,6 +485,7 @@ function eliminarLider(int $id): bool
     $pdo = getConnection();
     $pdo->prepare('DELETE FROM territorio_asignaciones WHERE miembro_id = ?')->execute([$id]);
     $pdo->prepare('DELETE FROM miembro_parentescos WHERE miembro_id = ? OR pariente_id = ?')->execute([$id, $id]);
+    $pdo->prepare('DELETE FROM miembro_cursos WHERE miembro_id = ?')->execute([$id]);
     $stmt = $pdo->prepare('DELETE FROM lideres WHERE id = ?');
 
     return $stmt->execute([$id]) && $stmt->rowCount() > 0;
@@ -505,6 +506,7 @@ function eliminarTodosLideres(): int
     try {
         $pdo->exec('DELETE FROM territorio_asignaciones');
         $pdo->exec('DELETE FROM miembro_parentescos');
+        $pdo->exec('DELETE FROM miembro_cursos');
         $pdo->exec('DELETE FROM casas_vida');
         $pdo->exec('DELETE FROM lideres');
         $pdo->commit();
@@ -516,14 +518,211 @@ function eliminarTodosLideres(): int
     return $total;
 }
 
+function formatearFechaMiembro(?string $fecha): string
+{
+    $fecha = trim((string) $fecha);
+    if ($fecha === '') {
+        return '—';
+    }
+
+    $dt = DateTime::createFromFormat('Y-m-d', $fecha);
+    if ($dt && $dt->format('Y-m-d') === $fecha) {
+        return $dt->format('d/m/Y');
+    }
+
+    return $fecha;
+}
+
+function normalizarFechaOpcionalMiembro(?string $fecha, bool $requerida = false, string $etiqueta = 'fecha'): ?string
+{
+    $fecha = trim((string) $fecha);
+    if ($fecha === '') {
+        if ($requerida) {
+            throw new InvalidArgumentException('Indica la ' . $etiqueta . '.');
+        }
+
+        return null;
+    }
+
+    $dt = DateTime::createFromFormat('Y-m-d', $fecha);
+    if (!$dt || $dt->format('Y-m-d') !== $fecha) {
+        throw new InvalidArgumentException('La ' . $etiqueta . ' no es válida.');
+    }
+
+    return $fecha;
+}
+
+/**
+ * @return array<string, string>
+ */
+function opcionesCursoMinisterial(): array
+{
+    return [
+        'honra'   => 'Honra',
+        'escol'   => 'Escol',
+        'academy' => 'Academy',
+    ];
+}
+
+function etiquetaCursoMinisterial(?string $curso): string
+{
+    $curso = trim((string) $curso);
+
+    return opcionesCursoMinisterial()[$curso] ?? ($curso !== '' ? $curso : '—');
+}
+
+function normalizarCursoMinisterial(?string $curso): string
+{
+    $clave = function_exists('mb_strtolower')
+        ? mb_strtolower(trim((string) $curso), 'UTF-8')
+        : strtolower(trim((string) $curso));
+    $clave = strtr($clave, [
+        'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
+    ]);
+
+    $mapa = [
+        'honra'   => 'honra',
+        'escol'   => 'escol',
+        'academy' => 'academy',
+        'academia' => 'academy',
+    ];
+
+    if (!isset($mapa[$clave])) {
+        throw new InvalidArgumentException('Selecciona un curso válido.');
+    }
+
+    return $mapa[$clave];
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function obtenerCursosMiembro(int $miembroId): array
+{
+    asegurarTablasEstructura();
+    if ($miembroId <= 0) {
+        return [];
+    }
+
+    $pdo = getConnection();
+    $stmt = $pdo->prepare(
+        'SELECT * FROM miembro_cursos WHERE miembro_id = ? ORDER BY fecha_culminacion ASC, id ASC'
+    );
+    $stmt->execute([$miembroId]);
+
+    return $stmt->fetchAll();
+}
+
+/**
+ * @param list<array{curso?: mixed, fecha?: mixed}> $cursos
+ */
+function guardarCursosMiembro(int $miembroId, array $cursos): void
+{
+    asegurarTablasEstructura();
+    $normalizados = [];
+
+    foreach ($cursos as $fila) {
+        if (!is_array($fila)) {
+            continue;
+        }
+
+        $curso = trim((string) ($fila['curso'] ?? ''));
+        if ($curso === '') {
+            continue;
+        }
+
+        $curso = normalizarCursoMinisterial($curso);
+        if (isset($normalizados[$curso])) {
+            throw new InvalidArgumentException('Cada curso solo se puede registrar una vez.');
+        }
+
+        $normalizados[$curso] = normalizarFechaOpcionalMiembro(
+            (string) ($fila['fecha'] ?? ''),
+            true,
+            'fecha de culminación de ' . etiquetaCursoMinisterial($curso)
+        );
+    }
+
+    $pdo = getConnection();
+    $pdo->prepare('DELETE FROM miembro_cursos WHERE miembro_id = ?')->execute([$miembroId]);
+
+    if ($normalizados === []) {
+        return;
+    }
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO miembro_cursos (miembro_id, curso, fecha_culminacion, creado_en)
+         VALUES (?, ?, ?, NOW())'
+    );
+    foreach ($normalizados as $curso => $fecha) {
+        $stmt->execute([$miembroId, $curso, $fecha]);
+    }
+}
+
+/**
+ * @param array<string, mixed> $datos
+ * @return list<array{curso: string, fecha: string}>
+ */
+function parsearCursosMinisterialesPost(array $datos): array
+{
+    $cursos = $datos['cursos'] ?? [];
+    if (!is_array($cursos)) {
+        return [];
+    }
+
+    $claves = $cursos['curso'] ?? [];
+    $fechas = $cursos['fecha'] ?? [];
+    if (!is_array($claves)) {
+        return [];
+    }
+
+    $filas = [];
+    foreach ($claves as $indice => $curso) {
+        $filas[] = [
+            'curso' => (string) $curso,
+            'fecha' => (string) ($fechas[$indice] ?? ''),
+        ];
+    }
+
+    return $filas;
+}
+
+function guardarDatosMinisterialesMiembro(int $id, array $datos): void
+{
+    asegurarTablasEstructura();
+    if (obtenerLider($id) === null) {
+        throw new InvalidArgumentException('Miembro no válido.');
+    }
+
+    $fechaBautismo = normalizarFechaOpcionalMiembro(
+        (string) ($datos['fecha_bautismo'] ?? ''),
+        false,
+        'fecha de bautismo'
+    );
+
+    $pdo = getConnection();
+    $pdo->prepare('UPDATE lideres SET fecha_bautismo = ? WHERE id = ?')->execute([$fechaBautismo, $id]);
+    guardarCursosMiembro($id, parsearCursosMinisterialesPost($datos));
+}
+
 /**
  * @return array<string, string>
  */
 function opcionesParentescoMiembro(): array
 {
     return [
-        'esposo' => 'Esposo',
-        'esposa' => 'Esposa',
+        'esposo'   => 'Esposo',
+        'esposa'   => 'Esposa',
+        'padre'    => 'Padre',
+        'madre'    => 'Madre',
+        'hijo'     => 'Hijo',
+        'hija'     => 'Hija',
+        'hermano'  => 'Hermano',
+        'hermana'  => 'Hermana',
+        'abuelo'   => 'Abuelo',
+        'abuela'   => 'Abuela',
+        'nieto'    => 'Nieto',
+        'nieta'    => 'Nieta',
     ];
 }
 
@@ -537,17 +736,103 @@ function normalizarParentescoMiembro(?string $parentesco): string
     $clave = function_exists('mb_strtolower')
         ? mb_strtolower(trim((string) $parentesco), 'UTF-8')
         : strtolower(trim((string) $parentesco));
+    $clave = strtr($clave, [
+        'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
+    ]);
 
-    if (!isset(opcionesParentescoMiembro()[$clave])) {
+    $mapa = [
+        'esposo'   => 'esposo',
+        'esposa'   => 'esposa',
+        'padre'    => 'padre',
+        'madre'    => 'madre',
+        'hijo'     => 'hijo',
+        'hija'     => 'hija',
+        'hermano'  => 'hermano',
+        'hermana'  => 'hermana',
+        'abuelo'   => 'abuelo',
+        'abuela'   => 'abuela',
+        'nieto'    => 'nieto',
+        'nieta'    => 'nieta',
+    ];
+
+    if (!isset($mapa[$clave])) {
         throw new InvalidArgumentException('Selecciona un parentesco válido.');
     }
 
-    return $clave;
+    return $mapa[$clave];
 }
 
-function parentescoInversoMiembro(string $parentesco): string
+/**
+ * @return list<string>
+ */
+function parentescosMasculinosMiembro(): array
 {
-    return $parentesco === 'esposo' ? 'esposa' : 'esposo';
+    return ['esposo', 'padre', 'hijo', 'hermano', 'abuelo', 'nieto'];
+}
+
+/**
+ * @return list<string>
+ */
+function parentescosFemeninosMiembro(): array
+{
+    return ['esposa', 'madre', 'hija', 'hermana', 'abuela', 'nieta'];
+}
+
+function esParentescoConyugeMiembro(string $parentesco): bool
+{
+    return $parentesco === 'esposo' || $parentesco === 'esposa';
+}
+
+function parentescoInversoMiembro(string $parentesco, ?string $generoRelacionado = null): string
+{
+    $parentesco = normalizarParentescoMiembro($parentesco);
+    $esFemenino = false;
+    if ($generoRelacionado !== null && trim($generoRelacionado) !== '') {
+        try {
+            $esFemenino = normalizarGeneroMiembro($generoRelacionado) === 'femenino';
+        } catch (InvalidArgumentException $e) {
+            $esFemenino = false;
+        }
+    }
+
+    $mapa = [
+        'esposo'  => 'esposa',
+        'esposa'  => 'esposo',
+        'padre'   => $esFemenino ? 'hija' : 'hijo',
+        'madre'   => $esFemenino ? 'hija' : 'hijo',
+        'hijo'    => $esFemenino ? 'madre' : 'padre',
+        'hija'    => $esFemenino ? 'madre' : 'padre',
+        'hermano' => $esFemenino ? 'hermana' : 'hermano',
+        'hermana' => $esFemenino ? 'hermana' : 'hermano',
+        'abuelo'  => $esFemenino ? 'nieta' : 'nieto',
+        'abuela'  => $esFemenino ? 'nieta' : 'nieto',
+        'nieto'   => $esFemenino ? 'abuela' : 'abuelo',
+        'nieta'   => $esFemenino ? 'abuela' : 'abuelo',
+    ];
+
+    return $mapa[$parentesco] ?? $parentesco;
+}
+
+function validarGeneroParentescoMiembro(string $parentesco, ?string $genero, string $etiqueta): void
+{
+    $genero = trim((string) $genero);
+    if ($genero === '') {
+        return;
+    }
+
+    try {
+        $genero = normalizarGeneroMiembro($genero);
+    } catch (InvalidArgumentException $e) {
+        return;
+    }
+
+    if (in_array($parentesco, parentescosMasculinosMiembro(), true) && $genero !== 'masculino') {
+        throw new InvalidArgumentException('El parentesco ' . $etiqueta . ' debe ser un miembro masculino.');
+    }
+
+    if (in_array($parentesco, parentescosFemeninosMiembro(), true) && $genero !== 'femenino') {
+        throw new InvalidArgumentException('El parentesco ' . $etiqueta . ' debe ser un miembro femenino.');
+    }
 }
 
 /**
@@ -560,8 +845,9 @@ function obtenerParentescosMiembros(): array
 
     return $pdo->query(
         'SELECT p.*,
-                m.nombre AS miembro_nombre, m.apellido AS miembro_apellido,
-                r.nombre AS pariente_nombre, r.apellido AS pariente_apellido
+                m.nombre AS miembro_nombre, m.apellido AS miembro_apellido, m.genero AS miembro_genero,
+                r.nombre AS pariente_nombre, r.apellido AS pariente_apellido, r.genero AS pariente_genero,
+                r.cedula AS pariente_cedula
          FROM miembro_parentescos p
          INNER JOIN lideres m ON m.id = p.miembro_id
          INNER JOIN lideres r ON r.id = p.pariente_id
@@ -570,17 +856,41 @@ function obtenerParentescosMiembros(): array
 }
 
 /**
- * @return array<int, array<string, mixed>>
+ * @return array<int, list<array<string, mixed>>>
  */
 function obtenerParentescoPorMiembro(): array
 {
     $porMiembro = [];
 
     foreach (obtenerParentescosMiembros() as $fila) {
-        $porMiembro[(int) $fila['miembro_id']] = $fila;
+        $id = (int) $fila['miembro_id'];
+        if (!isset($porMiembro[$id])) {
+            $porMiembro[$id] = [];
+        }
+        $porMiembro[$id][] = $fila;
     }
 
     return $porMiembro;
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function obtenerFamiliaresMiembro(int $miembroId): array
+{
+    return obtenerParentescoPorMiembro()[$miembroId] ?? [];
+}
+
+function etiquetaParentescoDesdePariente(array $familiar): string
+{
+    $parentesco = (string) ($familiar['parentesco'] ?? '');
+    $generoPariente = (string) ($familiar['pariente_genero'] ?? '');
+
+    try {
+        return etiquetaParentescoMiembro(parentescoInversoMiembro($parentesco, $generoPariente));
+    } catch (InvalidArgumentException $e) {
+        return etiquetaParentescoMiembro($parentesco);
+    }
 }
 
 /**
@@ -655,37 +965,33 @@ function conectarParentescoMiembros(int $miembroId, int $parienteId, string $par
         throw new InvalidArgumentException('Uno de los miembros no existe.');
     }
 
-    $generoMiembro = (string) ($miembro['genero'] ?? '');
-    $generoPariente = (string) ($pariente['genero'] ?? '');
-
-    if ($parentesco === 'esposo' && $generoMiembro !== '' && $generoMiembro !== 'masculino') {
-        throw new InvalidArgumentException('El esposo debe ser un miembro de género masculino.');
-    }
-
-    if ($parentesco === 'esposa' && $generoMiembro !== '' && $generoMiembro !== 'femenino') {
-        throw new InvalidArgumentException('La esposa debe ser un miembro de género femenino.');
-    }
-
-    if ($parentesco === 'esposo' && $generoPariente !== '' && $generoPariente !== 'femenino') {
-        throw new InvalidArgumentException('La esposa debe ser un miembro de género femenino.');
-    }
-
-    if ($parentesco === 'esposa' && $generoPariente !== '' && $generoPariente !== 'masculino') {
-        throw new InvalidArgumentException('El esposo debe ser un miembro de género masculino.');
-    }
+    $inverso = parentescoInversoMiembro($parentesco, (string) ($pariente['genero'] ?? ''));
+    validarGeneroParentescoMiembro($parentesco, (string) ($miembro['genero'] ?? ''), etiquetaParentescoMiembro($parentesco));
+    validarGeneroParentescoMiembro($inverso, (string) ($pariente['genero'] ?? ''), etiquetaParentescoMiembro($inverso));
 
     $pdo = getConnection();
-    $existe = $pdo->prepare(
+    $existePar = $pdo->prepare(
         'SELECT id FROM miembro_parentescos
-         WHERE miembro_id IN (?, ?) OR pariente_id IN (?, ?)
+         WHERE (miembro_id = ? AND pariente_id = ?) OR (miembro_id = ? AND pariente_id = ?)
          LIMIT 1'
     );
-    $existe->execute([$miembroId, $parienteId, $miembroId, $parienteId]);
-    if ($existe->fetch()) {
-        throw new InvalidArgumentException('Uno de los miembros ya tiene un parentesco. Quítalo antes de crear otro.');
+    $existePar->execute([$miembroId, $parienteId, $parienteId, $miembroId]);
+    if ($existePar->fetch()) {
+        throw new InvalidArgumentException('Esas personas ya tienen un parentesco.');
     }
 
-    $inverso = parentescoInversoMiembro($parentesco);
+    if (esParentescoConyugeMiembro($parentesco)) {
+        $conyuge = $pdo->prepare(
+            "SELECT id FROM miembro_parentescos
+             WHERE parentesco IN ('esposo', 'esposa') AND miembro_id IN (?, ?)
+             LIMIT 1"
+        );
+        $conyuge->execute([$miembroId, $parienteId]);
+        if ($conyuge->fetch()) {
+            throw new InvalidArgumentException('Uno de los miembros ya tiene esposo o esposa.');
+        }
+    }
+
     $stmt = $pdo->prepare(
         'INSERT INTO miembro_parentescos (miembro_id, pariente_id, parentesco, creado_en)
          VALUES (?, ?, ?, NOW())'
@@ -695,6 +1001,26 @@ function conectarParentescoMiembros(int $miembroId, int $parienteId, string $par
     $stmt->execute([$parienteId, $miembroId, $inverso]);
 
     return $id;
+}
+
+function agregarFamiliarMiembro(int $miembroId, int $parienteId, string $parentescoPariente): int
+{
+    $parentescoPariente = normalizarParentescoMiembro($parentescoPariente);
+    $miembro = obtenerLider($miembroId);
+    $pariente = obtenerLider($parienteId);
+    if ($miembro === null || $pariente === null) {
+        throw new InvalidArgumentException('Uno de los miembros no existe.');
+    }
+
+    validarGeneroParentescoMiembro(
+        $parentescoPariente,
+        (string) ($pariente['genero'] ?? ''),
+        etiquetaParentescoMiembro($parentescoPariente)
+    );
+
+    $parentescoMiembro = parentescoInversoMiembro($parentescoPariente, (string) ($miembro['genero'] ?? ''));
+
+    return conectarParentescoMiembros($miembroId, $parienteId, $parentescoMiembro);
 }
 
 function eliminarParentescoMiembro(int $miembroId, int $parienteId): bool

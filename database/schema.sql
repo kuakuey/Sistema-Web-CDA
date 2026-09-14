@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS lideres (
     cedula VARCHAR(30) DEFAULT NULL,
     celular VARCHAR(30) DEFAULT NULL,
     email VARCHAR(100) DEFAULT NULL,
+    fecha_bautismo DATE DEFAULT NULL,
     notas TEXT DEFAULT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -102,6 +103,17 @@ CREATE TABLE IF NOT EXISTS miembro_parentescos (
     UNIQUE KEY uniq_miembro_pariente (miembro_id, pariente_id),
     INDEX idx_pariente (pariente_id),
     INDEX idx_parentesco (parentesco)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS miembro_cursos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    miembro_id INT NOT NULL,
+    curso VARCHAR(20) NOT NULL,
+    fecha_culminacion DATE DEFAULT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_miembro_curso (miembro_id, curso),
+    INDEX idx_miembro (miembro_id),
+    INDEX idx_curso (curso)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS casas_vida (

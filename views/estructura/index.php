@@ -15,6 +15,8 @@ $miembroDetalle = $miembroDetalle ?? null;
 $datosMiembro = $datosMiembro ?? null;
 $asignacionesMiembro = $asignacionesMiembro ?? [];
 $casasMiembro = $casasMiembro ?? [];
+$cursosMiembro = $cursosMiembro ?? [];
+$cursosMiembroForm = $cursosMiembroForm ?? $cursosMiembro;
 $lideresPagina = $lideresPagina ?? $lideres ?? [];
 $totalMiembros = $totalMiembros ?? count($lideres ?? []);
 $totalMiembrosRegistrados = $totalMiembrosRegistrados ?? $totalMiembros;
@@ -209,7 +211,7 @@ $filtrosListaEstructura = $buscarEstructura !== '' ? ['buscar' => $buscarEstruct
             <input type="tel" class="form-control" name="celular">
           </div>
           <div class="mb-3">
-            <label class="form-label">Email</label>
+            <label class="form-label">Correo</label>
             <input type="email" class="form-control" name="email">
           </div>
           <div class="mb-0">

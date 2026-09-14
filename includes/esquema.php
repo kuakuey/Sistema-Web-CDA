@@ -571,8 +571,9 @@ function migrateEstructuraTables(PDO $pdo): void
     ]);
 
     asegurarColumnasTabla($pdo, 'lideres', [
-        'pareja' => "ADD COLUMN pareja VARCHAR(20) NOT NULL DEFAULT 'esposo' AFTER apellido",
-        'genero' => "ADD COLUMN genero VARCHAR(20) NOT NULL DEFAULT '' AFTER apellido",
+        'pareja'         => "ADD COLUMN pareja VARCHAR(20) NOT NULL DEFAULT 'esposo' AFTER apellido",
+        'genero'         => "ADD COLUMN genero VARCHAR(20) NOT NULL DEFAULT '' AFTER apellido",
+        'fecha_bautismo' => 'ADD COLUMN fecha_bautismo DATE DEFAULT NULL AFTER email',
     ]);
 
     if (tablaExiste($pdo, 'lideres')) {
@@ -626,6 +627,19 @@ function migrateEstructuraTables(PDO $pdo): void
             UNIQUE KEY uniq_miembro_pariente (miembro_id, pariente_id),
             INDEX idx_pariente (pariente_id),
             INDEX idx_parentesco (parentesco)
+        ) ENGINE=InnoDB'
+    );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS miembro_cursos (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            miembro_id INT NOT NULL,
+            curso VARCHAR(20) NOT NULL,
+            fecha_culminacion DATE DEFAULT NULL,
+            creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_miembro_curso (miembro_id, curso),
+            INDEX idx_miembro (miembro_id),
+            INDEX idx_curso (curso)
         ) ENGINE=InnoDB'
     );
 }

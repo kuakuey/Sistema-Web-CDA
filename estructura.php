@@ -109,7 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'crear_lider'                  => 'lideres',
         'actualizar_lider'             => 'lideres',
         'conectar_parentesco'          => 'lideres',
+        'agregar_familiar'             => 'lideres',
         'eliminar_parentesco'          => 'lideres',
+        'guardar_datos_ministeriales'  => 'lideres',
         'eliminar_todos_lideres'       => 'lideres',
         'eliminar_todos_territorios'   => 'territorios',
         'crear_casa'            => 'casas',
@@ -225,6 +227,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pestaña = 'avanzado';
                 break;
 
+            case 'agregar_familiar':
+                $miembroId = (int) ($_POST['miembro_id'] ?? 0);
+                agregarFamiliarMiembro(
+                    $miembroId,
+                    (int) ($_POST['pariente_id'] ?? 0),
+                    (string) ($_POST['parentesco'] ?? '')
+                );
+                registrarActividadPorAccion('conectar_parentesco', $miembroId, 'Agregar familiar');
+                $mensaje = 'Familiar agregado correctamente.';
+                $pestaña = 'lideres';
+                $miembroVistaId = $miembroId;
+                break;
+
             case 'eliminar_parentesco':
                 $miembroId = (int) ($_POST['miembro_id'] ?? 0);
                 $parienteId = (int) ($_POST['pariente_id'] ?? 0);
@@ -234,6 +249,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 registrarActividadPorAccion('eliminar_parentesco', $miembroId, 'Quitar parentesco');
                 $mensaje = 'Parentesco eliminado.';
                 $pestaña = 'lideres';
+                $miembroVistaId = $miembroId;
+                break;
+
+            case 'guardar_datos_ministeriales':
+                $id = (int) ($_POST['id'] ?? 0);
+                if ($id <= 0) {
+                    throw new InvalidArgumentException('Miembro no válido.');
+                }
+                guardarDatosMinisterialesMiembro($id, $_POST);
+                registrarActividadPorAccion('actualizar_lider', $id, 'Guardar datos ministeriales');
+                $mensaje = 'Datos ministeriales guardados.';
+                $pestaña = 'lideres';
+                $miembroVistaId = $id;
                 break;
 
             case 'eliminar_todos_lideres':
@@ -403,6 +431,10 @@ if ($error !== null && isset($accion)) {
         ];
     } elseif ($accion === 'actualizar_lider') {
         $miembroVistaId = (int) ($_POST['id'] ?? $miembroVistaId);
+    } elseif ($accion === 'guardar_datos_ministeriales') {
+        $miembroVistaId = (int) ($_POST['id'] ?? $miembroVistaId);
+    } elseif ($accion === 'agregar_familiar' || $accion === 'eliminar_parentesco') {
+        $miembroVistaId = (int) ($_POST['miembro_id'] ?? $miembroVistaId);
     } elseif ($accion === 'crear_casa') {
         $modalEstructura = 'casa';
     }
@@ -415,6 +447,8 @@ $miembroDetalle = null;
 $datosMiembro = null;
 $asignacionesMiembro = [];
 $casasMiembro = [];
+$cursosMiembro = [];
+$cursosMiembroForm = [];
 if ($pestaña === 'lideres' && $miembroVistaId > 0) {
     foreach ($lideres as $lider) {
         if ((int) $lider['id'] === $miembroVistaId) {
@@ -430,6 +464,8 @@ if ($pestaña === 'lideres' && $miembroVistaId > 0) {
         $miembroVistaId = 0;
     } else {
         $datosMiembro = $miembroDetalle;
+        $cursosMiembro = obtenerCursosMiembro($miembroVistaId);
+        $cursosMiembroForm = $cursosMiembro;
         if ($error !== null && isset($accion) && $accion === 'actualizar_lider') {
             $datosMiembro = array_merge($miembroDetalle, [
                 'nombre'   => (string) ($_POST['nombre'] ?? $miembroDetalle['nombre']),
@@ -437,9 +473,22 @@ if ($pestaña === 'lideres' && $miembroVistaId > 0) {
                 'genero'   => (string) ($_POST['genero'] ?? $miembroDetalle['genero']),
                 'cedula'   => (string) ($_POST['cedula'] ?? $miembroDetalle['cedula'] ?? ''),
                 'celular'  => (string) ($_POST['celular'] ?? $miembroDetalle['celular'] ?? ''),
-                'email'    => (string) ($_POST['email'] ?? $miembroDetalle['email'] ?? ''),
-                'notas'    => (string) ($_POST['notas'] ?? $miembroDetalle['notas'] ?? ''),
+                'email'           => (string) ($_POST['email'] ?? $miembroDetalle['email'] ?? ''),
+                'fecha_bautismo'  => (string) ($_POST['fecha_bautismo'] ?? $miembroDetalle['fecha_bautismo'] ?? ''),
+                'notas'           => (string) ($_POST['notas'] ?? $miembroDetalle['notas'] ?? ''),
             ]);
+        }
+        if ($error !== null && isset($accion) && $accion === 'guardar_datos_ministeriales') {
+            $datosMiembro = array_merge($datosMiembro, [
+                'fecha_bautismo' => (string) ($_POST['fecha_bautismo'] ?? $miembroDetalle['fecha_bautismo'] ?? ''),
+            ]);
+            $cursosMiembroForm = [];
+            foreach (parsearCursosMinisterialesPost($_POST) as $filaCurso) {
+                $cursosMiembroForm[] = [
+                    'curso'              => (string) ($filaCurso['curso'] ?? ''),
+                    'fecha_culminacion'  => (string) ($filaCurso['fecha'] ?? ''),
+                ];
+            }
         }
 
         foreach (obtenerAsignacionesTerritorio() as $asignacion) {
@@ -502,6 +551,8 @@ view('estructura/index', [
     'datosMiembro'        => $datosMiembro,
     'asignacionesMiembro' => $asignacionesMiembro,
     'casasMiembro'        => $casasMiembro,
+    'cursosMiembro'       => $cursosMiembro,
+    'cursosMiembroForm'   => $cursosMiembroForm,
     'mensaje'             => $mensaje,
     'error'               => $error,
     'puedeEliminar'       => puedeEliminarRegistros($usuario['rol']),

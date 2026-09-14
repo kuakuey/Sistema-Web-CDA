@@ -1140,6 +1140,10 @@ body.blank-body {
   border-bottom: 0;
 }
 
+#familiarListaMiembros {
+  min-height: 120px;
+}
+
 html[data-theme="dark"] .cdv-paso {
   background: var(--cda-surface);
   border-color: var(--cda-border);

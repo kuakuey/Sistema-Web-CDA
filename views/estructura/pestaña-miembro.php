@@ -6,11 +6,14 @@ if (!is_array($familiares) || (isset($familiares['id']) && !isset($familiares[0]
 }
 $asignacionesMiembro = $asignacionesMiembro ?? [];
 $casasMiembro = $casasMiembro ?? [];
-$cursosMiembroForm = $cursosMiembroForm ?? $cursosMiembro ?? [];
+$cursosMiembro = $cursosMiembro ?? [];
+$cursosMiembroForm = $cursosMiembroForm ?? $cursosMiembro;
+$editarFicha = !empty($editarFicha);
 $paginaLista = (int) ($paginaMiembros ?? 1);
 $buscarLista = trim((string) ($buscarEstructura ?? ''));
 $urlLista = construirUrlRegistros('estructura.php', $buscarLista !== '' ? ['buscar' => $buscarLista] : [], $paginaLista, 'lideres');
 $urlFicha = urlFichaMiembro((int) ($miembroDetalle['id'] ?? 0), $paginaLista, $buscarLista);
+$urlFichaEditar = urlFichaMiembro((int) ($miembroDetalle['id'] ?? 0), $paginaLista, $buscarLista, true);
 $nombreCompleto = trim((string) ($miembroDetalle['nombre'] ?? '') . ' ' . (string) ($miembroDetalle['apellido'] ?? ''));
 $idsFamilia = [(int) ($miembroDetalle['id'] ?? 0)];
 foreach ($familiares as $familiar) {
@@ -28,25 +31,135 @@ foreach ($lideres ?? [] as $candidato) {
         'genero' => (string) ($candidato['genero'] ?? ''),
     ];
 }
+
+$textoFicha = static function ($valor): string {
+    $texto = trim((string) $valor);
+
+    return $texto !== '' ? $texto : '—';
+};
 ?>
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
   <div>
     <a class="small text-decoration-none" href="<?= htmlspecialchars($urlLista) ?>">
       <i class="bi bi-arrow-left me-1"></i>Volver a miembros
     </a>
     <h3 class="h5 mb-0 mt-2"><?= htmlspecialchars($nombreCompleto !== '' ? $nombreCompleto : 'Miembro') ?></h3>
-    <p class="text-muted small mb-0">Datos personales, ministeriales y familiares.</p>
+    <p class="text-muted small mb-0">
+      <?= $editarFicha ? 'Editando ficha del miembro.' : 'Datos personales, ministeriales y familiares.' ?>
+    </p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <?php if ($editarFicha): ?>
+    <a class="btn btn-outline-secondary btn-sm" href="<?= htmlspecialchars($urlFicha) ?>">
+      Cancelar
+    </a>
+    <?php else: ?>
+    <a class="btn btn-primary btn-sm" href="<?= htmlspecialchars($urlFichaEditar) ?>">
+      <i class="bi bi-pencil me-1"></i>Editar
+    </a>
+    <?php endif; ?>
   </div>
 </div>
 
 <div class="row g-4">
   <div class="col-lg-8">
+    <?php if (!$editarFicha): ?>
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-header bg-white py-3">
         <h4 class="h6 mb-0">Datos personales</h4>
       </div>
       <div class="card-body">
-        <form method="POST" action="<?= htmlspecialchars($urlFicha) ?>">
+        <dl class="detalle-registro-list mb-0">
+          <div class="detalle-registro-list__row">
+            <dt>Nombres</dt>
+            <dd><?= htmlspecialchars($textoFicha($miembro['nombre'] ?? '')) ?></dd>
+          </div>
+          <div class="detalle-registro-list__row">
+            <dt>Apellidos</dt>
+            <dd><?= htmlspecialchars($textoFicha($miembro['apellido'] ?? '')) ?></dd>
+          </div>
+          <div class="detalle-registro-list__row">
+            <dt>Género</dt>
+            <dd><?= htmlspecialchars(etiquetaGeneroMiembro($miembro['genero'] ?? '')) ?></dd>
+          </div>
+          <div class="detalle-registro-list__row">
+            <dt>Cédula</dt>
+            <dd><?= htmlspecialchars($textoFicha($miembro['cedula'] ?? '')) ?></dd>
+          </div>
+          <div class="detalle-registro-list__row">
+            <dt>Celular</dt>
+            <dd><?= htmlspecialchars($textoFicha($miembro['celular'] ?? '')) ?></dd>
+          </div>
+          <div class="detalle-registro-list__row">
+            <dt>Correo</dt>
+            <dd><?= htmlspecialchars($textoFicha($miembro['email'] ?? '')) ?></dd>
+          </div>
+          <div class="detalle-registro-list__row">
+            <dt>Notas</dt>
+            <dd><?= nl2br(htmlspecialchars($textoFicha($miembro['notas'] ?? ''))) ?></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h4 class="h6 mb-0">Datos ministeriales</h4>
+      </div>
+      <div class="card-body">
+        <dl class="detalle-registro-list mb-3">
+          <div class="detalle-registro-list__row">
+            <dt>Fecha de bautismo</dt>
+            <dd><?= htmlspecialchars(formatearFechaMiembro($miembro['fecha_bautismo'] ?? '')) ?></dd>
+          </div>
+        </dl>
+        <p class="small mb-2"><strong>Cursos realizados</strong></p>
+        <?php if ($cursosMiembro === []): ?>
+        <p class="text-muted small mb-0">Sin cursos registrados.</p>
+        <?php else: ?>
+        <ul class="small mb-0 ps-3">
+          <?php foreach ($cursosMiembro as $cursoFila): ?>
+          <li>
+            <?= htmlspecialchars(etiquetaCursoMinisterial($cursoFila['curso'] ?? '')) ?>
+            · <?= htmlspecialchars(formatearFechaMiembro($cursoFila['fecha_culminacion'] ?? '')) ?>
+          </li>
+          <?php endforeach; ?>
+        </ul>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h4 class="h6 mb-0">Familiares</h4>
+      </div>
+      <div class="card-body">
+        <?php if ($familiares === []): ?>
+        <p class="text-muted small mb-0">Sin familiares conectados.</p>
+        <?php else: ?>
+        <dl class="detalle-registro-list mb-0">
+          <?php foreach ($familiares as $familiar): ?>
+          <div class="detalle-registro-list__row">
+            <dt><?= htmlspecialchars(etiquetaParentescoDesdePariente($familiar)) ?></dt>
+            <dd>
+              <a href="<?= htmlspecialchars(urlFichaMiembro((int) $familiar['pariente_id'], $paginaLista, $buscarLista)) ?>">
+                <?= htmlspecialchars($textoFicha(trim((string) ($familiar['pariente_nombre'] ?? '') . ' ' . (string) ($familiar['pariente_apellido'] ?? '')))) ?>
+              </a>
+            </dd>
+          </div>
+          <?php endforeach; ?>
+        </dl>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <?php else: ?>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h4 class="h6 mb-0">Datos personales</h4>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="<?= htmlspecialchars($urlFichaEditar) ?>">
           <input type="hidden" name="accion" value="actualizar_lider">
           <input type="hidden" name="id" value="<?= (int) ($miembroDetalle['id'] ?? 0) ?>">
           <div class="row g-3">
@@ -87,6 +200,7 @@ foreach ($lideres ?? [] as $candidato) {
             </div>
           </div>
           <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+            <a class="btn btn-outline-secondary" href="<?= htmlspecialchars($urlFicha) ?>">Cancelar</a>
             <button type="submit" class="btn btn-primary">
               <i class="bi bi-check-lg me-1"></i>Guardar
             </button>
@@ -100,7 +214,7 @@ foreach ($lideres ?? [] as $candidato) {
         <h4 class="h6 mb-0">Datos ministeriales</h4>
       </div>
       <div class="card-body">
-        <form method="POST" action="<?= htmlspecialchars($urlFicha) ?>" id="formDatosMinisteriales">
+        <form method="POST" action="<?= htmlspecialchars($urlFichaEditar) ?>" id="formDatosMinisteriales">
           <input type="hidden" name="accion" value="guardar_datos_ministeriales">
           <input type="hidden" name="id" value="<?= (int) ($miembroDetalle['id'] ?? 0) ?>">
           <div class="row g-3 mb-3">
@@ -157,6 +271,7 @@ foreach ($lideres ?? [] as $candidato) {
             Aún no hay cursos. Pulsa «Añadir curso» para registrar uno.
           </p>
           <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+            <a class="btn btn-outline-secondary" href="<?= htmlspecialchars($urlFicha) ?>">Cancelar</a>
             <button type="submit" class="btn btn-primary">
               <i class="bi bi-check-lg me-1"></i>Guardar
             </button>
@@ -204,7 +319,7 @@ foreach ($lideres ?? [] as $candidato) {
             </div>
             <form
               method="POST"
-              action="<?= htmlspecialchars($urlFicha) ?>"
+              action="<?= htmlspecialchars($urlFichaEditar) ?>"
               class="d-inline js-form-confirmar"
               data-confirm-title="Quitar familiar"
               data-confirm="¿Quitar este familiar?"
@@ -221,7 +336,7 @@ foreach ($lideres ?? [] as $candidato) {
         </ul>
         <?php endif; ?>
 
-        <form method="POST" action="<?= htmlspecialchars($urlFicha) ?>" id="formAgregarFamiliar">
+        <form method="POST" action="<?= htmlspecialchars($urlFichaEditar) ?>" id="formAgregarFamiliar">
           <input type="hidden" name="accion" value="agregar_familiar">
           <input type="hidden" name="miembro_id" value="<?= (int) ($miembroDetalle['id'] ?? 0) ?>">
           <input type="hidden" name="pariente_id" id="familiarParienteId" value="">
@@ -245,6 +360,7 @@ foreach ($lideres ?? [] as $candidato) {
         </form>
       </div>
     </div>
+    <?php endif; ?>
   </div>
 
   <div class="col-lg-4">
@@ -297,6 +413,7 @@ foreach ($lideres ?? [] as $candidato) {
     </div>
   </div>
 </div>
+<?php if ($editarFicha): ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var listaCursos = document.getElementById('listaCursosMiembro');
@@ -307,7 +424,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var campoBuscar = document.getElementById('familiarBuscar');
   var listaFamilia = document.getElementById('familiarListaMiembros');
   var campoPariente = document.getElementById('familiarParienteId');
-  var campoParentesco = document.getElementById('familiarParentesco');
   var formFamiliar = document.getElementById('formAgregarFamiliar');
 
   function actualizarVacioCursos() {
@@ -386,3 +502,4 @@ document.addEventListener('DOMContentLoaded', function () {
   renderFamilia();
 });
 </script>
+<?php endif; ?>

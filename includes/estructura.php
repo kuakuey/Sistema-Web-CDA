@@ -306,7 +306,7 @@ function obtenerLideres(): array
     )->fetchAll();
 }
 
-function urlFichaMiembro(int $id, int $pagina = 1, string $buscar = ''): string
+function urlFichaMiembro(int $id, int $pagina = 1, string $buscar = '', bool $editar = false): string
 {
     $parametros = [
         'pestaña' => 'lideres',
@@ -318,6 +318,9 @@ function urlFichaMiembro(int $id, int $pagina = 1, string $buscar = ''): string
     $buscar = trim($buscar);
     if ($buscar !== '') {
         $parametros['buscar'] = $buscar;
+    }
+    if ($editar) {
+        $parametros['editar'] = 1;
     }
 
     return 'estructura.php?' . http_build_query($parametros);

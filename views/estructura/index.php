@@ -17,6 +17,7 @@ $asignacionesMiembro = $asignacionesMiembro ?? [];
 $casasMiembro = $casasMiembro ?? [];
 $cursosMiembro = $cursosMiembro ?? [];
 $cursosMiembroForm = $cursosMiembroForm ?? $cursosMiembro;
+$editarFicha = $editarFicha ?? false;
 $lideresPagina = $lideresPagina ?? $lideres ?? [];
 $totalMiembros = $totalMiembros ?? count($lideres ?? []);
 $totalMiembrosRegistrados = $totalMiembrosRegistrados ?? $totalMiembros;

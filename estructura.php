@@ -87,6 +87,7 @@ if (isset($_GET['descargar']) && $_GET['descargar'] === 'plantilla') {
 $mensaje = null;
 $error = null;
 $miembroVistaId = isset($_GET['miembro']) ? (int) $_GET['miembro'] : 0;
+$editarFicha = isset($_GET['editar']) && (string) $_GET['editar'] === '1';
 
 $resultadoImportEstructura = $_SESSION['import_estructura_resultado'] ?? null;
 $errorImportEstructura = $_SESSION['import_estructura_error'] ?? null;
@@ -390,6 +391,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+if (isset($accion) && in_array($accion, ['actualizar_lider', 'guardar_datos_ministeriales', 'agregar_familiar', 'eliminar_parentesco'], true)) {
+    $editarFicha = $error !== null || in_array($accion, ['agregar_familiar', 'eliminar_parentesco'], true);
+}
+
 $territorios = obtenerTerritoriosConAsignaciones();
 $lideres = obtenerLideres();
 $casas = obtenerCasasVida();
@@ -553,6 +558,7 @@ view('estructura/index', [
     'casasMiembro'        => $casasMiembro,
     'cursosMiembro'       => $cursosMiembro,
     'cursosMiembroForm'   => $cursosMiembroForm,
+    'editarFicha'         => $editarFicha,
     'mensaje'             => $mensaje,
     'error'               => $error,
     'puedeEliminar'       => puedeEliminarRegistros($usuario['rol']),

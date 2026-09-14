@@ -65,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'estado'      => $_POST['estado'] ?? 'activo',
                 ], $_FILES['foto'] ?? null);
                 salirConActividad('calendario.php?pestaña=nuevo&ok=1', 'crear_evento_calendario', $eventoId);
+                break;
 
             case 'actualizar_evento_calendario':
                 if (!puedeGestionarEventosCalendario($rol)) {
@@ -84,10 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'actualizar_evento_calendario',
                     $eventoId
                 );
+                break;
         }
     } catch (InvalidArgumentException $e) {
         $error = $e->getMessage();
     } catch (Throwable $e) {
+        error_log('Calendario guardar: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
         $error = 'No se pudo guardar el evento del calendario. Intenta de nuevo.';
     }
 }

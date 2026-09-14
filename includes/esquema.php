@@ -419,25 +419,27 @@ function migrarTablaConsejerias(PDO $pdo): void
 function migrarTablaCalendarioEventos(PDO $pdo): void
 {
     $pdo->exec(
-        'CREATE TABLE IF NOT EXISTS calendario_eventos (
+        "CREATE TABLE IF NOT EXISTS calendario_eventos (
             id INT AUTO_INCREMENT PRIMARY KEY,
             titulo VARCHAR(150) NOT NULL,
-            descripcion VARCHAR(255) NOT NULL DEFAULT "",
+            descripcion VARCHAR(255) NOT NULL DEFAULT '',
             fecha DATE NOT NULL,
             fecha_fin DATE NULL,
-            foto VARCHAR(255) NOT NULL DEFAULT "",
+            foto VARCHAR(255) NOT NULL DEFAULT '',
             activo TINYINT(1) NOT NULL DEFAULT 1,
             creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_fecha (fecha),
             INDEX idx_fecha_fin (fecha_fin),
             INDEX idx_activo (activo),
             INDEX idx_creado_en (creado_en)
-        ) ENGINE=InnoDB'
+        ) ENGINE=InnoDB"
     );
 
     asegurarColumnasTabla($pdo, 'calendario_eventos', [
-        'descripcion' => 'ADD COLUMN descripcion VARCHAR(255) NOT NULL DEFAULT "" AFTER titulo',
+        'descripcion' => "ADD COLUMN descripcion VARCHAR(255) NOT NULL DEFAULT '' AFTER titulo",
         'fecha_fin'   => 'ADD COLUMN fecha_fin DATE NULL AFTER fecha',
+        'foto'        => "ADD COLUMN foto VARCHAR(255) NOT NULL DEFAULT '' AFTER fecha_fin",
+        'activo'      => 'ADD COLUMN activo TINYINT(1) NOT NULL DEFAULT 1 AFTER foto',
     ]);
 }
 

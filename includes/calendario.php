@@ -4,12 +4,6 @@ require_once __DIR__ . '/esquema.php';
 
 const CALENDARIO_UPLOAD_DIR = 'uploads/calendario';
 const CALENDARIO_MAX_BYTES = 5242880; // 5 MB
-const CALENDARIO_MIME_PERMITIDOS = [
-    'image/jpeg' => 'jpg',
-    'image/png'  => 'png',
-    'image/webp' => 'webp',
-    'image/gif'  => 'gif',
-];
 
 function asegurarTablaCalendarioEventos(?PDO $pdo = null): void
 {
@@ -97,21 +91,28 @@ function crearEventoCalendario(array $datos, ?array $archivo = null): int
     $normalizado = normalizarDatosEventoCalendario($datos, true);
     $foto = guardarFotoEventoCalendario($archivo) ?? '';
 
-    $pdo = getConnection();
-    $stmt = $pdo->prepare(
-        'INSERT INTO calendario_eventos (titulo, descripcion, fecha, fecha_fin, foto, activo)
-         VALUES (?, ?, ?, ?, ?, ?)'
-    );
-    $stmt->execute([
-        $normalizado['titulo'],
-        $normalizado['descripcion'],
-        $normalizado['fecha'],
-        $normalizado['fecha_fin'],
-        $foto,
-        $normalizado['activo'],
-    ]);
+    try {
+        $pdo = getConnection();
+        $stmt = $pdo->prepare(
+            'INSERT INTO calendario_eventos (titulo, descripcion, fecha, fecha_fin, foto, activo)
+             VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([
+            $normalizado['titulo'],
+            $normalizado['descripcion'],
+            $normalizado['fecha'],
+            $normalizado['fecha_fin'],
+            $foto,
+            $normalizado['activo'],
+        ]);
 
-    return (int) $pdo->lastInsertId();
+        return (int) $pdo->lastInsertId();
+    } catch (Throwable $e) {
+        if ($foto !== '') {
+            eliminarArchivoFotoCalendario($foto);
+        }
+        throw $e;
+    }
 }
 
 /**
@@ -257,9 +258,78 @@ function validarFechaCalendario(string $fecha): void
     }
 }
 
+function mensajeErrorSubidaFotoCalendario(int $error): string
+{
+    switch ($error) {
+        case UPLOAD_ERR_INI_SIZE:
+        case UPLOAD_ERR_FORM_SIZE:
+            return 'La foto supera el tamaño máximo permitido (5 MB).';
+        case UPLOAD_ERR_PARTIAL:
+            return 'La foto se subió incompleta. Intenta de nuevo.';
+        case UPLOAD_ERR_NO_TMP_DIR:
+            return 'El servidor no tiene carpeta temporal para subir fotos.';
+        case UPLOAD_ERR_CANT_WRITE:
+            return 'No se pudo escribir la foto en el servidor.';
+        case UPLOAD_ERR_EXTENSION:
+            return 'Una extensión de PHP bloqueó la subida de la foto.';
+        default:
+            return 'No se pudo subir la foto. Intenta de nuevo.';
+    }
+}
+
 /**
- * @param array<string, mixed>|null $archivo
+ * Detecta la extensión real de la imagen (JPG, PNG, WEBP o GIF).
+ * Usa getimagesize para no depender de la extensión fileinfo.
  */
+function extensionFotoCalendario(string $tmp): string
+{
+    $info = @getimagesize($tmp);
+    $tipo = is_array($info) ? (int) ($info[2] ?? 0) : 0;
+
+    $mapa = [
+        IMAGETYPE_JPEG => 'jpg',
+        IMAGETYPE_PNG  => 'png',
+        IMAGETYPE_GIF  => 'gif',
+    ];
+
+    if (defined('IMAGETYPE_WEBP')) {
+        $mapa[IMAGETYPE_WEBP] = 'webp';
+    }
+
+    if (isset($mapa[$tipo])) {
+        return $mapa[$tipo];
+    }
+
+    throw new InvalidArgumentException('Formato de imagen no permitido. Usa JPG, PNG, WEBP o GIF.');
+}
+
+function asegurarDirectorioFotosCalendario(): string
+{
+    $directorio = rutaAbsolutaCalendarioUpload();
+
+    if (!is_dir($directorio) && !@mkdir($directorio, 0775, true) && !is_dir($directorio)) {
+        throw new InvalidArgumentException(
+            'No se pudo crear el directorio de fotos del calendario. Verifica permisos de uploads/calendario.'
+        );
+    }
+
+    if (!is_writable($directorio)) {
+        @chmod($directorio, 0775);
+    }
+
+    if (!is_writable($directorio)) {
+        @chmod($directorio, 0777);
+    }
+
+    if (!is_writable($directorio)) {
+        throw new InvalidArgumentException(
+            'El directorio de fotos no tiene permiso de escritura. Ajusta uploads/calendario.'
+        );
+    }
+
+    return $directorio;
+}
+
 function guardarFotoEventoCalendario(?array $archivo): ?string
 {
     if ($archivo === null) {
@@ -268,18 +338,22 @@ function guardarFotoEventoCalendario(?array $archivo): ?string
 
     $error = (int) ($archivo['error'] ?? UPLOAD_ERR_NO_FILE);
 
-    if ($error === UPLOAD_ERR_NO_FILE) {
+    if ($error === UPLOAD_ERR_NO_FILE || trim((string) ($archivo['name'] ?? '')) === '') {
         return null;
     }
 
     if ($error !== UPLOAD_ERR_OK) {
-        throw new InvalidArgumentException('No se pudo subir la foto. Intenta de nuevo.');
+        throw new InvalidArgumentException(mensajeErrorSubidaFotoCalendario($error));
     }
 
     $tmp = (string) ($archivo['tmp_name'] ?? '');
     $tamano = (int) ($archivo['size'] ?? 0);
 
-    if ($tmp === '' || !is_uploaded_file($tmp)) {
+    if ($tmp === '' || !is_file($tmp)) {
+        throw new InvalidArgumentException('Archivo de foto no válido.');
+    }
+
+    if (function_exists('is_uploaded_file') && !is_uploaded_file($tmp)) {
         throw new InvalidArgumentException('Archivo de foto no válido.');
     }
 
@@ -287,27 +361,28 @@ function guardarFotoEventoCalendario(?array $archivo): ?string
         throw new InvalidArgumentException('La foto debe pesar como máximo 5 MB.');
     }
 
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = (string) $finfo->file($tmp);
-
-    if (!isset(CALENDARIO_MIME_PERMITIDOS[$mime])) {
-        throw new InvalidArgumentException('Formato de imagen no permitido. Usa JPG, PNG, WEBP o GIF.');
-    }
-
-    $extension = CALENDARIO_MIME_PERMITIDOS[$mime];
-    $directorioAbsoluto = rutaAbsolutaCalendarioUpload();
-
-    if (!is_dir($directorioAbsoluto) && !mkdir($directorioAbsoluto, 0755, true) && !is_dir($directorioAbsoluto)) {
-        throw new RuntimeException('No se pudo crear el directorio de fotos del calendario.');
-    }
+    $extension = extensionFotoCalendario($tmp);
+    $directorioAbsoluto = asegurarDirectorioFotosCalendario();
 
     $nombre = date('YmdHis') . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
     $destinoAbsoluto = $directorioAbsoluto . DIRECTORY_SEPARATOR . $nombre;
     $rutaRelativa = CALENDARIO_UPLOAD_DIR . '/' . $nombre;
 
-    if (!move_uploaded_file($tmp, $destinoAbsoluto)) {
-        throw new RuntimeException('No se pudo guardar la foto del evento.');
+    $movido = @move_uploaded_file($tmp, $destinoAbsoluto);
+    if (!$movido) {
+        $movido = @copy($tmp, $destinoAbsoluto);
+        if ($movido) {
+            @unlink($tmp);
+        }
     }
+
+    if (!$movido || !is_file($destinoAbsoluto)) {
+        throw new InvalidArgumentException(
+            'No se pudo guardar la foto del evento. Verifica permisos de uploads/calendario.'
+        );
+    }
+
+    @chmod($destinoAbsoluto, 0644);
 
     return $rutaRelativa;
 }

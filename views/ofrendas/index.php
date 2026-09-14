@@ -64,7 +64,7 @@
     <?php if (empty($casas)): ?>
     <div class="alert alert-warning mb-0">
       <i class="bi bi-exclamation-triangle me-1"></i>
-      No hay casas de vida registradas. Configura la estructura CDV antes de registrar ofrendas.
+      No hay casas de vida registradas. Configura la estructura CDA antes de registrar ofrendas.
     </div>
     <?php else: ?>
     <form method="POST" action="acciones.php" class="row g-3 js-form-registro" id="formOfrenda" data-mensaje-exito="Ofrenda registrada correctamente.">

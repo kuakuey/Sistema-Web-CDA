@@ -136,7 +136,7 @@ function obtenerCatalogoPermisosDetallados(): array
             ],
         ],
         'estructura' => [
-            'etiqueta'  => 'Estructura CDV',
+            'etiqueta'  => 'Estructura CDA',
             'icono'     => 'bi-diagram-3',
             'permisos'  => [
                 'lideres'     => 'Miembros',
@@ -265,7 +265,7 @@ function obtenerSeccionesConfigurablesPermisos(): array
         'valores_adicionales' => 'Valores adicionales',
         'consejeria'          => "Consejer\u{00ED}a",
         'generar_informe'     => 'Generar informe',
-        'estructura'          => 'Estructura CDV',
+        'estructura'          => 'Estructura CDA',
     ];
 }
 

@@ -27,7 +27,7 @@ function mapaMetadatosActividad(): array
         'crear_valor_adicional'            => ['seccion' => 'valores_adicionales', 'entidad' => 'valor_adicional', 'etiqueta' => 'Crear valor adicional'],
         'registrar_evento'                 => ['seccion' => 'eventos', 'entidad' => 'registro_evento', 'etiqueta' => 'Registrar participante de evento'],
         'importar_registros_eventos'       => ['seccion' => 'eventos', 'entidad' => 'registro_evento', 'etiqueta' => 'Importar registros de eventos'],
-        'importar_estructura'              => ['seccion' => 'estructura', 'entidad' => 'estructura', 'etiqueta' => 'Importar estructura CDV'],
+        'importar_estructura'              => ['seccion' => 'estructura', 'entidad' => 'estructura', 'etiqueta' => 'Importar estructura CDA'],
         'guardar_permisos_rol'             => ['seccion' => 'usuarios', 'entidad' => 'permisos', 'etiqueta' => 'Guardar permisos de rol'],
         'cambiar_clave_usuario'            => ['seccion' => 'usuarios', 'entidad' => 'usuario', 'etiqueta' => 'Cambiar contraseña'],
         'crear_usuario'                    => ['seccion' => 'usuarios', 'entidad' => 'usuario', 'etiqueta' => 'Crear usuario'],

@@ -466,7 +466,7 @@ try {
     $estadisticas = [];
 }
 
-$tituloPagina = 'Estructura CDV';
+$tituloPagina = 'Estructura CDA';
 if (is_array($miembroDetalle)) {
     $tituloPagina = 'Miembro · ' . trim((string) $miembroDetalle['nombre'] . ' ' . (string) $miembroDetalle['apellido']);
 }

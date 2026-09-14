@@ -376,7 +376,7 @@ function obtenerEtiquetasSecciones(): array
         'calendario'          => 'Calendario',
         'consejeria'          => "Consejer\u{00ED}a",
         'generar_informe'     => 'Generar informe',
-        'estructura'          => 'Estructura CDV',
+        'estructura'          => 'Estructura CDA',
         'avanzado'            => 'Avanzado',
     ];
 }

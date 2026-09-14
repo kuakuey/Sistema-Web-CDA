@@ -403,7 +403,7 @@ function construirHojaGuiaXmlPlantillaImportEstructura(array $info): string
     $xml .= '<Column ss:Index="2" ss:AutoFitWidth="0" ss:Width="140"/>';
     $xml .= '<Column ss:Index="3" ss:AutoFitWidth="0" ss:Width="280"/>';
 
-    $xml .= filaXmlExcelImportEstructura(['PLANTILLA · ESTRUCTURA CDV · ' . strtoupper((string) $info['etiqueta'])], 'Titulo');
+    $xml .= filaXmlExcelImportEstructura(['PLANTILLA · ESTRUCTURA CDA · ' . strtoupper((string) $info['etiqueta'])], 'Titulo');
     $xml .= filaXmlExcelImportEstructura(['']);
     $xml .= filaXmlExcelImportEstructura([(string) $info['descripcion']], 'Subtitulo');
     $xml .= filaXmlExcelImportEstructura([(string) $info['ayuda']]);

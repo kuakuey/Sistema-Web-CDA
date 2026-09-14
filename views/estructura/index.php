@@ -30,7 +30,7 @@ $filtrosListaEstructura = $buscarEstructura !== '' ? ['buscar' => $buscarEstruct
 ?>
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
-    <h2 class="h4 mb-1">Estructura CDV</h2>
+    <h2 class="h4 mb-1">Estructura CDA</h2>
     <p class="text-muted small mb-0">Primero registra los miembros. Luego crea territorios y asígnales coordinadores y encargados.</p>
   </div>
 </div>
@@ -77,34 +77,37 @@ $filtrosListaEstructura = $buscarEstructura !== '' ? ['buscar' => $buscarEstruct
 <?php if ($pestaña === 'lideres' && $miembroDetalle): ?>
 <?php include __DIR__ . '/pestaña-miembro.php'; ?>
 <?php elseif ($pestaña === 'lideres'): ?>
-<div class="d-flex flex-wrap justify-content-end align-items-center gap-2 mb-4">
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoMiembro">
-    <i class="bi bi-plus-lg me-1"></i>Nuevo miembro
-  </button>
-</div>
-
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body py-3">
-    <form method="GET" action="estructura.php" class="row g-2 align-items-end">
-      <input type="hidden" name="pestaña" value="lideres">
-      <div class="col-md-6 col-lg-4">
-        <label class="form-label small mb-1" for="buscar-miembros">Buscar</label>
-        <input
-          type="search"
-          class="form-control form-control-sm"
-          id="buscar-miembros"
-          name="buscar"
-          value="<?= htmlspecialchars((string) $buscarEstructura) ?>"
-          placeholder="Nombre, cédula, celular…"
-        >
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md">
+        <form method="GET" action="estructura.php" class="row g-2 align-items-end">
+          <input type="hidden" name="pestaña" value="lideres">
+          <div class="col-md-6 col-lg-5">
+            <label class="form-label small mb-1" for="buscar-miembros">Buscar</label>
+            <input
+              type="search"
+              class="form-control form-control-sm"
+              id="buscar-miembros"
+              name="buscar"
+              value="<?= htmlspecialchars((string) $buscarEstructura) ?>"
+              placeholder="Nombre, cédula, celular…"
+            >
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-outline-primary">Buscar</button>
+            <?php if ($buscarEstructura !== ''): ?>
+            <a class="btn btn-sm btn-outline-secondary" href="estructura.php?pestaña=lideres">Limpiar</a>
+            <?php endif; ?>
+          </div>
+        </form>
       </div>
-      <div class="col-auto">
-        <button type="submit" class="btn btn-sm btn-outline-primary">Buscar</button>
-        <?php if ($buscarEstructura !== ''): ?>
-        <a class="btn btn-sm btn-outline-secondary" href="estructura.php?pestaña=lideres">Limpiar</a>
-        <?php endif; ?>
+      <div class="col-auto ms-md-auto">
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoMiembro">
+          <i class="bi bi-plus-lg me-1"></i>Nuevo miembro
+        </button>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 
@@ -246,10 +249,14 @@ foreach ($lideres as $miembro) {
     ];
 }
 ?>
-<div class="d-flex flex-wrap justify-content-end align-items-center gap-2 mb-4">
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoTerritorio">
-    <i class="bi bi-plus-lg me-1"></i>Nuevo territorio
-  </button>
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
+      <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoTerritorio">
+        <i class="bi bi-plus-lg me-1"></i>Nuevo territorio
+      </button>
+    </div>
+  </div>
 </div>
 
 <div class="card border-0 shadow-sm">
@@ -563,43 +570,46 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <?php if ($pestaña === 'casas'): ?>
 <?php $casaForm = ($modalEstructura === 'casa') ? $_POST : []; ?>
-<div class="d-flex flex-wrap justify-content-end align-items-center gap-2 mb-4">
-  <?php if (empty($territorios) || empty($lideres)): ?>
-    <?php if (empty($lideres) && in_array('lideres', $pestañasEstructura, true)): ?>
-    <a class="btn btn-outline-primary" href="estructura.php?pestaña=lideres">Ir a miembros</a>
-    <?php endif; ?>
-    <?php if (empty($territorios) && in_array('territorios', $pestañasEstructura, true)): ?>
-    <a class="btn btn-outline-primary" href="estructura.php?pestaña=territorios">Ir a territorios</a>
-    <?php endif; ?>
-  <?php else: ?>
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaCasa">
-    <i class="bi bi-plus-lg me-1"></i>Nueva casa
-  </button>
-  <?php endif; ?>
-</div>
-
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body py-3">
-    <form method="GET" action="estructura.php" class="row g-2 align-items-end">
-      <input type="hidden" name="pestaña" value="casas">
-      <div class="col-md-6 col-lg-4">
-        <label class="form-label small mb-1" for="buscar-casas">Buscar</label>
-        <input
-          type="search"
-          class="form-control form-control-sm"
-          id="buscar-casas"
-          name="buscar"
-          value="<?= htmlspecialchars((string) $buscarEstructura) ?>"
-          placeholder="Casa, territorio, líder, dirección…"
-        >
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md">
+        <form method="GET" action="estructura.php" class="row g-2 align-items-end">
+          <input type="hidden" name="pestaña" value="casas">
+          <div class="col-md-6 col-lg-5">
+            <label class="form-label small mb-1" for="buscar-casas">Buscar</label>
+            <input
+              type="search"
+              class="form-control form-control-sm"
+              id="buscar-casas"
+              name="buscar"
+              value="<?= htmlspecialchars((string) $buscarEstructura) ?>"
+              placeholder="Casa, territorio, líder, dirección…"
+            >
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-outline-primary">Buscar</button>
+            <?php if ($buscarEstructura !== ''): ?>
+            <a class="btn btn-sm btn-outline-secondary" href="estructura.php?pestaña=casas">Limpiar</a>
+            <?php endif; ?>
+          </div>
+        </form>
       </div>
-      <div class="col-auto">
-        <button type="submit" class="btn btn-sm btn-outline-primary">Buscar</button>
-        <?php if ($buscarEstructura !== ''): ?>
-        <a class="btn btn-sm btn-outline-secondary" href="estructura.php?pestaña=casas">Limpiar</a>
+      <div class="col-auto ms-md-auto">
+        <?php if (empty($territorios) || empty($lideres)): ?>
+          <?php if (empty($lideres) && in_array('lideres', $pestañasEstructura, true)): ?>
+          <a class="btn btn-outline-primary btn-sm" href="estructura.php?pestaña=lideres">Ir a miembros</a>
+          <?php endif; ?>
+          <?php if (empty($territorios) && in_array('territorios', $pestañasEstructura, true)): ?>
+          <a class="btn btn-outline-primary btn-sm" href="estructura.php?pestaña=territorios">Ir a territorios</a>
+          <?php endif; ?>
+        <?php else: ?>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevaCasa">
+          <i class="bi bi-plus-lg me-1"></i>Nueva casa
+        </button>
         <?php endif; ?>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 

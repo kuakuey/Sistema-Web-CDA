@@ -29,5 +29,5 @@ try {
     echo json_encode(array_merge(['exito' => true], $datos));
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['exito' => false, 'mensaje' => 'Error al cargar estructura CDV.']);
+    echo json_encode(['exito' => false, 'mensaje' => 'Error al cargar estructura CDA.']);
 }

@@ -1145,6 +1145,124 @@ html[data-theme="dark"] .cdv-paso {
   border-color: var(--cda-border);
 }
 
+/* Calendario mensual */
+.calendario-mes {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.calendario-mes th,
+.calendario-mes td {
+  width: 14.28%;
+}
+
+.calendario-mes__celda {
+  vertical-align: top;
+  min-height: 7rem;
+  height: 7rem;
+}
+
+.calendario-mes__dia {
+  font-size: var(--cda-text-xs);
+  font-weight: var(--cda-font-semibold);
+  line-height: var(--cda-leading-tight);
+  margin-bottom: 0.25rem;
+}
+
+.calendario-mes__puntos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.calendario-evento {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.15rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.calendario-evento--activo {
+  background: rgba(25, 135, 84, 0.12);
+}
+
+.calendario-evento--inactivo {
+  background: rgba(108, 117, 125, 0.14);
+}
+
+.calendario-evento__punto {
+  display: none;
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+
+.calendario-evento--activo .calendario-evento__punto {
+  background: var(--cda-success);
+}
+
+.calendario-evento--inactivo .calendario-evento__punto {
+  background: var(--cda-muted);
+}
+
+.calendario-evento__foto {
+  width: 22px;
+  height: 22px;
+  border-radius: 0.25rem;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.calendario-evento__titulo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+@media (max-width: 767.98px) {
+  .calendario-mes th {
+    font-size: 0.65rem;
+    padding: 0.35rem 0.1rem;
+  }
+
+  .calendario-mes__celda {
+    min-height: 0;
+    height: auto;
+    padding: 0.3rem 0.12rem 0.4rem;
+  }
+
+  .calendario-mes__dia {
+    text-align: center;
+    margin-bottom: 0.2rem;
+  }
+
+  .calendario-mes__puntos {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.2rem;
+  }
+
+  .calendario-evento {
+    background: transparent;
+    padding: 0;
+  }
+
+  .calendario-evento__punto {
+    display: block;
+  }
+
+  .calendario-evento__foto,
+  .calendario-evento__titulo {
+    display: none;
+  }
+}
+
 @media print {
   .no-print,
   .app-sidebar,

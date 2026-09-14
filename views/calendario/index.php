@@ -117,27 +117,34 @@ $totalEventosVista = $pestaña === 'calendario' ? count($eventosMes) : count($ev
               $indice = $fila * 7 + $col;
               if ($indice < $offsetInicio || $diaActual > $diasEnMes):
             ?>
-            <td class="bg-light" style="min-height: 7rem; height: 7rem; vertical-align: top; width: 14.28%;"></td>
+            <td class="calendario-mes__celda calendario-mes__celda--vacia bg-light"></td>
             <?php else:
               $fechaCelda = sprintf('%04d-%02d-%02d', $anio, $mes, $diaActual);
               $eventosDia = $eventosPorFecha[$fechaCelda] ?? [];
               $esHoy = $fechaCelda === $hoy;
             ?>
-            <td class="<?= $esHoy ? 'table-primary' : '' ?>" style="min-height: 7rem; height: 7rem; vertical-align: top; width: 14.28%;">
-              <div class="small fw-semibold mb-1"><?= (int) $diaActual ?></div>
+            <td class="calendario-mes__celda <?= $esHoy ? 'table-primary calendario-mes__celda--hoy' : '' ?>">
+              <div class="calendario-mes__dia"><?= (int) $diaActual ?></div>
+              <?php if ($eventosDia !== []): ?>
+              <div class="calendario-mes__puntos">
               <?php foreach ($eventosDia as $eventoDia):
                 $activo = (int) ($eventoDia['activo'] ?? 0) === 1;
                 $fotoUrl = urlFotoEventoCalendario($eventoDia['foto'] ?? '');
+                $tituloEvento = (string) ($eventoDia['titulo'] ?? '');
               ?>
-              <div class="d-flex align-items-center gap-1 mb-1 small rounded px-1 py-1 <?= $activo ? 'bg-success-subtle' : 'bg-secondary-subtle' ?>">
+              <div
+                class="calendario-evento <?= $activo ? 'calendario-evento--activo' : 'calendario-evento--inactivo' ?>"
+                title="<?= htmlspecialchars($tituloEvento) ?>"
+              >
+                <span class="calendario-evento__punto" aria-hidden="true"></span>
                 <?php if ($fotoUrl !== ''): ?>
-                <img src="<?= htmlspecialchars($fotoUrl) ?>" alt="" width="22" height="22" class="rounded object-fit-cover flex-shrink-0" style="object-fit: cover;">
+                <img src="<?= htmlspecialchars($fotoUrl) ?>" alt="" width="22" height="22" class="calendario-evento__foto">
                 <?php endif; ?>
-                <span class="text-truncate" title="<?= htmlspecialchars($eventoDia['titulo'] ?? '') ?>">
-                  <?= htmlspecialchars($eventoDia['titulo'] ?? '') ?>
-                </span>
+                <span class="calendario-evento__titulo"><?= htmlspecialchars($tituloEvento) ?></span>
               </div>
               <?php endforeach; ?>
+              </div>
+              <?php endif; ?>
             </td>
             <?php
               $diaActual++;
